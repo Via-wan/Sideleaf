@@ -69,25 +69,25 @@
 <div id="pagination-tester" class="viz-root" lang="zh-CN">
   <section class="tester-shell">
     <a class="shelf-link" href="./" aria-label="返回书架">‹</a>
-    <button class="type-toggle" type="button" aria-expanded="false" aria-controls="tester-controls" aria-label="调整字号和行距">Aa</button>
-    <div id="tester-controls" class="tester-controls">
+    <button class="type-toggle" type="button" data-light-popover-trigger aria-expanded="false" aria-controls="tester-controls" aria-label="调整字号和行距">Aa</button>
+    <div id="tester-controls" class="tester-controls" data-light-popover hidden>
       <label for="font-slider">字号 <output id="font-output">17px</output></label>
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.12</small>
+      <small class="build-version">Sideleaf 0.3.13</small>
     </div>
 
     <div class="page-wrap">
       <article class="reading-sheet" tabindex="0" aria-live="polite">
         <div class="chapter-name">雨停以后</div>
         <div class="page-text"></div>
-        <div class="page-number" role="button" tabindex="0" aria-label="打开本页工具"></div>
+        <div class="page-number" role="button" tabindex="0" data-light-popover-trigger aria-expanded="false" aria-controls="page-tools" aria-label="打开本页工具"></div>
       </article>
       <div class="measure-text" aria-hidden="true"></div>
     </div>
 
-    <nav class="page-tools" aria-label="本页工具" hidden>
+    <nav id="page-tools" class="page-tools" data-light-popover aria-label="本页工具" hidden>
       <button id="open-notes" type="button">本页批注</button>
       <span aria-hidden="true"></span>
       <button id="send-context" type="button">递给峥</button>
@@ -766,7 +766,7 @@
       renderNotes();
       notesSheet.hidden = false;
       notesSheet.setAttribute('aria-hidden', 'false');
-      pageTools.hidden = true;
+      closeLightPopovers();
     }
 
     function hideNotes() {
@@ -852,13 +852,36 @@
       updateTocCurrent();
     }
 
+    function lightPopoverFor(trigger) {
+      const panelId = trigger?.getAttribute('aria-controls');
+      return panelId ? document.getElementById(panelId) : null;
+    }
+
+    function setLightPopover(trigger, open) {
+      const panel = lightPopoverFor(trigger);
+      if (!panel) return;
+      panel.hidden = !open;
+      panel.classList.toggle('is-open', open);
+      trigger.setAttribute('aria-expanded', String(open));
+    }
+
+    function closeLightPopovers(exceptTrigger = null) {
+      root.querySelectorAll('[data-light-popover-trigger][aria-expanded="true"]').forEach(trigger => {
+        if (trigger !== exceptTrigger) setLightPopover(trigger, false);
+      });
+    }
+
+    function toggleLightPopover(trigger) {
+      const open = trigger.getAttribute('aria-expanded') !== 'true';
+      closeLightPopovers(trigger);
+      setLightPopover(trigger, open);
+    }
+
     function openToc() {
       renderToc();
       root.classList.add('toc-open');
       tocDrawer.setAttribute('aria-hidden', 'false');
-      pageTools.hidden = true;
-      controls.classList.remove('is-open');
-      typeToggle.setAttribute('aria-expanded', 'false');
+      closeLightPopovers();
     }
 
     function closeToc() {
@@ -866,11 +889,12 @@
       tocDrawer.setAttribute('aria-hidden', 'true');
     }
 
-    typeToggle.addEventListener('click', () => {
-      const open = controls.classList.toggle('is-open');
-      typeToggle.setAttribute('aria-expanded', String(open));
-      if (open) pageTools.hidden = true;
-    });
+    root.addEventListener('click', event => {
+      const trigger = event.target.closest('[data-light-popover-trigger]');
+      if (!trigger || !root.contains(trigger)) return;
+      event.stopPropagation();
+      toggleLightPopover(trigger);
+    }, true);
 
     openNotes.addEventListener('click', showNotes);
     closeNotes.addEventListener('click', hideNotes);
@@ -880,27 +904,18 @@
     tocDrawer.addEventListener('pointerup', event => {
       if (event.clientX - drawerStartX < -52) closeToc();
     });
-    pageNumber.addEventListener('click', event => {
-      event.stopPropagation();
-      pageTools.hidden = !pageTools.hidden;
-      controls.classList.remove('is-open');
-      typeToggle.setAttribute('aria-expanded', 'false');
-    });
     pageNumber.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') pageNumber.click();
     });
 
     document.addEventListener('pointerdown', event => {
       let dismissed = false;
-      if (controls.classList.contains('is-open') && !controls.contains(event.target) && !typeToggle.contains(event.target)) {
-        controls.classList.remove('is-open');
-        typeToggle.setAttribute('aria-expanded', 'false');
+      root.querySelectorAll('[data-light-popover-trigger][aria-expanded="true"]').forEach(trigger => {
+        const panel = lightPopoverFor(trigger);
+        if (!panel || panel.contains(event.target) || trigger.contains(event.target)) return;
+        setLightPopover(trigger, false);
         dismissed = true;
-      }
-      if (!pageTools.hidden && !pageTools.contains(event.target) && !pageNumber.contains(event.target)) {
-        pageTools.hidden = true;
-        dismissed = true;
-      }
+      });
       dismissedOverlayByPointer = dismissed && sheet.contains(event.target);
     }, true);
     saveNote.addEventListener('click', () => {
@@ -974,9 +989,7 @@
       if (position < .35) turn(-1);
       if (position > .65) turn(1);
       if (position >= .35 && position <= .65) {
-        pageTools.hidden = !pageTools.hidden;
-        controls.classList.remove('is-open');
-        typeToggle.setAttribute('aria-expanded', 'false');
+        toggleLightPopover(pageNumber);
       }
     });
 
