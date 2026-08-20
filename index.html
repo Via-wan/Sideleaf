@@ -92,6 +92,28 @@
     background: linear-gradient(90deg, rgba(91, 72, 57, .10), transparent 9px), linear-gradient(145deg, #d8cfb2, #b7a872);
   }
   .book:active .cover { transform: scale(.985); }
+  .book-open-transition {
+    position: fixed !important;
+    z-index: 9999;
+    margin: 0 !important;
+    overflow: hidden;
+    pointer-events: none;
+    transition: none !important;
+    will-change: top, left, width, height, border-radius;
+  }
+  .book-open-transition .cover-title,
+  .book-open-transition .leaf-mark {
+    will-change: opacity;
+  }
+  .book-open-veil {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: block;
+    background: #f8f4eb;
+    opacity: 0;
+    will-change: opacity;
+  }
   .cover-title {
     display: block;
     max-width: 9em;
@@ -239,6 +261,93 @@
       });
       formatNote.hidden = books.length > 0;
     }
+
+    let openingBook = false;
+
+    function clearBookTransition() {
+      document.querySelectorAll('.book-open-transition').forEach(node => node.remove());
+      openingBook = false;
+    }
+
+    async function openBook(link) {
+      if (openingBook) return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        window.location.assign(link.href);
+        return;
+      }
+
+      const cover = link.querySelector('.cover');
+      if (!cover) {
+        window.location.assign(link.href);
+        return;
+      }
+
+      openingBook = true;
+      const rect = cover.getBoundingClientRect();
+      const coverStyle = getComputedStyle(cover);
+      const clone = cover.cloneNode(true);
+      const veil = document.createElement('span');
+      clone.classList.add('book-open-transition');
+      veil.className = 'book-open-veil';
+      clone.appendChild(veil);
+      Object.assign(clone.style, {
+        top: `${rect.top}px`,
+        left: `${rect.left}px`,
+        width: `${rect.width}px`,
+        height: `${rect.height}px`,
+        backgroundColor: coverStyle.backgroundColor,
+        backgroundImage: coverStyle.backgroundImage,
+        borderRadius: coverStyle.borderRadius,
+        boxShadow: coverStyle.boxShadow
+      });
+      document.body.appendChild(clone);
+
+      const duration = 420;
+      const easing = 'cubic-bezier(.22, .78, .18, 1)';
+      const expand = clone.animate([
+        {
+          top: `${rect.top}px`,
+          left: `${rect.left}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          borderRadius: coverStyle.borderRadius,
+          boxShadow: coverStyle.boxShadow
+        },
+        {
+          top: '0px',
+          left: '0px',
+          width: `${window.innerWidth}px`,
+          height: `${window.innerHeight}px`,
+          borderRadius: '0px',
+          boxShadow: 'none'
+        }
+      ], { duration, easing, fill: 'forwards' });
+
+      clone.querySelectorAll('.cover-title, .leaf-mark').forEach(node => {
+        node.animate([
+          { opacity: 1 },
+          { offset: .46, opacity: 1 },
+          { opacity: 0 }
+        ], { duration: duration * .82, easing: 'ease-out', fill: 'forwards' });
+      });
+      veil.animate([
+        { opacity: 0 },
+        { offset: .48, opacity: 0 },
+        { opacity: 1 }
+      ], { duration, easing: 'ease-out', fill: 'forwards' });
+
+      try { await expand.finished; } catch (_) {}
+      window.location.assign(link.href);
+    }
+
+    grid.addEventListener('click', event => {
+      const link = event.target.closest('a.book');
+      if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      openBook(link);
+    });
+
+    window.addEventListener('pageshow', clearBookTransition);
 
     importButton.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', async () => {
