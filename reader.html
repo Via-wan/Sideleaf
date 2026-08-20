@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.4.3</small>
+      <small class="build-version">Sideleaf 0.5.0</small>
     </div>
 
     <div class="page-wrap">
@@ -88,7 +88,7 @@
     </div>
 
     <nav id="page-tools" class="page-tools" data-light-popover aria-label="本页工具" hidden>
-      <button id="open-notes" type="button">本页批注</button>
+      <button id="open-notes" type="button">批注</button>
       <span aria-hidden="true"></span>
       <button id="send-context" type="button">递给峥</button>
       <span aria-hidden="true"></span>
@@ -109,15 +109,20 @@
       <p class="reading-lines-note">愿的线跟着当前页面移动；峥的线只在你明确放下书签时移动。</p>
     </section>
 
+    <div id="selection-toolbar" class="selection-toolbar" hidden>
+      <button id="annotate-selection" type="button">批注</button>
+    </div>
+
     <section class="notes-sheet" aria-hidden="true" hidden>
       <div class="notes-head">
-        <strong>本页批注</strong>
+        <strong>批注</strong>
         <button id="close-notes" type="button" aria-label="关闭批注">完成</button>
       </div>
+      <blockquote id="selection-quote" class="selection-quote" hidden></blockquote>
       <div id="notes-list" class="notes-list"></div>
-      <div class="note-compose">
+      <div id="note-compose" class="note-compose" hidden>
         <div class="note-compose-head">
-          <label for="note-input">在这一页留一句</label>
+          <label for="note-input">在这句话旁边留一句</label>
           <div class="note-author-switch" role="group" aria-label="批注署名">
             <button type="button" class="is-active" data-note-author="wish" aria-pressed="true">愿</button>
             <button type="button" data-note-author="zheng" aria-pressed="false">峥</button>
@@ -125,7 +130,7 @@
         </div>
         <textarea id="note-input" rows="3" placeholder="想起什么，就钉在这里。"></textarea>
       </div>
-      <button id="save-note" class="save-note" type="button">留下批注</button>
+      <button id="save-note" class="save-note" type="button" hidden>留下批注</button>
     </section>
 
     <div class="toc-backdrop" aria-hidden="true"></div>
@@ -270,6 +275,12 @@
     margin-left: 18px !important;
     user-select: text;
   }
+  #pagination-tester .annotation-highlight {
+    padding-bottom: .04em;
+    border-bottom: 1.5px solid rgba(143, 111, 96, .72);
+    background: linear-gradient(to top, rgba(181, 142, 119, .12) 0 .42em, transparent .42em);
+    cursor: pointer;
+  }
   #pagination-tester .page-number {
     flex: 0 0 1em;
     min-height: 1em;
@@ -386,6 +397,23 @@
     font-size: 11px;
     line-height: 1.55;
   }
+  #pagination-tester .selection-toolbar {
+    position: fixed;
+    z-index: 45;
+    transform: translate(-50%, -100%);
+    padding: 4px;
+    border: 1px solid rgba(71, 62, 51, .12);
+    border-radius: 10px;
+    background: rgba(49, 43, 38, .94);
+    box-shadow: 0 8px 24px rgba(50, 42, 35, .20);
+  }
+  #pagination-tester .selection-toolbar button {
+    padding: 7px 13px;
+    border: 0;
+    background: transparent;
+    color: #fffaf4;
+    font: 500 13px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
   #pagination-tester .notes-sheet {
     position: fixed;
     z-index: 40;
@@ -410,6 +438,16 @@
   }
   #pagination-tester .notes-head strong { font-size: 16px; }
   #pagination-tester .notes-head button { color: var(--primary); }
+  #pagination-tester .selection-quote {
+    margin: -4px 0 14px;
+    padding: 10px 12px;
+    border-left: 2px solid rgba(143, 111, 96, .58);
+    border-radius: 0 10px 10px 0;
+    background: rgba(143, 111, 96, .06);
+    color: var(--muted-foreground);
+    font-size: 13px;
+    line-height: 1.55;
+  }
   #pagination-tester .notes-list {
     display: grid;
     gap: 10px;
@@ -630,9 +668,13 @@
     const closeNotes = root.querySelector('#close-notes');
     const notesSheet = root.querySelector('.notes-sheet');
     const notesList = root.querySelector('#notes-list');
+    const noteCompose = root.querySelector('#note-compose');
     const noteInput = root.querySelector('#note-input');
     const saveNote = root.querySelector('#save-note');
     const noteAuthorButtons = [...root.querySelectorAll('[data-note-author]')];
+    const selectionToolbar = root.querySelector('#selection-toolbar');
+    const annotateSelection = root.querySelector('#annotate-selection');
+    const selectionQuote = root.querySelector('#selection-quote');
     const sendContext = root.querySelector('#send-context');
     const wishLineStatus = root.querySelector('#wish-line-status');
     const zhengLineStatus = root.querySelector('#zheng-line-status');
@@ -760,6 +802,8 @@
     let resizeTimer;
     let editingNoteId = null;
     let composingNoteAuthor = 'wish';
+    let activeSelection = null;
+    let focusedNoteIds = null;
     let drawerStartX = 0;
     let dismissedOverlayByPointer = false;
 
@@ -788,7 +832,18 @@
           }
         }
         const end = Math.max(start + 1, best);
-        nextPages.push({ start, end, text: text.slice(start, end).trim() });
+        const rawPageText = text.slice(start, end);
+        const leadingSpace = rawPageText.match(/^\s*/)?.[0].length || 0;
+        const trailingSpace = rawPageText.match(/\s*$/)?.[0].length || 0;
+        const displayStart = start + leadingSpace;
+        const displayEnd = Math.max(displayStart, end - trailingSpace);
+        nextPages.push({
+          start,
+          end,
+          displayStart,
+          displayEnd,
+          text: text.slice(displayStart, displayEnd)
+        });
         start = end;
         while (text[start] === '\n') start += 1;
       }
@@ -846,10 +901,59 @@
       markZhengLine.textContent = zhengIsHere ? '峥的书签在本页' : '把峥的书签放在本页';
     }
 
+    function isRangeNote(note) {
+      return Number.isFinite(Number(note.rangeStart)) && Number.isFinite(Number(note.rangeEnd))
+        && Number(note.rangeEnd) > Number(note.rangeStart);
+    }
+
+    function rangeNotesForPage(page) {
+      if (!page) return [];
+      return readNotes().filter(note =>
+        note.bookId === activeBookId && isRangeNote(note)
+        && Number(note.rangeStart) < page.displayEnd
+        && Number(note.rangeEnd) > page.displayStart
+      );
+    }
+
+    function renderPageContent(page) {
+      const annotations = rangeNotesForPage(page);
+      if (!annotations.length) {
+        pageText.textContent = page.text;
+        return;
+      }
+      const boundaries = new Set([page.displayStart, page.displayEnd]);
+      annotations.forEach(note => {
+        boundaries.add(Math.max(page.displayStart, Number(note.rangeStart)));
+        boundaries.add(Math.min(page.displayEnd, Number(note.rangeEnd)));
+      });
+      const points = [...boundaries].sort((a, b) => a - b);
+      const fragment = document.createDocumentFragment();
+      for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
+        const from = points[pointIndex];
+        const to = points[pointIndex + 1];
+        if (to <= from) continue;
+        const matchingNotes = annotations.filter(note =>
+          Number(note.rangeStart) < to && Number(note.rangeEnd) > from
+        );
+        const content = text.slice(from, to);
+        if (!matchingNotes.length) {
+          fragment.appendChild(document.createTextNode(content));
+          continue;
+        }
+        const mark = document.createElement('span');
+        mark.className = 'annotation-highlight';
+        mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+        mark.textContent = content;
+        fragment.appendChild(mark);
+      }
+      pageText.replaceChildren(fragment);
+    }
+
     function render() {
       const page = pages[index];
       if (!page) return;
-      pageText.textContent = page.text;
+      hideSelectionToolbar();
+      renderPageContent(page);
       pageNumber.textContent = `${index + 1}/${pages.length}`;
       const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
@@ -915,17 +1019,24 @@
       const page = pages[index];
       if (!page) return [];
       return readNotes().filter(note =>
-        note.bookId === activeBookId && note.anchor >= page.start && note.anchor < page.end
+        note.bookId === activeBookId && (
+          isRangeNote(note)
+            ? Number(note.rangeStart) < page.displayEnd && Number(note.rangeEnd) > page.displayStart
+            : note.anchor >= page.start && note.anchor < page.end
+        )
       );
     }
 
     function renderNotes() {
-      const notes = notesOnPage();
+      const pageNotes = notesOnPage();
+      const notes = focusedNoteIds === null
+        ? pageNotes
+        : pageNotes.filter(note => focusedNoteIds.includes(note.id));
       notesList.replaceChildren();
       if (!notes.length) {
         const empty = document.createElement('p');
         empty.className = 'notes-empty';
-        empty.textContent = '这一页还没有批注。';
+        empty.textContent = activeSelection ? '这段原文还没有批注。' : '这里还没有批注。';
         notesList.appendChild(empty);
         return;
       }
@@ -964,6 +1075,15 @@
         more.addEventListener('click', () => { actions.hidden = !actions.hidden; });
         edit.addEventListener('click', () => {
           editingNoteId = note.id;
+          activeSelection = isRangeNote(note) ? {
+            start: Number(note.rangeStart),
+            end: Number(note.rangeEnd),
+            quote: note.quote || text.slice(Number(note.rangeStart), Number(note.rangeEnd))
+          } : null;
+          noteCompose.hidden = false;
+          saveNote.hidden = false;
+          selectionQuote.hidden = !activeSelection;
+          selectionQuote.textContent = activeSelection?.quote || '';
           noteInput.value = note.text;
           setNoteAuthor(note.author);
           saveNote.textContent = '保存修改';
@@ -978,12 +1098,14 @@
           }
           const nextNotes = readNotes().filter(item => item.id !== note.id);
           localStorage.setItem(notesKey, JSON.stringify(nextNotes));
+          if (focusedNoteIds) focusedNoteIds = focusedNoteIds.filter(id => id !== note.id);
           if (editingNoteId === note.id) {
             editingNoteId = null;
             noteInput.value = '';
             setNoteAuthor('wish');
             saveNote.textContent = '留下批注';
           }
+          renderPageContent(pages[index]);
           renderNotes();
         });
 
@@ -994,6 +1116,8 @@
     }
 
     function showNotes() {
+      selectionQuote.hidden = !activeSelection;
+      selectionQuote.textContent = activeSelection?.quote || '';
       renderNotes();
       notesSheet.hidden = false;
       notesSheet.setAttribute('aria-hidden', 'false');
@@ -1008,6 +1132,101 @@
       noteInput.value = '';
       setNoteAuthor('wish');
       saveNote.textContent = '留下批注';
+      noteCompose.hidden = true;
+      saveNote.hidden = true;
+      selectionQuote.hidden = true;
+      activeSelection = null;
+      focusedNoteIds = null;
+    }
+
+    function hideSelectionToolbar() {
+      selectionToolbar.hidden = true;
+    }
+
+    function selectionOffsets(range) {
+      const startRange = document.createRange();
+      startRange.selectNodeContents(pageText);
+      startRange.setEnd(range.startContainer, range.startOffset);
+      const endRange = document.createRange();
+      endRange.selectNodeContents(pageText);
+      endRange.setEnd(range.endContainer, range.endOffset);
+      return {
+        start: startRange.toString().length,
+        end: endRange.toString().length
+      };
+    }
+
+    function updateSelectionToolbar() {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.rangeCount) {
+        hideSelectionToolbar();
+        return;
+      }
+      const range = selection.getRangeAt(0);
+      const startElement = range.startContainer.nodeType === Node.ELEMENT_NODE
+        ? range.startContainer
+        : range.startContainer.parentElement;
+      const endElement = range.endContainer.nodeType === Node.ELEMENT_NODE
+        ? range.endContainer
+        : range.endContainer.parentElement;
+      if (!startElement || !endElement || !pageText.contains(startElement) || !pageText.contains(endElement)) {
+        hideSelectionToolbar();
+        return;
+      }
+      const page = pages[index];
+      if (!page) return;
+      const offsets = selectionOffsets(range);
+      const rangeStart = page.displayStart + Math.min(offsets.start, offsets.end);
+      const rangeEnd = page.displayStart + Math.max(offsets.start, offsets.end);
+      const quote = text.slice(rangeStart, rangeEnd).trim();
+      if (!quote) {
+        hideSelectionToolbar();
+        return;
+      }
+      const leadingTrim = text.slice(rangeStart, rangeEnd).indexOf(quote);
+      const start = rangeStart + Math.max(0, leadingTrim);
+      const end = start + quote.length;
+      activeSelection = {
+        start,
+        end,
+        quote,
+        prefix: text.slice(Math.max(0, start - 60), start),
+        suffix: text.slice(end, Math.min(text.length, end + 60))
+      };
+      const rect = range.getBoundingClientRect();
+      selectionToolbar.style.left = `${Math.max(46, Math.min(window.innerWidth - 46, rect.left + rect.width / 2))}px`;
+      selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
+      selectionToolbar.hidden = false;
+    }
+
+    function composeForSelection() {
+      if (!activeSelection) return;
+      focusedNoteIds = [];
+      editingNoteId = null;
+      noteInput.value = '';
+      setNoteAuthor('wish');
+      saveNote.textContent = '留下批注';
+      noteCompose.hidden = false;
+      saveNote.hidden = false;
+      hideSelectionToolbar();
+      window.getSelection()?.removeAllRanges();
+      showNotes();
+      window.setTimeout(() => noteInput.focus(), 80);
+    }
+
+    function showHighlightedNotes(noteIds) {
+      const notes = readNotes().filter(note => noteIds.includes(note.id));
+      if (!notes.length) return;
+      const first = notes[0];
+      activeSelection = isRangeNote(first) ? {
+        start: Number(first.rangeStart),
+        end: Number(first.rangeEnd),
+        quote: first.quote || text.slice(Number(first.rangeStart), Number(first.rangeEnd))
+      } : null;
+      focusedNoteIds = noteIds;
+      noteCompose.hidden = true;
+      saveNote.hidden = true;
+      showNotes();
     }
 
     async function copyContext() {
@@ -1016,10 +1235,17 @@
       const from = Math.max(0, page.start - 2000);
       const to = Math.min(text.length, page.end + 2000);
       const relatedNotes = readNotes().filter(note =>
-        note.bookId === activeBookId && note.anchor >= from && note.anchor < to
+        note.bookId === activeBookId && (
+          isRangeNote(note)
+            ? Number(note.rangeStart) < to && Number(note.rangeEnd) > from
+            : note.anchor >= from && note.anchor < to
+        )
       );
       const noteBlock = relatedNotes.length
-        ? relatedNotes.map((note, i) => `${i + 1}. ${noteAuthorLabel(note.author)}：${note.text}`).join('\n')
+        ? relatedNotes.map((note, i) => {
+            const quote = isRangeNote(note) ? `「${note.quote || text.slice(note.rangeStart, note.rangeEnd)}」` : '（旧页边批注）';
+            return `${i + 1}. ${noteAuthorLabel(note.author)}｜${quote}：${note.text}`;
+          }).join('\n')
         : '无';
       const packet = [
         `【Sideleaf｜${chapterName.textContent}｜${index + 1}/${pages.length}】`,
@@ -1128,8 +1354,15 @@
       toggleLightPopover(trigger);
     }, true);
 
-    openNotes.addEventListener('click', showNotes);
+    openNotes.addEventListener('click', () => {
+      activeSelection = null;
+      focusedNoteIds = null;
+      noteCompose.hidden = true;
+      saveNote.hidden = true;
+      showNotes();
+    });
     closeNotes.addEventListener('click', hideNotes);
+    annotateSelection.addEventListener('click', composeForSelection);
     sendContext.addEventListener('click', copyContext);
     noteAuthorButtons.forEach(button => {
       button.addEventListener('click', () => setNoteAuthor(button.dataset.noteAuthor));
@@ -1164,7 +1397,7 @@
     saveNote.addEventListener('click', () => {
       const value = noteInput.value.trim();
       const page = pages[index];
-      if (!value || !page) return;
+      if (!value || !page || (!editingNoteId && !activeSelection)) return;
       const notes = readNotes();
       if (editingNoteId) {
         const target = notes.find(note => note.id === editingNoteId);
@@ -1177,7 +1410,12 @@
         notes.push({
           id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           bookId: activeBookId,
-          anchor: Math.floor((page.start + page.end) / 2),
+          anchor: activeSelection.start,
+          rangeStart: activeSelection.start,
+          rangeEnd: activeSelection.end,
+          quote: activeSelection.quote,
+          prefix: activeSelection.prefix,
+          suffix: activeSelection.suffix,
           text: value,
           author: composingNoteAuthor,
           createdAt: Date.now(),
@@ -1185,10 +1423,18 @@
         });
       }
       localStorage.setItem(notesKey, JSON.stringify(notes));
+      if (activeSelection) {
+        focusedNoteIds = notes.filter(note =>
+          note.bookId === activeBookId
+          && Number(note.rangeStart) === activeSelection.start
+          && Number(note.rangeEnd) === activeSelection.end
+        ).map(note => note.id);
+      }
       editingNoteId = null;
       noteInput.value = '';
       setNoteAuthor('wish');
       saveNote.textContent = '留下批注';
+      renderPageContent(page);
       renderNotes();
     });
 
@@ -1222,11 +1468,18 @@
         if (dx > 58 && startedInLeftHalf) openToc();
         window.setTimeout(() => { ignoreNextClick = false; }, 350);
       }
+      window.setTimeout(updateSelectionToolbar, 30);
     });
 
     sheet.addEventListener('click', event => {
       if (dismissedOverlayByPointer) {
         dismissedOverlayByPointer = false;
+        return;
+      }
+      const annotation = event.target.closest('.annotation-highlight');
+      if (annotation) {
+        const noteIds = (annotation.dataset.noteIds || '').split(',').filter(Boolean);
+        showHighlightedNotes(noteIds);
         return;
       }
       if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
@@ -1237,6 +1490,12 @@
       if (position >= .35 && position <= .65) {
         toggleLightPopover(pageNumber);
       }
+    });
+
+    let selectionTimer;
+    document.addEventListener('selectionchange', () => {
+      window.clearTimeout(selectionTimer);
+      selectionTimer = window.setTimeout(updateSelectionToolbar, 80);
     });
 
     sheet.addEventListener('keydown', event => {
