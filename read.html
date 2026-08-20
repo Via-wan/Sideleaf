@@ -1362,6 +1362,7 @@
       showNotes();
     });
     closeNotes.addEventListener('click', hideNotes);
+    annotateSelection.addEventListener('pointerdown', event => event.preventDefault());
     annotateSelection.addEventListener('click', composeForSelection);
     sendContext.addEventListener('click', copyContext);
     noteAuthorButtons.forEach(button => {
