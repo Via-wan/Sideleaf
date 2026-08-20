@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f1e8">
 <title>Sideleaf · 共读阅读器排版验收</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
 <style>
   :root {
     --foreground: #26231f;
@@ -37,10 +40,10 @@
   <section class="tester-shell">
     <button class="type-toggle" type="button" aria-expanded="false" aria-controls="tester-controls" aria-label="调整字号和行距">Aa</button>
     <div id="tester-controls" class="tester-controls">
-      <label for="font-slider">字号 <output id="font-output">18px</output></label>
-      <input id="font-slider" type="range" min="16" max="25" value="18">
-      <label for="line-slider">行距 <output id="line-output">1.75</output></label>
-      <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.75">
+      <label for="font-slider">字号 <output id="font-output">17px</output></label>
+      <input id="font-slider" type="range" min="16" max="25" value="17">
+      <label for="line-slider">行距 <output id="line-output">1.60</output></label>
+      <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
     </div>
 
     <div class="page-wrap">
@@ -61,8 +64,8 @@
     height: 100%;
     padding: 0;
     color: var(--foreground);
-    --reader-size: 18px;
-    --reader-leading: 1.75;
+    --reader-size: 17px;
+    --reader-leading: 1.6;
   }
   #pagination-tester .tester-shell {
     width: 100%;
@@ -144,7 +147,7 @@
   }
   #pagination-tester .page-text,
   #pagination-tester .measure-text {
-    font-family: "Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif !important;
+    font-family: "Noto Serif SC", "Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif !important;
     font-weight: 400 !important;
     font-size: var(--reader-size);
     line-height: var(--reader-leading);
@@ -163,9 +166,10 @@
   #pagination-tester .page-number {
     flex: 0 0 auto;
     margin-top: calc(var(--reader-size) / 2);
-    margin-bottom: calc(var(--reader-size) / 2);
+    margin-bottom: var(--reader-size);
     text-align: center;
     color: var(--muted-foreground);
+    font-size: 15px;
     font-variant-numeric: tabular-nums;
     line-height: 1;
   }
@@ -283,7 +287,7 @@
       pageText.style.setProperty('margin-right', inset, 'important');
       measure.style.setProperty('left', inset, 'important');
       measure.style.setProperty('right', inset, 'important');
-      const serifStack = '"Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif';
+      const serifStack = '"Noto Serif SC", "Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif';
       pageText.style.setProperty('font-family', serifStack, 'important');
       measure.style.setProperty('font-family', serifStack, 'important');
       pageText.style.setProperty('font-weight', '400', 'important');
