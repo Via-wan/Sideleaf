@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.11</small>
+      <small class="build-version">Sideleaf 0.3.12</small>
     </div>
 
     <div class="page-wrap">
@@ -604,6 +604,7 @@
     let resizeTimer;
     let editingNoteId = null;
     let drawerStartX = 0;
+    let dismissedOverlayByPointer = false;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -868,6 +869,7 @@
     typeToggle.addEventListener('click', () => {
       const open = controls.classList.toggle('is-open');
       typeToggle.setAttribute('aria-expanded', String(open));
+      if (open) pageTools.hidden = true;
     });
 
     openNotes.addEventListener('click', showNotes);
@@ -887,6 +889,20 @@
     pageNumber.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') pageNumber.click();
     });
+
+    document.addEventListener('pointerdown', event => {
+      let dismissed = false;
+      if (controls.classList.contains('is-open') && !controls.contains(event.target) && !typeToggle.contains(event.target)) {
+        controls.classList.remove('is-open');
+        typeToggle.setAttribute('aria-expanded', 'false');
+        dismissed = true;
+      }
+      if (!pageTools.hidden && !pageTools.contains(event.target) && !pageNumber.contains(event.target)) {
+        pageTools.hidden = true;
+        dismissed = true;
+      }
+      dismissedOverlayByPointer = dismissed && sheet.contains(event.target);
+    }, true);
     saveNote.addEventListener('click', () => {
       const value = noteInput.value.trim();
       const page = pages[index];
@@ -948,6 +964,10 @@
     });
 
     sheet.addEventListener('click', event => {
+      if (dismissedOverlayByPointer) {
+        dismissedOverlayByPointer = false;
+        return;
+      }
       if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
       const bounds = sheet.getBoundingClientRect();
       const position = (event.clientX - bounds.left) / bounds.width;
