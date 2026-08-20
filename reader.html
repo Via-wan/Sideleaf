@@ -399,6 +399,7 @@
     let index = 0;
     let startX = 0;
     let startY = 0;
+    let ignoreNextClick = false;
     let resizeTimer;
 
     function fits(fragment, height) {
@@ -601,13 +602,17 @@
     });
 
     sheet.addEventListener('pointerup', event => {
-      if (window.getSelection()?.toString().trim()) return;
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
       if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
+        ignoreNextClick = true;
         turn(dx < 0 ? 1 : -1);
-        return;
+        window.setTimeout(() => { ignoreNextClick = false; }, 350);
       }
+    });
+
+    sheet.addEventListener('click', event => {
+      if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
       const bounds = sheet.getBoundingClientRect();
       const position = (event.clientX - bounds.left) / bounds.width;
       if (position < .35) turn(-1);
