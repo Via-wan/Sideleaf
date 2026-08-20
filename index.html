@@ -258,19 +258,22 @@
       catch (_) { return {}; }
     }
 
-    function linePercent(anchor, totalLength) {
+    function linePercent(anchor, totalLength, started = false) {
       const value = Number(anchor);
       const total = Number(totalLength);
       if (!Number.isFinite(value) || !total) return 0;
-      return Math.max(0, Math.min(100, (value / total) * 100));
+      const percent = Math.max(0, Math.min(100, (value / total) * 100));
+      return started ? Math.max(1.5, percent) : percent;
     }
 
     function updateBookLines(element, state, totalLength, legacyAnchor = 0) {
       if (!element) return;
       const wishAnchor = state?.wish?.furthest ?? legacyAnchor;
       const zhengAnchor = state?.zheng?.furthest;
-      element.querySelector('.wish i').style.width = `${linePercent(wishAnchor, totalLength)}%`;
-      element.querySelector('.zheng i').style.width = `${linePercent(zhengAnchor, totalLength)}%`;
+      const wishStarted = Boolean(state) || Number(legacyAnchor) > 0;
+      const zhengStarted = state?.zheng?.current !== null && state?.zheng?.current !== undefined;
+      element.querySelector('.wish i').style.width = `${linePercent(wishAnchor, totalLength, wishStarted)}%`;
+      element.querySelector('.zheng i').style.width = `${linePercent(zhengAnchor, totalLength, zhengStarted)}%`;
     }
 
     function bookLinesMarkup(bookId) {

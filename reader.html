@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.4.0</small>
+      <small class="build-version">Sideleaf 0.4.1</small>
     </div>
 
     <div class="page-wrap">
@@ -639,15 +639,23 @@
 
     const legacyAnchor = clampAnchor(activeBook?.progress || 0);
     const storedReadingState = readingLineStates[activeBookId] || {};
+    const readingStateIsCurrent = storedReadingState.schemaVersion === 2;
+    const migratedWishCurrent = clampAnchor(storedReadingState.wish?.current, legacyAnchor);
+    const migratedZhengCurrent = nullableAnchor(storedReadingState.zheng?.current);
     const readingState = {
       wish: {
-        current: clampAnchor(storedReadingState.wish?.current, legacyAnchor),
-        furthest: clampAnchor(storedReadingState.wish?.furthest, legacyAnchor)
+        current: migratedWishCurrent,
+        furthest: readingStateIsCurrent
+          ? clampAnchor(storedReadingState.wish?.furthest, migratedWishCurrent)
+          : Math.max(migratedWishCurrent, legacyAnchor)
       },
       zheng: {
-        current: nullableAnchor(storedReadingState.zheng?.current),
-        furthest: nullableAnchor(storedReadingState.zheng?.furthest)
+        current: migratedZhengCurrent,
+        furthest: readingStateIsCurrent
+          ? nullableAnchor(storedReadingState.zheng?.furthest)
+          : migratedZhengCurrent
       },
+      schemaVersion: 2,
       textLength: text.length,
       updatedAt: Number(storedReadingState.updatedAt) || Date.now()
     };
@@ -754,18 +762,19 @@
       render();
     }
 
-    function pageOrdinalForAnchor(anchor, isEnd = false) {
+    function pageOrdinalForAnchor(anchor) {
       if (anchor === null || anchor === undefined || !pages.length) return null;
-      const lookup = isEnd ? Math.max(0, Number(anchor) - 1) : Number(anchor);
+      const lookup = Number(anchor);
       const found = pages.findIndex((page, pageIndex) =>
         lookup >= page.start && (lookup < page.end || pageIndex === pages.length - 1)
       );
       return Math.max(0, found) + 1;
     }
 
-    function readingPercent(anchor) {
+    function readingPercent(anchor, started = false) {
       if (anchor === null || anchor === undefined || !text.length) return 0;
-      return Math.max(0, Math.min(100, (Number(anchor) / text.length) * 100));
+      const percent = Math.max(0, Math.min(100, (Number(anchor) / text.length) * 100));
+      return started ? Math.max(1.5, percent) : percent;
     }
 
     function persistReadingState() {
@@ -782,18 +791,18 @@
 
     function renderReadingLines() {
       const wishCurrent = pageOrdinalForAnchor(readingState.wish.current);
-      const wishFurthest = pageOrdinalForAnchor(readingState.wish.furthest, true);
+      const wishFurthest = pageOrdinalForAnchor(readingState.wish.furthest);
       wishLineStatus.textContent = `现在 ${wishCurrent}/${pages.length} · 最远 ${wishFurthest}/${pages.length}`;
-      wishLineFill.style.width = `${readingPercent(readingState.wish.furthest)}%`;
+      wishLineFill.style.width = `${readingPercent(readingState.wish.furthest, true)}%`;
 
       if (readingState.zheng.current === null) {
         zhengLineStatus.textContent = '还没开始';
         zhengLineFill.style.width = '0%';
       } else {
         const zhengCurrent = pageOrdinalForAnchor(readingState.zheng.current);
-        const zhengFurthest = pageOrdinalForAnchor(readingState.zheng.furthest, true);
+        const zhengFurthest = pageOrdinalForAnchor(readingState.zheng.furthest);
         zhengLineStatus.textContent = `书签 ${zhengCurrent}/${pages.length} · 最远 ${zhengFurthest}/${pages.length}`;
-        zhengLineFill.style.width = `${readingPercent(readingState.zheng.furthest)}%`;
+        zhengLineFill.style.width = `${readingPercent(readingState.zheng.furthest, true)}%`;
       }
 
       const page = pages[index];
@@ -809,7 +818,7 @@
       const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
       readingState.wish.current = page.start;
-      readingState.wish.furthest = Math.max(readingState.wish.furthest, page.end);
+      readingState.wish.furthest = Math.max(readingState.wish.furthest, page.start);
       persistReadingState();
       renderReadingLines();
       if (!notesSheet.hidden) renderNotes();
@@ -1061,7 +1070,7 @@
       const page = pages[index];
       if (!page) return;
       readingState.zheng.current = page.start;
-      readingState.zheng.furthest = Math.max(readingState.zheng.furthest ?? 0, page.end);
+      readingState.zheng.furthest = Math.max(readingState.zheng.furthest ?? 0, page.start);
       persistReadingState();
       renderReadingLines();
     });
