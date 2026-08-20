@@ -27,11 +27,7 @@
     --shadow-md: 0 12px 36px rgba(62, 52, 42, .10);
   }
   * { box-sizing: border-box; }
-  html, body {
-    width: 100%;
-    height: 100%;
-    height: 100dvh;
-  }
+  html, body { width: 100%; height: 100%; }
   body {
     margin: 0;
     overflow: hidden;
@@ -87,7 +83,7 @@
 <style>
   #pagination-tester {
     width: 100%;
-    height: 100dvh;
+    height: 100%;
     padding: 0;
     color: var(--foreground);
     --reader-size: 17px;
@@ -314,7 +310,7 @@
     outline: none;
     background: #fffaf2;
     color: var(--foreground);
-    font: 400 15px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    font: 400 16px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
   #pagination-tester .note-compose textarea:focus { border-color: rgba(143, 111, 96, .48); }
   #pagination-tester .notes-sheet .save-note {
@@ -407,7 +403,6 @@
     let startY = 0;
     let ignoreNextClick = false;
     let resizeTimer;
-    let viewportTimer;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -461,13 +456,6 @@
     function repaginate() {
       const anchor = pages[index]?.start || 0;
       window.requestAnimationFrame(() => paginate(anchor));
-    }
-
-    function syncViewport() {
-      const height = window.visualViewport?.height || window.innerHeight;
-      root.style.height = `${Math.round(height)}px`;
-      window.scrollTo(0, 0);
-      repaginate();
     }
 
     function applyTypography() {
@@ -532,8 +520,6 @@
       notesSheet.hidden = true;
       notesSheet.setAttribute('aria-hidden', 'true');
       noteInput.blur();
-      window.requestAnimationFrame(syncViewport);
-      window.setTimeout(syncViewport, 320);
     }
 
     async function copyContext() {
@@ -659,16 +645,8 @@
       resizeTimer = window.setTimeout(repaginate, 80);
     });
     observer.observe(pageText);
-    window.visualViewport?.addEventListener('resize', () => {
-      window.clearTimeout(viewportTimer);
-      viewportTimer = window.setTimeout(syncViewport, 120);
-    });
-    window.addEventListener('orientationchange', () => window.setTimeout(syncViewport, 250));
     applyTypography();
-    window.requestAnimationFrame(() => {
-      syncViewport();
-      paginate(initialAnchor);
-    });
+    window.requestAnimationFrame(() => paginate(initialAnchor));
   })();
 </script>
 </body>
