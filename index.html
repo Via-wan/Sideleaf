@@ -151,7 +151,7 @@
     </header>
 
     <section id="book-grid" class="book-grid" aria-label="书架">
-      <a class="book" href="./reader.html">
+      <a class="book" href="./reader.html?v=20260820-2">
         <div class="cover">
           <span class="cover-title">雨停以后</span>
           <span class="leaf-mark">SIDELEAF</span>
@@ -197,7 +197,7 @@
         const link = document.createElement('a');
         link.className = 'book';
         link.dataset.imported = 'true';
-        link.href = `./reader.html?book=${encodeURIComponent(book.id)}`;
+        link.href = `./reader.html?book=${encodeURIComponent(book.id)}&v=20260820-2`;
         link.innerHTML = `
           <div class="cover">
             <span class="cover-title">${escapeText(book.title)}</span>
