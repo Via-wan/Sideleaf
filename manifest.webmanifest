@@ -3,7 +3,7 @@
   "short_name": "Sideleaf",
   "description": "A quiet co-reading space for reading side by side.",
   "id": "/Sideleaf/",
-  "start_url": "/Sideleaf/",
+  "start_url": "/Sideleaf/?pwa=2",
   "scope": "/Sideleaf/",
   "display": "standalone",
   "background_color": "#f8f4eb",
