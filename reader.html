@@ -50,7 +50,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.1</small>
+      <small class="build-version">Sideleaf 0.3.2</small>
     </div>
 
     <div class="page-wrap">
@@ -84,7 +84,7 @@
     <div class="toc-backdrop" aria-hidden="true"></div>
     <aside class="toc-drawer" aria-hidden="true" aria-label="目录">
       <div class="toc-head">
-        <strong>目录</strong>
+        <strong id="toc-book-title">雨停以后</strong>
       </div>
       <nav id="toc-list" class="toc-list" aria-label="章节目录"></nav>
     </aside>
@@ -491,6 +491,7 @@
     const tocDrawer = root.querySelector('.toc-drawer');
     const tocBackdrop = root.querySelector('.toc-backdrop');
     const tocList = root.querySelector('#toc-list');
+    const tocBookTitle = root.querySelector('#toc-book-title');
 
     const defaultText = [
       '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
@@ -517,13 +518,15 @@
     function parseToc(source) {
       if (!activeBook) {
         return [
-          { title: '雨停以后', level: 1, anchor: 0 },
+          { title: '第一章', level: 1, anchor: 0 },
           { title: '两条阅读线', level: 2, anchor: Math.max(0, source.indexOf('街道被洗得发亮')) },
           { title: '章节札记', level: 2, anchor: Math.max(0, source.indexOf('到了章节末尾')) }
         ];
       }
       const entries = [];
       let offset = 0;
+      let markdownLevelShift = 0;
+      const normalizedBookTitle = (activeBook.title || '').replace(/[\s　·:：_-]+/g, '').toLowerCase();
       source.split('\n').forEach(line => {
         const trimmed = line.trim();
         const markdown = trimmed.match(/^(#{1,3})\s+(.+?)\s*#*$/);
@@ -531,7 +534,17 @@
         const section = trimmed.match(/^(第[^\s]{1,12}节)(?:[\s　:：·-]+(.+))?$/);
         const special = trimmed.match(/^(序章|序言|前言|楔子|引子|后记|尾声|终章)(?:[\s　:：·-]+(.+))?$/);
         if (markdown) {
-          entries.push({ title: markdown[2].trim(), level: Math.min(3, markdown[1].length), anchor: offset });
+          const headingTitle = markdown[2].trim();
+          const normalizedHeading = headingTitle.replace(/[\s　·:：_-]+/g, '').toLowerCase();
+          if (!entries.length && normalizedHeading === normalizedBookTitle) {
+            markdownLevelShift = 1;
+          } else {
+            entries.push({
+              title: headingTitle,
+              level: Math.min(3, Math.max(1, markdown[1].length - markdownLevelShift)),
+              anchor: offset
+            });
+          }
         } else if (section) {
           entries.push({ title: trimmed, level: 2, anchor: offset });
         } else if (volume || special) {
@@ -545,6 +558,7 @@
     const tocEntries = parseToc(text);
 
     chapterName.textContent = activeBook?.title || '雨停以后';
+    tocBookTitle.textContent = activeBook?.title || '雨停以后';
     document.title = `${chapterName.textContent} · Sideleaf`;
 
     let savedSettings = {};
