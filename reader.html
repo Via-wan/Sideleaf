@@ -50,7 +50,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.3</small>
+      <small class="build-version">Sideleaf 0.3.4</small>
     </div>
 
     <div class="page-wrap">
@@ -788,16 +788,9 @@
 
     function resolveTocIndex(page) {
       if (!page) return 0;
-      const indexesOnPage = tocEntries
-        .map((entry, entryIndex) => ({ entry, entryIndex }))
-        .filter(item => item.entry.anchor >= page.start && item.entry.anchor < page.end);
-      if (indexesOnPage.length) {
-        const deepestLevel = Math.max(...indexesOnPage.map(item => item.entry.level));
-        return indexesOnPage.find(item => item.entry.level === deepestLevel)?.entryIndex || 0;
-      }
       let currentIndex = 0;
       tocEntries.forEach((entry, entryIndex) => {
-        if (entry.anchor <= page.start) currentIndex = entryIndex;
+        if (entry.anchor < page.end) currentIndex = entryIndex;
       });
       return currentIndex;
     }
