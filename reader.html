@@ -50,7 +50,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.2.0</small>
+      <small class="build-version">Sideleaf 0.3.0</small>
     </div>
 
     <div class="page-wrap">
@@ -80,6 +80,15 @@
       </label>
       <button id="save-note" class="save-note" type="button">留下批注</button>
     </section>
+
+    <div class="toc-backdrop" aria-hidden="true"></div>
+    <aside class="toc-drawer" aria-hidden="true" aria-label="目录">
+      <div class="toc-head">
+        <strong>目录</strong>
+        <button id="close-toc" type="button" aria-label="关闭目录">完成</button>
+      </div>
+      <nav id="toc-list" class="toc-list" aria-label="章节目录"></nav>
+    </aside>
 
   </section>
 </div>
@@ -362,6 +371,75 @@
     background: var(--primary);
     color: #fffaf4;
   }
+  #pagination-tester .toc-backdrop {
+    position: fixed;
+    z-index: 49;
+    inset: 0;
+    visibility: hidden;
+    background: rgba(39, 32, 27, .18);
+    opacity: 0;
+    transition: opacity .22s ease, visibility .22s ease;
+  }
+  #pagination-tester .toc-drawer {
+    position: fixed;
+    z-index: 50;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(82vw, 350px);
+    overflow: auto;
+    padding: max(28px, env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));
+    border-right: 1px solid var(--border);
+    background: #fbf7ef;
+    box-shadow: 14px 0 38px rgba(54, 43, 34, .16);
+    transform: translateX(-104%);
+    transition: transform .24s ease;
+    touch-action: pan-y;
+  }
+  #pagination-tester.toc-open .toc-backdrop {
+    visibility: visible;
+    opacity: 1;
+  }
+  #pagination-tester.toc-open .toc-drawer { transform: translateX(0); }
+  #pagination-tester .toc-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 3px 18px;
+  }
+  #pagination-tester .toc-head strong { font-size: 19px; }
+  #pagination-tester .toc-head button {
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .toc-list { display: grid; gap: 4px; }
+  #pagination-tester .toc-entry {
+    width: 100%;
+    padding: 11px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--foreground);
+    text-align: left;
+    font: 450 15px/1.45 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .toc-entry.level-2 {
+    padding-left: 27px;
+    color: #625b52;
+    font-size: 14px;
+  }
+  #pagination-tester .toc-entry.level-3 {
+    padding-left: 43px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+  #pagination-tester .toc-entry.is-current {
+    background: rgba(143, 111, 96, .10);
+    color: var(--primary);
+    font-weight: 600;
+  }
   @media (max-width: 560px) {
     #pagination-tester .tester-controls {
       grid-template-columns: auto 1fr;
@@ -415,6 +493,10 @@
     const noteInput = root.querySelector('#note-input');
     const saveNote = root.querySelector('#save-note');
     const sendContext = root.querySelector('#send-context');
+    const tocDrawer = root.querySelector('.toc-drawer');
+    const tocBackdrop = root.querySelector('.toc-backdrop');
+    const tocList = root.querySelector('#toc-list');
+    const closeTocButton = root.querySelector('#close-toc');
 
     const defaultText = [
       '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
@@ -438,6 +520,36 @@
     const text = activeBook?.content || defaultText;
     const initialAnchor = Number(activeBook?.progress) || 0;
 
+    function parseToc(source) {
+      if (!activeBook) {
+        return [
+          { title: '雨停以后', level: 1, anchor: 0 },
+          { title: '两条阅读线', level: 2, anchor: Math.max(0, source.indexOf('街道被洗得发亮')) },
+          { title: '章节札记', level: 2, anchor: Math.max(0, source.indexOf('到了章节末尾')) }
+        ];
+      }
+      const entries = [];
+      let offset = 0;
+      source.split('\n').forEach(line => {
+        const trimmed = line.trim();
+        const markdown = trimmed.match(/^(#{1,3})\s+(.+?)\s*#*$/);
+        const volume = trimmed.match(/^(第[^\s]{1,12}[卷部篇章回])(?:[\s　:：·-]+(.+))?$/);
+        const section = trimmed.match(/^(第[^\s]{1,12}节)(?:[\s　:：·-]+(.+))?$/);
+        const special = trimmed.match(/^(序章|序言|前言|楔子|引子|后记|尾声|终章)(?:[\s　:：·-]+(.+))?$/);
+        if (markdown) {
+          entries.push({ title: markdown[2].trim(), level: Math.min(3, markdown[1].length), anchor: offset });
+        } else if (section) {
+          entries.push({ title: trimmed, level: 2, anchor: offset });
+        } else if (volume || special) {
+          entries.push({ title: trimmed, level: 1, anchor: offset });
+        }
+        offset += line.length + 1;
+      });
+      return entries.length ? entries : [{ title: activeBook.title || '正文', level: 1, anchor: 0 }];
+    }
+
+    const tocEntries = parseToc(text);
+
     chapterName.textContent = activeBook?.title || '雨停以后';
     document.title = `${chapterName.textContent} · Sideleaf`;
 
@@ -457,6 +569,7 @@
     let ignoreNextClick = false;
     let resizeTimer;
     let editingNoteId = null;
+    let drawerStartX = 0;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -499,12 +612,15 @@
       if (!page) return;
       pageText.textContent = page.text;
       pageNumber.textContent = `${index + 1}/${pages.length}`;
+      const currentChapter = [...tocEntries].reverse().find(entry => entry.anchor <= page.start) || tocEntries[0];
+      chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
       if (activeBook) {
         activeBook.progress = page.start;
         activeBook.updatedAt = Date.now();
         localStorage.setItem(booksKey, JSON.stringify(storedBooks));
       }
       if (!notesSheet.hidden) renderNotes();
+      updateTocCurrent();
     }
 
     function repaginate() {
@@ -663,6 +779,53 @@
       render();
     }
 
+    function updateTocCurrent() {
+      const anchor = pages[index]?.start || 0;
+      let currentIndex = 0;
+      tocEntries.forEach((entry, entryIndex) => {
+        if (entry.anchor <= anchor) currentIndex = entryIndex;
+      });
+      tocList.querySelectorAll('.toc-entry').forEach((button, buttonIndex) => {
+        button.classList.toggle('is-current', buttonIndex === currentIndex);
+      });
+    }
+
+    function renderToc() {
+      tocList.replaceChildren();
+      tocEntries.forEach(entry => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `toc-entry level-${entry.level}`;
+        button.textContent = entry.title;
+        button.addEventListener('click', () => {
+          const targetIndex = pages.findIndex((page, pageIndex) =>
+            entry.anchor >= page.start && (entry.anchor < page.end || pageIndex === pages.length - 1)
+          );
+          if (targetIndex >= 0) {
+            index = targetIndex;
+            render();
+          }
+          closeToc();
+        });
+        tocList.appendChild(button);
+      });
+      updateTocCurrent();
+    }
+
+    function openToc() {
+      renderToc();
+      root.classList.add('toc-open');
+      tocDrawer.setAttribute('aria-hidden', 'false');
+      pageTools.hidden = true;
+      controls.classList.remove('is-open');
+      typeToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    function closeToc() {
+      root.classList.remove('toc-open');
+      tocDrawer.setAttribute('aria-hidden', 'true');
+    }
+
     typeToggle.addEventListener('click', () => {
       const open = controls.classList.toggle('is-open');
       typeToggle.setAttribute('aria-expanded', String(open));
@@ -671,6 +834,12 @@
     openNotes.addEventListener('click', showNotes);
     closeNotes.addEventListener('click', hideNotes);
     sendContext.addEventListener('click', copyContext);
+    closeTocButton.addEventListener('click', closeToc);
+    tocBackdrop.addEventListener('click', closeToc);
+    tocDrawer.addEventListener('pointerdown', event => { drawerStartX = event.clientX; });
+    tocDrawer.addEventListener('pointerup', event => {
+      if (event.clientX - drawerStartX < -52) closeToc();
+    });
     pageNumber.addEventListener('click', event => {
       event.stopPropagation();
       pageTools.hidden = !pageTools.hidden;
@@ -731,9 +900,11 @@
     sheet.addEventListener('pointerup', event => {
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
+      const bounds = sheet.getBoundingClientRect();
+      const startedInLeftHalf = startX <= bounds.left + bounds.width * .5;
       if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
         ignoreNextClick = true;
-        turn(dx < 0 ? 1 : -1);
+        if (dx > 58 && startedInLeftHalf) openToc();
         window.setTimeout(() => { ignoreNextClick = false; }, 350);
       }
     });
@@ -762,7 +933,10 @@
     });
     observer.observe(pageText);
     applyTypography();
-    window.requestAnimationFrame(() => paginate(initialAnchor));
+    window.requestAnimationFrame(() => {
+      paginate(initialAnchor);
+      renderToc();
+    });
   })();
 </script>
 </body>
