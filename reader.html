@@ -571,10 +571,6 @@
           if (remove.dataset.confirm !== 'true') {
             remove.dataset.confirm = 'true';
             remove.textContent = '确认删除';
-            window.setTimeout(() => {
-              remove.dataset.confirm = 'false';
-              remove.textContent = '删除';
-            }, 2200);
             return;
           }
           const nextNotes = readNotes().filter(item => item.id !== note.id);
