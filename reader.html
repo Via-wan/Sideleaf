@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.4.1</small>
+      <small class="build-version">Sideleaf 0.4.2</small>
     </div>
 
     <div class="page-wrap">
@@ -106,7 +106,7 @@
         <div class="reading-line-track"><i id="zheng-line-fill"></i></div>
       </div>
       <button id="mark-zheng-line" class="mark-zheng-line" type="button">把峥的书签放在本页</button>
-      <p class="reading-lines-note">愿往回翻不会抹掉最远进度；峥的线只在你明确放下书签时移动。</p>
+      <p class="reading-lines-note">愿的线跟着当前页面移动；峥的线只在你明确放下书签时移动。</p>
     </section>
 
     <section class="notes-sheet" aria-hidden="true" hidden>
@@ -644,10 +644,7 @@
     const migratedZhengCurrent = nullableAnchor(storedReadingState.zheng?.current);
     const readingState = {
       wish: {
-        current: migratedWishCurrent,
-        furthest: readingStateIsCurrent
-          ? clampAnchor(storedReadingState.wish?.furthest, migratedWishCurrent)
-          : Math.max(migratedWishCurrent, legacyAnchor)
+        current: migratedWishCurrent
       },
       zheng: {
         current: migratedZhengCurrent,
@@ -659,7 +656,6 @@
       textLength: text.length,
       updatedAt: Number(storedReadingState.updatedAt) || Date.now()
     };
-    readingState.wish.furthest = Math.max(readingState.wish.current, readingState.wish.furthest);
     const initialAnchor = readingState.wish.current;
 
     function parseToc(source) {
@@ -791,9 +787,8 @@
 
     function renderReadingLines() {
       const wishCurrent = pageOrdinalForAnchor(readingState.wish.current);
-      const wishFurthest = pageOrdinalForAnchor(readingState.wish.furthest);
-      wishLineStatus.textContent = `现在 ${wishCurrent}/${pages.length} · 最远 ${wishFurthest}/${pages.length}`;
-      wishLineFill.style.width = `${readingPercent(readingState.wish.furthest, true)}%`;
+      wishLineStatus.textContent = `书签 ${wishCurrent}/${pages.length}`;
+      wishLineFill.style.width = `${readingPercent(readingState.wish.current, true)}%`;
 
       if (readingState.zheng.current === null) {
         zhengLineStatus.textContent = '还没开始';
@@ -818,7 +813,6 @@
       const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
       readingState.wish.current = page.start;
-      readingState.wish.furthest = Math.max(readingState.wish.furthest, page.start);
       persistReadingState();
       renderReadingLines();
       if (!notesSheet.hidden) renderNotes();

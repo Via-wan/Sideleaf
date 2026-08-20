@@ -268,7 +268,7 @@
 
     function updateBookLines(element, state, totalLength, legacyAnchor = 0) {
       if (!element) return;
-      const wishAnchor = state?.wish?.furthest ?? legacyAnchor;
+      const wishAnchor = state?.wish?.current ?? legacyAnchor;
       const zhengAnchor = state?.zheng?.furthest;
       const wishStarted = Boolean(state) || Number(legacyAnchor) > 0;
       const zhengStarted = state?.zheng?.current !== null && state?.zheng?.current !== undefined;
