@@ -35,7 +35,8 @@
 <body>
 <div id="pagination-tester" class="viz-root" lang="zh-CN">
   <section class="tester-shell">
-    <div class="tester-controls">
+    <button class="type-toggle" type="button" aria-expanded="false" aria-controls="tester-controls" aria-label="调整字号和行距">Aa</button>
+    <div id="tester-controls" class="tester-controls">
       <label for="font-slider">字号 <output id="font-output">18px</output></label>
       <input id="font-slider" type="range" min="16" max="25" value="18">
       <label for="line-slider">行距 <output id="line-output">1.75</output></label>
@@ -51,7 +52,6 @@
       <div class="measure-text" aria-hidden="true"></div>
     </div>
 
-    <p class="tester-hint">左右轻点或横划翻页 · 本页按真实可用高度重新排版</p>
   </section>
 </div>
 
@@ -59,28 +59,52 @@
   #pagination-tester {
     width: 100%;
     height: 100%;
-    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: 0;
     color: var(--foreground);
     --reader-size: 18px;
     --reader-leading: 1.75;
   }
   #pagination-tester .tester-shell {
-    width: min(100%, 720px);
+    width: 100%;
     height: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
   }
   #pagination-tester .tester-controls {
-    display: grid;
+    position: fixed;
+    z-index: 20;
+    top: calc(max(12px, env(safe-area-inset-top)) + 48px);
+    right: max(12px, env(safe-area-inset-right));
+    display: none;
+    width: min(440px, calc(100% - 24px));
     grid-template-columns: auto minmax(90px, 1fr) auto minmax(90px, 1fr);
     align-items: center;
     gap: var(--space-3);
-    margin-bottom: var(--space-3);
+    margin: 0;
     padding: var(--space-3) var(--space-4);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    background: var(--card);
+    background: rgba(248, 244, 235, .97);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(16px);
+  }
+  #pagination-tester .tester-controls.is-open { display: grid; }
+  #pagination-tester .type-toggle {
+    position: fixed;
+    z-index: 21;
+    top: max(12px, env(safe-area-inset-top));
+    right: max(12px, env(safe-area-inset-right));
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 1px solid rgba(71, 62, 51, .12);
+    border-radius: 999px;
+    background: rgba(248, 244, 235, .82);
+    color: var(--muted-foreground);
+    box-shadow: 0 4px 16px rgba(62, 52, 42, .08);
+    backdrop-filter: blur(12px);
+    font: 500 15px/1 -apple-system, BlinkMacSystemFont, sans-serif;
   }
   #pagination-tester label {
     color: var(--muted-foreground);
@@ -103,11 +127,11 @@
     flex-direction: column;
     overflow: hidden;
     padding: var(--space-6) 0 0;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border: 0;
+    border-radius: 0;
     background: var(--card);
     color: var(--card-foreground);
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
     touch-action: pan-y;
     user-select: none;
     cursor: pointer;
@@ -155,18 +179,21 @@
     visibility: hidden;
     pointer-events: none;
   }
-  #pagination-tester .tester-hint {
-    flex: 0 0 auto;
-    margin: 8px 0 0;
-    text-align: center;
-    color: var(--muted-foreground);
-  }
   @media (max-width: 560px) {
     #pagination-tester .tester-controls {
       grid-template-columns: auto 1fr;
     }
     #pagination-tester .reading-sheet {
-      padding: var(--space-6) 0 0;
+      padding: max(var(--space-6), env(safe-area-inset-top)) 0 0;
+    }
+  }
+  @media (min-width: 561px) {
+    #pagination-tester { padding: 12px; }
+    #pagination-tester .tester-shell { width: min(100%, 720px); }
+    #pagination-tester .reading-sheet {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
     }
   }
 </style>
@@ -182,6 +209,8 @@
     const lineSlider = root.querySelector('#line-slider');
     const fontOutput = root.querySelector('#font-output');
     const lineOutput = root.querySelector('#line-output');
+    const typeToggle = root.querySelector('.type-toggle');
+    const controls = root.querySelector('.tester-controls');
 
     const text = [
       '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
@@ -267,6 +296,11 @@
       index = next;
       render();
     }
+
+    typeToggle.addEventListener('click', () => {
+      const open = controls.classList.toggle('is-open');
+      typeToggle.setAttribute('aria-expanded', String(open));
+    });
 
     fontSlider.addEventListener('input', () => {
       root.style.setProperty('--reader-size', `${fontSlider.value}px`);
