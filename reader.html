@@ -50,7 +50,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.0</small>
+      <small class="build-version">Sideleaf 0.3.1</small>
     </div>
 
     <div class="page-wrap">
@@ -85,7 +85,6 @@
     <aside class="toc-drawer" aria-hidden="true" aria-label="目录">
       <div class="toc-head">
         <strong>目录</strong>
-        <button id="close-toc" type="button" aria-label="关闭目录">完成</button>
       </div>
       <nav id="toc-list" class="toc-list" aria-label="章节目录"></nav>
     </aside>
@@ -386,7 +385,7 @@
     top: 0;
     bottom: 0;
     left: 0;
-    width: min(82vw, 350px);
+    width: min(66vw, 280px);
     overflow: auto;
     padding: max(28px, env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));
     border-right: 1px solid var(--border);
@@ -404,16 +403,9 @@
   #pagination-tester .toc-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     margin: 0 3px 18px;
   }
   #pagination-tester .toc-head strong { font-size: 19px; }
-  #pagination-tester .toc-head button {
-    border: 0;
-    background: transparent;
-    color: var(--primary);
-    font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-  }
   #pagination-tester .toc-list { display: grid; gap: 4px; }
   #pagination-tester .toc-entry {
     width: 100%;
@@ -424,6 +416,9 @@
     color: var(--foreground);
     text-align: left;
     font: 450 15px/1.45 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    appearance: none;
+    touch-action: manipulation;
   }
   #pagination-tester .toc-entry.level-2 {
     padding-left: 27px;
@@ -496,7 +491,6 @@
     const tocDrawer = root.querySelector('.toc-drawer');
     const tocBackdrop = root.querySelector('.toc-backdrop');
     const tocList = root.querySelector('#toc-list');
-    const closeTocButton = root.querySelector('#close-toc');
 
     const defaultText = [
       '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
@@ -612,7 +606,7 @@
       if (!page) return;
       pageText.textContent = page.text;
       pageNumber.textContent = `${index + 1}/${pages.length}`;
-      const currentChapter = [...tocEntries].reverse().find(entry => entry.anchor <= page.start) || tocEntries[0];
+      const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
       if (activeBook) {
         activeBook.progress = page.start;
@@ -779,12 +773,24 @@
       render();
     }
 
-    function updateTocCurrent() {
-      const anchor = pages[index]?.start || 0;
+    function resolveTocIndex(page) {
+      if (!page) return 0;
+      const indexesOnPage = tocEntries
+        .map((entry, entryIndex) => ({ entry, entryIndex }))
+        .filter(item => item.entry.anchor >= page.start && item.entry.anchor < page.end);
+      if (indexesOnPage.length) {
+        const deepestLevel = Math.max(...indexesOnPage.map(item => item.entry.level));
+        return indexesOnPage.find(item => item.entry.level === deepestLevel)?.entryIndex || 0;
+      }
       let currentIndex = 0;
       tocEntries.forEach((entry, entryIndex) => {
-        if (entry.anchor <= anchor) currentIndex = entryIndex;
+        if (entry.anchor <= page.start) currentIndex = entryIndex;
       });
+      return currentIndex;
+    }
+
+    function updateTocCurrent() {
+      const currentIndex = resolveTocIndex(pages[index]);
       tocList.querySelectorAll('.toc-entry').forEach((button, buttonIndex) => {
         button.classList.toggle('is-current', buttonIndex === currentIndex);
       });
@@ -834,7 +840,6 @@
     openNotes.addEventListener('click', showNotes);
     closeNotes.addEventListener('click', hideNotes);
     sendContext.addEventListener('click', copyContext);
-    closeTocButton.addEventListener('click', closeToc);
     tocBackdrop.addEventListener('click', closeToc);
     tocDrawer.addEventListener('pointerdown', event => { drawerStartX = event.clientX; });
     tocDrawer.addEventListener('pointerup', event => {
