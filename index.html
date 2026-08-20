@@ -7,351 +7,232 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Sideleaf">
-<title>Sideleaf · 共读阅读器排版验收</title>
+<title>Sideleaf · 书架</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root {
-    --foreground: #26231f;
-    --muted-foreground: #8a8379;
-    --border: rgba(71, 62, 51, .14);
-    --card: #f8f4eb;
-    --card-foreground: #2c2924;
-    --primary: #8f6f60;
-    --space-3: 12px;
-    --space-4: 16px;
-    --space-5: 20px;
-    --space-6: 24px;
-    --radius-md: 14px;
-    --radius-lg: 18px;
-    --shadow-md: 0 12px 36px rgba(62, 52, 42, .10);
+    --paper: #f5f1e8;
+    --paper-deep: #ebe3d6;
+    --ink: #292621;
+    --muted: #8b8378;
+    --line: rgba(73, 62, 49, .13);
+    --accent: #8f6f60;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; }
+  html, body { min-height: 100%; }
   body {
     margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif;
+  }
+  .shelf {
+    width: min(100%, 760px);
+    min-height: 100svh;
+    margin: 0 auto;
+    padding: max(34px, env(safe-area-inset-top)) 22px calc(110px + env(safe-area-inset-bottom));
+  }
+  header { margin: 14px 2px 34px; }
+  h1 {
+    margin: 0;
+    font-size: 29px;
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: -.02em;
+  }
+  header p {
+    margin: 9px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .book-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 18px;
+  }
+  .book {
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+  }
+  .cover {
+    position: relative;
+    aspect-ratio: 3 / 4.15;
     overflow: hidden;
-    background: #eee8dd;
-    color: var(--foreground);
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", sans-serif;
+    padding: 20px 17px;
+    border: 1px solid rgba(79, 66, 52, .12);
+    border-radius: 5px 13px 13px 5px;
+    background:
+      linear-gradient(90deg, rgba(91, 72, 57, .12), transparent 9px),
+      linear-gradient(145deg, #d8c6b8, #b79b8c);
+    box-shadow: 0 9px 22px rgba(65, 52, 41, .12), inset 2px 0 rgba(255,255,255,.35);
+    transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .book:nth-child(3n + 2) .cover {
+    background: linear-gradient(90deg, rgba(91, 72, 57, .10), transparent 9px), linear-gradient(145deg, #c5cdc5, #91a097);
+  }
+  .book:nth-child(3n) .cover {
+    background: linear-gradient(90deg, rgba(91, 72, 57, .10), transparent 9px), linear-gradient(145deg, #d8cfb2, #b7a872);
+  }
+  .book:active .cover { transform: scale(.985); }
+  .cover-title {
+    display: block;
+    max-width: 9em;
+    color: rgba(255,255,255,.94);
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.45;
+    letter-spacing: .04em;
+    text-shadow: 0 1px 6px rgba(50,39,31,.12);
+  }
+  .leaf-mark {
+    position: absolute;
+    right: 16px;
+    bottom: 15px;
+    color: rgba(255,255,255,.72);
+    font-size: 13px;
+    letter-spacing: .08em;
+  }
+  .book-info { padding: 10px 3px 0; }
+  .book-name {
+    overflow: hidden;
+    margin: 0;
+    font-size: 15px;
+    font-weight: 560;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .book-progress {
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .import-button {
+    position: fixed;
+    z-index: 10;
+    left: 50%;
+    bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    min-width: 154px;
+    padding: 13px 22px;
+    border: 1px solid rgba(255,255,255,.25);
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fffaf3;
+    box-shadow: 0 10px 28px rgba(74, 55, 44, .22);
+    font: 560 15px/1.2 inherit;
+  }
+  .import-button:active { transform: translateX(-50%) scale(.98); }
+  .format-note {
+    grid-column: 1 / -1;
+    margin: 2px 0 0;
+    padding: 14px 16px;
+    border: 1px dashed var(--line);
+    border-radius: 13px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  @media (min-width: 620px) {
+    .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .shelf { padding-right: 30px; padding-left: 30px; }
   }
 </style>
 </head>
 <body>
-<div id="pagination-tester" class="viz-root" lang="zh-CN">
-  <section class="tester-shell">
-    <button class="type-toggle" type="button" aria-expanded="false" aria-controls="tester-controls" aria-label="调整字号和行距">Aa</button>
-    <div id="tester-controls" class="tester-controls">
-      <label for="font-slider">字号 <output id="font-output">17px</output></label>
-      <input id="font-slider" type="range" min="16" max="25" value="17">
-      <label for="line-slider">行距 <output id="line-output">1.60</output></label>
-      <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-    </div>
+  <main class="shelf">
+    <header>
+      <h1>Sideleaf</h1>
+      <p>愿与峥的共读书架</p>
+    </header>
 
-    <div class="page-wrap">
-      <article class="reading-sheet" tabindex="0" aria-live="polite">
-        <div class="chapter-name">第一章 · 雨停以后</div>
-        <div class="page-text"></div>
-        <div class="page-number"></div>
-      </article>
-      <div class="measure-text" aria-hidden="true"></div>
-    </div>
+    <section id="book-grid" class="book-grid" aria-label="书架">
+      <a class="book" href="./reader.html">
+        <div class="cover">
+          <span class="cover-title">雨停以后</span>
+          <span class="leaf-mark">SIDELEAF</span>
+        </div>
+        <div class="book-info">
+          <p class="book-name">雨停以后</p>
+          <div class="book-progress">排版样章</div>
+        </div>
+      </a>
+      <div id="format-note" class="format-note">先放一本小样章在这里。你也可以从“文件”里导入 TXT 或 Markdown。</div>
+    </section>
+  </main>
 
-  </section>
-</div>
-
-<style>
-  #pagination-tester {
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    color: var(--foreground);
-    --reader-size: 17px;
-    --reader-leading: 1.6;
-  }
-  #pagination-tester .tester-shell {
-    width: 100%;
-    height: 100%;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-  }
-  #pagination-tester .tester-controls {
-    position: fixed;
-    z-index: 20;
-    top: calc(max(12px, env(safe-area-inset-top)) + 48px);
-    right: max(12px, env(safe-area-inset-right));
-    display: none;
-    width: min(440px, calc(100% - 24px));
-    grid-template-columns: auto minmax(90px, 1fr) auto minmax(90px, 1fr);
-    align-items: center;
-    gap: var(--space-3);
-    margin: 0;
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: rgba(248, 244, 235, .97);
-    box-shadow: var(--shadow-md);
-    backdrop-filter: blur(16px);
-  }
-  #pagination-tester .tester-controls.is-open { display: grid; }
-  #pagination-tester .type-toggle {
-    position: fixed;
-    z-index: 21;
-    top: max(12px, env(safe-area-inset-top));
-    right: max(12px, env(safe-area-inset-right));
-    width: 40px;
-    height: 40px;
-    padding: 0;
-    border: 1px solid rgba(71, 62, 51, .12);
-    border-radius: 999px;
-    background: rgba(248, 244, 235, .82);
-    color: var(--muted-foreground);
-    box-shadow: 0 4px 16px rgba(62, 52, 42, .08);
-    backdrop-filter: blur(12px);
-    font: 500 15px/1 -apple-system, BlinkMacSystemFont, sans-serif;
-  }
-  #pagination-tester label {
-    color: var(--muted-foreground);
-    white-space: nowrap;
-  }
-  #pagination-tester output {
-    color: var(--foreground);
-    font-variant-numeric: tabular-nums;
-  }
-  #pagination-tester input { width: 100%; accent-color: var(--primary); }
-  #pagination-tester .page-wrap {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  #pagination-tester .reading-sheet {
-    box-sizing: border-box;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    padding: var(--space-6) 0 0;
-    border: 0;
-    border-radius: 0;
-    background: var(--card);
-    color: var(--card-foreground);
-    box-shadow: none;
-    touch-action: pan-y;
-    user-select: none;
-    cursor: pointer;
-  }
-  #pagination-tester .chapter-name {
-    flex: 0 0 auto;
-    margin-bottom: var(--space-5);
-    text-align: center;
-    color: var(--muted-foreground);
-  }
-  #pagination-tester .page-text,
-  #pagination-tester .measure-text {
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif !important;
-    font-weight: 400 !important;
-    font-size: var(--reader-size);
-    line-height: var(--reader-leading);
-    letter-spacing: .025em;
-    white-space: pre-wrap;
-    text-align: justify;
-  }
-  #pagination-tester .page-text {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-    margin-right: 18px !important;
-    margin-left: 18px !important;
-    user-select: text;
-  }
-  #pagination-tester .page-number {
-    flex: 0 0 auto;
-    margin-top: calc(var(--reader-size) / 2);
-    margin-bottom: calc(var(--reader-size) * 1.667);
-    text-align: center;
-    color: var(--muted-foreground);
-    font-size: 15px;
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-  #pagination-tester .measure-text {
-    position: absolute;
-    left: 18px !important;
-    right: 18px !important;
-    top: 0;
-    height: 1px;
-    overflow: hidden;
-    visibility: hidden;
-    pointer-events: none;
-  }
-  @media (max-width: 560px) {
-    #pagination-tester .tester-controls {
-      grid-template-columns: auto 1fr;
-    }
-    #pagination-tester .reading-sheet {
-      padding: max(var(--space-6), env(safe-area-inset-top)) 0 0;
-    }
-  }
-  @media (min-width: 561px) {
-    #pagination-tester { padding: 12px; }
-    #pagination-tester .tester-shell { width: min(100%, 720px); }
-    #pagination-tester .reading-sheet {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-md);
-    }
-  }
-</style>
+  <input id="book-file" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" hidden>
+  <button id="import-button" class="import-button" type="button">＋ 导入一本书</button>
 
 <script>
   (() => {
-    const root = document.getElementById('pagination-tester');
-    const sheet = root.querySelector('.reading-sheet');
-    const pageText = root.querySelector('.page-text');
-    const pageNumber = root.querySelector('.page-number');
-    const measure = root.querySelector('.measure-text');
-    const fontSlider = root.querySelector('#font-slider');
-    const lineSlider = root.querySelector('#line-slider');
-    const fontOutput = root.querySelector('#font-output');
-    const lineOutput = root.querySelector('#line-output');
-    const typeToggle = root.querySelector('.type-toggle');
-    const controls = root.querySelector('.tester-controls');
+    const booksKey = 'sideleaf.books.v1';
+    const grid = document.getElementById('book-grid');
+    const fileInput = document.getElementById('book-file');
+    const importButton = document.getElementById('import-button');
+    const formatNote = document.getElementById('format-note');
 
-    const text = [
-      '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
-      '峥的书签还在前面两页，安静地亮着。那不是催促，也不是“我已经读完了”。它只是在页边留下一个很小的位置：你到这里时，可以叫我。',
-      '街道被洗得发亮，树影在水洼里轻轻晃。她翻过一页，看见页角多了一枚新的标记。两条阅读线并没有立刻重合，却第一次知道了彼此准确停在哪里。',
-      '她有时往回翻，重新看一句早已读过的话。页面不会因此误以为她又向前走了一遍；批注仍钉在原文的位置上，页码可以变化，那句话却不会被搬走。',
-      '天色慢慢亮起来。右下角的数字又往前走了一格，但他们仍各自保留着自己的速度。并肩并不等于步幅相同，也不要求谁假装已经看过另一人的来路。',
-      '到了章节末尾，峥把这一章留下的疑问、判断和当时的感受写成长一点的札记。下一次窗口变化以后，愿可以把它原样递回来，不需要系统先替他压成一句轻飘飘的摘要。',
-      '书页继续往后。偶尔他们在同一段旁边说话，偶尔一个人先走到前面，另一个人慢慢追上。正文安静地留在书库里，真正需要相遇时，才连同附近的线头和批注一起被取出来。',
-      '雨后的风穿过半开的窗，纸张边缘轻轻动了一下。她用手指按住页角，忽然觉得这本书不再只是一本被读完的东西，而是两个人各自走过、又不断相遇的地方。'
-    ].join('\n\n');
-
-    let pages = [];
-    let index = 0;
-    let startX = 0;
-    let startY = 0;
-    let resizeTimer;
-
-    function fits(fragment, height) {
-      measure.style.height = `${height}px`;
-      measure.textContent = fragment;
-      return measure.scrollHeight <= height + 1;
+    function readBooks() {
+      try { return JSON.parse(localStorage.getItem(booksKey) || '[]'); }
+      catch (_) { return []; }
     }
 
-    function paginate(anchor = 0) {
-      const availableHeight = pageText.clientHeight;
-      if (!availableHeight || !pageText.clientWidth) return;
-      const nextPages = [];
-      let start = 0;
-      while (start < text.length) {
-        let low = start + 1;
-        let high = text.length;
-        let best = low;
-        while (low <= high) {
-          const middle = Math.floor((low + high) / 2);
-          if (fits(text.slice(start, middle), availableHeight)) {
-            best = middle;
-            low = middle + 1;
-          } else {
-            high = middle - 1;
-          }
-        }
-        const end = Math.max(start + 1, best);
-        nextPages.push({ start, end, text: text.slice(start, end).trim() });
-        start = end;
-        while (text[start] === '\n') start += 1;
+    function escapeText(value) {
+      const span = document.createElement('span');
+      span.textContent = value;
+      return span.innerHTML;
+    }
+
+    function renderBooks() {
+      grid.querySelectorAll('[data-imported]').forEach(node => node.remove());
+      const books = readBooks();
+      books.forEach(book => {
+        const percent = book.content.length
+          ? Math.min(100, Math.round((Number(book.progress || 0) / book.content.length) * 100))
+          : 0;
+        const link = document.createElement('a');
+        link.className = 'book';
+        link.dataset.imported = 'true';
+        link.href = `./reader.html?book=${encodeURIComponent(book.id)}`;
+        link.innerHTML = `
+          <div class="cover">
+            <span class="cover-title">${escapeText(book.title)}</span>
+            <span class="leaf-mark">SIDELEAF</span>
+          </div>
+          <div class="book-info">
+            <p class="book-name">${escapeText(book.title)}</p>
+            <div class="book-progress">${percent ? `继续阅读 · ${percent}%` : '尚未开始'}</div>
+          </div>`;
+        grid.insertBefore(link, formatNote);
+      });
+      formatNote.hidden = books.length > 0;
+    }
+
+    importButton.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      try {
+        const content = (await file.text()).replace(/\r\n/g, '\n').trim();
+        if (!content) throw new Error('empty');
+        const title = file.name.replace(/\.(txt|md|markdown)$/i, '') || '未命名';
+        const books = readBooks();
+        const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        books.unshift({ id, title, content, progress: 0, createdAt: Date.now(), updatedAt: Date.now() });
+        localStorage.setItem(booksKey, JSON.stringify(books));
+        renderBooks();
+      } catch (_) {
+        window.alert('这本书暂时没有导入成功。请先试试 UTF-8 编码的 TXT 或 Markdown 文件。');
+      } finally {
+        fileInput.value = '';
       }
-      pages = nextPages;
-      index = Math.max(0, pages.findIndex((page, pageIndex) =>
-        anchor >= page.start && (anchor < page.end || pageIndex === pages.length - 1)
-      ));
-      render();
-    }
-
-    function render() {
-      const page = pages[index];
-      if (!page) return;
-      pageText.textContent = page.text;
-      pageNumber.textContent = `${130 + index}/${129 + pages.length}`;
-    }
-
-    function repaginate() {
-      const anchor = pages[index]?.start || 0;
-      window.requestAnimationFrame(() => paginate(anchor));
-    }
-
-    function applyTypography() {
-      const inset = `${fontSlider.value}px`;
-      pageText.style.setProperty('margin-left', inset, 'important');
-      pageText.style.setProperty('margin-right', inset, 'important');
-      measure.style.setProperty('left', inset, 'important');
-      measure.style.setProperty('right', inset, 'important');
-      const readingFont = '-apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif';
-      pageText.style.setProperty('font-family', readingFont, 'important');
-      measure.style.setProperty('font-family', readingFont, 'important');
-      pageText.style.setProperty('font-weight', '400', 'important');
-      measure.style.setProperty('font-weight', '400', 'important');
-    }
-
-    function turn(delta) {
-      const next = index + delta;
-      if (next < 0 || next >= pages.length) return;
-      index = next;
-      render();
-    }
-
-    typeToggle.addEventListener('click', () => {
-      const open = controls.classList.toggle('is-open');
-      typeToggle.setAttribute('aria-expanded', String(open));
     });
 
-    fontSlider.addEventListener('input', () => {
-      root.style.setProperty('--reader-size', `${fontSlider.value}px`);
-      fontOutput.textContent = `${fontSlider.value}px`;
-      applyTypography();
-      repaginate();
-    });
-
-    lineSlider.addEventListener('input', () => {
-      root.style.setProperty('--reader-leading', lineSlider.value);
-      lineOutput.textContent = Number(lineSlider.value).toFixed(2);
-      repaginate();
-    });
-
-    sheet.addEventListener('pointerdown', event => {
-      startX = event.clientX;
-      startY = event.clientY;
-    });
-
-    sheet.addEventListener('pointerup', event => {
-      if (window.getSelection()?.toString().trim()) return;
-      const dx = event.clientX - startX;
-      const dy = event.clientY - startY;
-      if (Math.abs(dx) > 42 && Math.abs(dx) > Math.abs(dy)) {
-        turn(dx < 0 ? 1 : -1);
-        return;
-      }
-      const bounds = sheet.getBoundingClientRect();
-      const position = (event.clientX - bounds.left) / bounds.width;
-      if (position < .35) turn(-1);
-      if (position > .65) turn(1);
-    });
-
-    sheet.addEventListener('keydown', event => {
-      if (event.key === 'ArrowLeft') turn(-1);
-      if (event.key === 'ArrowRight') turn(1);
-    });
-
-    const observer = new ResizeObserver(() => {
-      window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(repaginate, 80);
-    });
-    observer.observe(pageText);
-    applyTypography();
-    window.requestAnimationFrame(() => paginate(0));
+    renderBooks();
   })();
 </script>
 </body>
