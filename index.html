@@ -99,7 +99,8 @@
     overflow: hidden;
     pointer-events: none;
     transition: none !important;
-    will-change: top, left, width, height, border-radius;
+    transform-origin: 0 0;
+    will-change: transform, border-radius;
   }
   .book-open-transition .cover-title,
   .book-open-transition .leaf-mark {
@@ -302,22 +303,18 @@
       });
       document.body.appendChild(clone);
 
-      const duration = 420;
+      const duration = 400;
       const easing = 'cubic-bezier(.22, .78, .18, 1)';
+      const scaleX = window.innerWidth / rect.width;
+      const scaleY = window.innerHeight / rect.height;
       const expand = clone.animate([
         {
-          top: `${rect.top}px`,
-          left: `${rect.left}px`,
-          width: `${rect.width}px`,
-          height: `${rect.height}px`,
+          transform: 'translate3d(0, 0, 0) scale(1)',
           borderRadius: coverStyle.borderRadius,
           boxShadow: coverStyle.boxShadow
         },
         {
-          top: '0px',
-          left: '0px',
-          width: `${window.innerWidth}px`,
-          height: `${window.innerHeight}px`,
+          transform: `translate3d(${-rect.left}px, ${-rect.top}px, 0) scale(${scaleX}, ${scaleY})`,
           borderRadius: '0px',
           boxShadow: 'none'
         }
@@ -337,6 +334,7 @@
       ], { duration, easing: 'ease-out', fill: 'forwards' });
 
       try { await expand.finished; } catch (_) {}
+      try { sessionStorage.setItem('sideleaf.opening', 'book'); } catch (_) {}
       window.location.assign(link.href);
     }
 
