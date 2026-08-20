@@ -303,7 +303,7 @@
       });
       document.body.appendChild(clone);
 
-      const duration = 400;
+      const duration = 390;
       const easing = 'cubic-bezier(.22, .78, .18, 1)';
       const scaleX = window.innerWidth / rect.width;
       const scaleY = window.innerHeight / rect.height;
@@ -323,18 +323,17 @@
       clone.querySelectorAll('.cover-title, .leaf-mark').forEach(node => {
         node.animate([
           { opacity: 1 },
-          { offset: .46, opacity: 1 },
+          { offset: .64, opacity: 1 },
           { opacity: 0 }
-        ], { duration: duration * .82, easing: 'ease-out', fill: 'forwards' });
+        ], { duration, easing: 'ease-out', fill: 'forwards' });
       });
       veil.animate([
         { opacity: 0 },
-        { offset: .48, opacity: 0 },
+        { offset: .76, opacity: 0 },
         { opacity: 1 }
       ], { duration, easing: 'ease-out', fill: 'forwards' });
 
       try { await expand.finished; } catch (_) {}
-      try { sessionStorage.setItem('sideleaf.opening', 'book'); } catch (_) {}
       window.location.assign(link.href);
     }
 
