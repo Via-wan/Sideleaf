@@ -1362,8 +1362,14 @@
       showNotes();
     });
     closeNotes.addEventListener('click', hideNotes);
-    annotateSelection.addEventListener('pointerdown', event => event.preventDefault());
-    annotateSelection.addEventListener('click', composeForSelection);
+    annotateSelection.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      composeForSelection();
+    });
+    annotateSelection.addEventListener('click', event => {
+      if (event.detail === 0) composeForSelection();
+    });
     sendContext.addEventListener('click', copyContext);
     noteAuthorButtons.forEach(button => {
       button.addEventListener('click', () => setNoteAuthor(button.dataset.noteAuthor));
