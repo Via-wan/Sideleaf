@@ -6,8 +6,8 @@
   "start_url": "/Sideleaf/?pwa=2",
   "scope": "/Sideleaf/",
   "display": "standalone",
-  "background_color": "#f8f4eb",
-  "theme_color": "#f5f1e8",
+  "background_color": "#faf8f2",
+  "theme_color": "#faf8f2",
   "icons": [
     {
       "src": "./icon.svg",
