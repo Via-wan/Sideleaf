@@ -4,10 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f5f1e8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sideleaf">
 <title>Sideleaf · 共读阅读器排版验收</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400&display=swap" rel="stylesheet">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
 <style>
   :root {
     --foreground: #26231f;
@@ -147,7 +149,7 @@
   }
   #pagination-tester .page-text,
   #pagination-tester .measure-text {
-    font-family: "Noto Serif SC", "Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif !important;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif !important;
     font-weight: 400 !important;
     font-size: var(--reader-size);
     line-height: var(--reader-leading);
@@ -287,9 +289,9 @@
       pageText.style.setProperty('margin-right', inset, 'important');
       measure.style.setProperty('left', inset, 'important');
       measure.style.setProperty('right', inset, 'important');
-      const serifStack = '"Noto Serif SC", "Songti TC", "STSongti-TC-Regular", "Songti SC", "STSongti-SC-Regular", STSong, serif';
-      pageText.style.setProperty('font-family', serifStack, 'important');
-      measure.style.setProperty('font-family', serifStack, 'important');
+      const readingFont = '-apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif';
+      pageText.style.setProperty('font-family', readingFont, 'important');
+      measure.style.setProperty('font-family', readingFont, 'important');
       pageText.style.setProperty('font-weight', '400', 'important');
       measure.style.setProperty('font-weight', '400', 'important');
     }

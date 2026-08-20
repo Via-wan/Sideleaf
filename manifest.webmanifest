@@ -1,0 +1,19 @@
+{
+  "name": "Sideleaf",
+  "short_name": "Sideleaf",
+  "description": "A quiet co-reading space for reading side by side.",
+  "id": "/Sideleaf/",
+  "start_url": "/Sideleaf/",
+  "scope": "/Sideleaf/",
+  "display": "standalone",
+  "background_color": "#f8f4eb",
+  "theme_color": "#f5f1e8",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
