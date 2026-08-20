@@ -293,8 +293,38 @@
     background: rgba(143, 111, 96, .08);
     font-size: 14px;
     line-height: 1.65;
+  }
+  #pagination-tester .note-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+  }
+  #pagination-tester .note-text {
+    margin: 0;
     white-space: pre-wrap;
   }
+  #pagination-tester .note-more {
+    min-width: 30px;
+    padding: 2px 4px;
+    color: var(--muted-foreground) !important;
+    font-size: 18px !important;
+    letter-spacing: .08em;
+  }
+  #pagination-tester .note-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 5px;
+    border-top: 1px solid rgba(71, 62, 51, .08);
+  }
+  #pagination-tester .note-actions button {
+    padding: 5px 8px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+  #pagination-tester .note-actions .delete-note { color: #9a655f; }
   #pagination-tester .notes-empty { color: var(--muted-foreground); }
   #pagination-tester .note-compose span {
     display: block;
@@ -404,6 +434,7 @@
     let startY = 0;
     let ignoreNextClick = false;
     let resizeTimer;
+    let editingNoteId = null;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -503,9 +534,61 @@
         return;
       }
       notes.forEach(note => {
-        const item = document.createElement('p');
+        const item = document.createElement('article');
         item.className = 'note-item';
-        item.textContent = note.text;
+        const noteText = document.createElement('p');
+        noteText.className = 'note-text';
+        noteText.textContent = note.text;
+
+        const more = document.createElement('button');
+        more.className = 'note-more';
+        more.type = 'button';
+        more.textContent = '···';
+        more.setAttribute('aria-label', '批注选项');
+
+        const actions = document.createElement('div');
+        actions.className = 'note-actions';
+        actions.hidden = true;
+
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.textContent = '编辑';
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'delete-note';
+        remove.textContent = '删除';
+
+        more.addEventListener('click', () => { actions.hidden = !actions.hidden; });
+        edit.addEventListener('click', () => {
+          editingNoteId = note.id;
+          noteInput.value = note.text;
+          saveNote.textContent = '保存修改';
+          noteInput.focus();
+          actions.hidden = true;
+        });
+        remove.addEventListener('click', () => {
+          if (remove.dataset.confirm !== 'true') {
+            remove.dataset.confirm = 'true';
+            remove.textContent = '确认删除';
+            window.setTimeout(() => {
+              remove.dataset.confirm = 'false';
+              remove.textContent = '删除';
+            }, 2200);
+            return;
+          }
+          const nextNotes = readNotes().filter(item => item.id !== note.id);
+          localStorage.setItem(notesKey, JSON.stringify(nextNotes));
+          if (editingNoteId === note.id) {
+            editingNoteId = null;
+            noteInput.value = '';
+            saveNote.textContent = '留下批注';
+          }
+          renderNotes();
+        });
+
+        actions.append(edit, remove);
+        item.append(noteText, more, actions);
         notesList.appendChild(item);
       });
     }
@@ -521,6 +604,9 @@
       notesSheet.hidden = true;
       notesSheet.setAttribute('aria-hidden', 'true');
       noteInput.blur();
+      editingNoteId = null;
+      noteInput.value = '';
+      saveNote.textContent = '留下批注';
     }
 
     async function copyContext() {
@@ -581,15 +667,26 @@
       const page = pages[index];
       if (!value || !page) return;
       const notes = readNotes();
-      notes.push({
-        id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-        bookId: activeBookId,
-        anchor: Math.floor((page.start + page.end) / 2),
-        text: value,
-        createdAt: Date.now()
-      });
+      if (editingNoteId) {
+        const target = notes.find(note => note.id === editingNoteId);
+        if (target) {
+          target.text = value;
+          target.updatedAt = Date.now();
+        }
+      } else {
+        notes.push({
+          id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          bookId: activeBookId,
+          anchor: Math.floor((page.start + page.end) / 2),
+          text: value,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      }
       localStorage.setItem(notesKey, JSON.stringify(notes));
+      editingNoteId = null;
       noteInput.value = '';
+      saveNote.textContent = '留下批注';
       renderNotes();
     });
 
