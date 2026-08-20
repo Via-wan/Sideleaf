@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.3.13</small>
+      <small class="build-version">Sideleaf 0.4.0</small>
     </div>
 
     <div class="page-wrap">
@@ -91,7 +91,23 @@
       <button id="open-notes" type="button">本页批注</button>
       <span aria-hidden="true"></span>
       <button id="send-context" type="button">递给峥</button>
+      <span aria-hidden="true"></span>
+      <button id="open-reading-lines" type="button" data-light-popover-trigger aria-expanded="false" aria-controls="reading-lines-panel">阅读线</button>
     </nav>
+
+    <section id="reading-lines-panel" class="reading-lines-panel" data-light-popover aria-label="两条阅读线" hidden>
+      <div class="reading-lines-head">两条阅读线</div>
+      <div class="reading-line-row wish-line">
+        <div class="reading-line-copy"><strong>愿</strong><span id="wish-line-status">现在这里</span></div>
+        <div class="reading-line-track"><i id="wish-line-fill"></i></div>
+      </div>
+      <div class="reading-line-row zheng-line">
+        <div class="reading-line-copy"><strong>峥</strong><span id="zheng-line-status">还没开始</span></div>
+        <div class="reading-line-track"><i id="zheng-line-fill"></i></div>
+      </div>
+      <button id="mark-zheng-line" class="mark-zheng-line" type="button">把峥的书签放在本页</button>
+      <p class="reading-lines-note">愿往回翻不会抹掉最远进度；峥的线只在你明确放下书签时移动。</p>
+    </section>
 
     <section class="notes-sheet" aria-hidden="true" hidden>
       <div class="notes-head">
@@ -279,7 +295,7 @@
     bottom: calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: auto 1px auto;
+    grid-template-columns: auto 1px auto 1px auto;
     align-items: center;
     gap: 15px;
     padding: 8px 15px;
@@ -295,11 +311,74 @@
     background: var(--border);
   }
   #pagination-tester .page-tools button,
-  #pagination-tester .notes-sheet button {
+  #pagination-tester .notes-sheet button,
+  #pagination-tester .reading-lines-panel button {
     border: 0;
     background: transparent;
     color: var(--foreground);
     font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .reading-lines-panel {
+    position: fixed;
+    z-index: 31;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    width: min(calc(100% - 36px), 360px);
+    transform: translateX(-50%);
+    padding: 16px;
+    border: 1px solid rgba(71, 62, 51, .12);
+    border-radius: 18px;
+    background: rgba(248, 244, 235, .98);
+    box-shadow: 0 12px 34px rgba(62, 52, 42, .16);
+    backdrop-filter: blur(16px);
+  }
+  #pagination-tester .reading-lines-head {
+    margin-bottom: 13px;
+    font-size: 15px;
+    font-weight: 650;
+  }
+  #pagination-tester .reading-line-row + .reading-line-row { margin-top: 13px; }
+  #pagination-tester .reading-line-copy {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 7px;
+  }
+  #pagination-tester .reading-line-copy strong { font-size: 14px; }
+  #pagination-tester .reading-line-copy span {
+    color: var(--muted-foreground);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  #pagination-tester .reading-line-track {
+    height: 3px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(71, 62, 51, .10);
+  }
+  #pagination-tester .reading-line-track i {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    transition: width .22s ease;
+  }
+  #pagination-tester .wish-line .reading-line-track i { background: #a57f70; }
+  #pagination-tester .zheng-line .reading-line-track i { background: #707b78; }
+  #pagination-tester .reading-lines-panel .mark-zheng-line {
+    width: 100%;
+    margin-top: 16px;
+    padding: 11px 14px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fffaf4;
+  }
+  #pagination-tester .reading-lines-note {
+    margin: 10px 2px 0;
+    color: var(--muted-foreground);
+    font-size: 11px;
+    line-height: 1.55;
   }
   #pagination-tester .notes-sheet {
     position: fixed;
@@ -515,6 +594,11 @@
     const noteInput = root.querySelector('#note-input');
     const saveNote = root.querySelector('#save-note');
     const sendContext = root.querySelector('#send-context');
+    const wishLineStatus = root.querySelector('#wish-line-status');
+    const zhengLineStatus = root.querySelector('#zheng-line-status');
+    const wishLineFill = root.querySelector('#wish-line-fill');
+    const zhengLineFill = root.querySelector('#zheng-line-fill');
+    const markZhengLine = root.querySelector('#mark-zheng-line');
     const tocDrawer = root.querySelector('.toc-drawer');
     const tocBackdrop = root.querySelector('.toc-backdrop');
     const tocList = root.querySelector('#toc-list');
@@ -534,13 +618,41 @@
     const booksKey = 'sideleaf.books.v1';
     const settingsKey = 'sideleaf.settings.v1';
     const notesKey = 'sideleaf.notes.v1';
+    const readingLinesKey = 'sideleaf.reading-lines.v1';
     const bookId = new URLSearchParams(window.location.search).get('book');
     let storedBooks = [];
     try { storedBooks = JSON.parse(localStorage.getItem(booksKey) || '[]'); } catch (_) {}
     const activeBook = storedBooks.find(book => book.id === bookId);
     const activeBookId = activeBook?.id || 'sideleaf-sample-rain';
     const text = activeBook?.content || defaultText;
-    const initialAnchor = Number(activeBook?.progress) || 0;
+    let readingLineStates = {};
+    try { readingLineStates = JSON.parse(localStorage.getItem(readingLinesKey) || '{}'); } catch (_) {}
+
+    function clampAnchor(value, fallback = 0) {
+      const number = Number(value);
+      return Number.isFinite(number) ? Math.max(0, Math.min(text.length, number)) : fallback;
+    }
+
+    function nullableAnchor(value) {
+      return value === null || value === undefined ? null : clampAnchor(value);
+    }
+
+    const legacyAnchor = clampAnchor(activeBook?.progress || 0);
+    const storedReadingState = readingLineStates[activeBookId] || {};
+    const readingState = {
+      wish: {
+        current: clampAnchor(storedReadingState.wish?.current, legacyAnchor),
+        furthest: clampAnchor(storedReadingState.wish?.furthest, legacyAnchor)
+      },
+      zheng: {
+        current: nullableAnchor(storedReadingState.zheng?.current),
+        furthest: nullableAnchor(storedReadingState.zheng?.furthest)
+      },
+      textLength: text.length,
+      updatedAt: Number(storedReadingState.updatedAt) || Date.now()
+    };
+    readingState.wish.furthest = Math.max(readingState.wish.current, readingState.wish.furthest);
+    const initialAnchor = readingState.wish.current;
 
     function parseToc(source) {
       if (!activeBook) {
@@ -642,6 +754,53 @@
       render();
     }
 
+    function pageOrdinalForAnchor(anchor, isEnd = false) {
+      if (anchor === null || anchor === undefined || !pages.length) return null;
+      const lookup = isEnd ? Math.max(0, Number(anchor) - 1) : Number(anchor);
+      const found = pages.findIndex((page, pageIndex) =>
+        lookup >= page.start && (lookup < page.end || pageIndex === pages.length - 1)
+      );
+      return Math.max(0, found) + 1;
+    }
+
+    function readingPercent(anchor) {
+      if (anchor === null || anchor === undefined || !text.length) return 0;
+      return Math.max(0, Math.min(100, (Number(anchor) / text.length) * 100));
+    }
+
+    function persistReadingState() {
+      readingState.textLength = text.length;
+      readingState.updatedAt = Date.now();
+      readingLineStates[activeBookId] = readingState;
+      localStorage.setItem(readingLinesKey, JSON.stringify(readingLineStates));
+      if (activeBook) {
+        activeBook.progress = readingState.wish.current;
+        activeBook.updatedAt = readingState.updatedAt;
+        localStorage.setItem(booksKey, JSON.stringify(storedBooks));
+      }
+    }
+
+    function renderReadingLines() {
+      const wishCurrent = pageOrdinalForAnchor(readingState.wish.current);
+      const wishFurthest = pageOrdinalForAnchor(readingState.wish.furthest, true);
+      wishLineStatus.textContent = `现在 ${wishCurrent}/${pages.length} · 最远 ${wishFurthest}/${pages.length}`;
+      wishLineFill.style.width = `${readingPercent(readingState.wish.furthest)}%`;
+
+      if (readingState.zheng.current === null) {
+        zhengLineStatus.textContent = '还没开始';
+        zhengLineFill.style.width = '0%';
+      } else {
+        const zhengCurrent = pageOrdinalForAnchor(readingState.zheng.current);
+        const zhengFurthest = pageOrdinalForAnchor(readingState.zheng.furthest, true);
+        zhengLineStatus.textContent = `书签 ${zhengCurrent}/${pages.length} · 最远 ${zhengFurthest}/${pages.length}`;
+        zhengLineFill.style.width = `${readingPercent(readingState.zheng.furthest)}%`;
+      }
+
+      const page = pages[index];
+      const zhengIsHere = page && readingState.zheng.current >= page.start && readingState.zheng.current < page.end;
+      markZhengLine.textContent = zhengIsHere ? '峥的书签在本页' : '把峥的书签放在本页';
+    }
+
     function render() {
       const page = pages[index];
       if (!page) return;
@@ -649,11 +808,10 @@
       pageNumber.textContent = `${index + 1}/${pages.length}`;
       const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
-      if (activeBook) {
-        activeBook.progress = page.start;
-        activeBook.updatedAt = Date.now();
-        localStorage.setItem(booksKey, JSON.stringify(storedBooks));
-      }
+      readingState.wish.current = page.start;
+      readingState.wish.furthest = Math.max(readingState.wish.furthest, page.end);
+      persistReadingState();
+      renderReadingLines();
       if (!notesSheet.hidden) renderNotes();
       updateTocCurrent();
     }
@@ -899,6 +1057,14 @@
     openNotes.addEventListener('click', showNotes);
     closeNotes.addEventListener('click', hideNotes);
     sendContext.addEventListener('click', copyContext);
+    markZhengLine.addEventListener('click', () => {
+      const page = pages[index];
+      if (!page) return;
+      readingState.zheng.current = page.start;
+      readingState.zheng.furthest = Math.max(readingState.zheng.furthest ?? 0, page.end);
+      persistReadingState();
+      renderReadingLines();
+    });
     tocBackdrop.addEventListener('click', closeToc);
     tocDrawer.addEventListener('pointerdown', event => { drawerStartX = event.clientX; });
     tocDrawer.addEventListener('pointerup', event => {

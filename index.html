@@ -134,6 +134,37 @@
     font-size: 12px;
     font-variant-numeric: tabular-nums;
   }
+  .book-reading-lines {
+    display: grid;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .book-reading-line {
+    display: grid;
+    grid-template-columns: 12px minmax(0, 1fr);
+    align-items: center;
+    gap: 5px;
+  }
+  .book-reading-line > span {
+    color: var(--muted);
+    font-size: 9px;
+    line-height: 1;
+  }
+  .book-reading-track {
+    height: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(73, 62, 49, .10);
+  }
+  .book-reading-track i {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    transition: width .22s ease;
+  }
+  .book-reading-line.wish .book-reading-track i { background: #a57f70; }
+  .book-reading-line.zheng .book-reading-track i { background: #707b78; }
   .import-button {
     position: fixed;
     z-index: 10;
@@ -183,6 +214,10 @@
         <div class="book-info">
           <p class="book-name">雨停以后</p>
           <div class="book-progress">排版样章</div>
+          <div class="book-reading-lines" data-book-lines="sideleaf-sample-rain" aria-label="愿与峥的阅读进度">
+            <div class="book-reading-line wish"><span>愿</span><div class="book-reading-track"><i></i></div></div>
+            <div class="book-reading-line zheng"><span>峥</span><div class="book-reading-track"><i></i></div></div>
+          </div>
         </div>
       </a>
       <div id="format-note" class="format-note">先放一本小样章在这里。你也可以从“文件”里导入 TXT 或 Markdown。</div>
@@ -207,6 +242,7 @@
 
   (() => {
     const booksKey = 'sideleaf.books.v1';
+    const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
     const fileInput = document.getElementById('book-file');
     const importButton = document.getElementById('import-button');
@@ -215,6 +251,33 @@
     function readBooks() {
       try { return JSON.parse(localStorage.getItem(booksKey) || '[]'); }
       catch (_) { return []; }
+    }
+
+    function readReadingLines() {
+      try { return JSON.parse(localStorage.getItem(readingLinesKey) || '{}'); }
+      catch (_) { return {}; }
+    }
+
+    function linePercent(anchor, totalLength) {
+      const value = Number(anchor);
+      const total = Number(totalLength);
+      if (!Number.isFinite(value) || !total) return 0;
+      return Math.max(0, Math.min(100, (value / total) * 100));
+    }
+
+    function updateBookLines(element, state, totalLength, legacyAnchor = 0) {
+      if (!element) return;
+      const wishAnchor = state?.wish?.furthest ?? legacyAnchor;
+      const zhengAnchor = state?.zheng?.furthest;
+      element.querySelector('.wish i').style.width = `${linePercent(wishAnchor, totalLength)}%`;
+      element.querySelector('.zheng i').style.width = `${linePercent(zhengAnchor, totalLength)}%`;
+    }
+
+    function bookLinesMarkup(bookId) {
+      return `<div class="book-reading-lines" data-book-lines="${escapeText(bookId)}" aria-label="愿与峥的阅读进度">
+        <div class="book-reading-line wish"><span>愿</span><div class="book-reading-track"><i></i></div></div>
+        <div class="book-reading-line zheng"><span>峥</span><div class="book-reading-track"><i></i></div></div>
+      </div>`;
     }
 
     function escapeText(value) {
@@ -226,6 +289,10 @@
     function renderBooks() {
       grid.querySelectorAll('[data-imported]').forEach(node => node.remove());
       const books = readBooks();
+      const readingLines = readReadingLines();
+      const sampleLines = grid.querySelector('[data-book-lines="sideleaf-sample-rain"]');
+      const sampleState = readingLines['sideleaf-sample-rain'];
+      updateBookLines(sampleLines, sampleState, sampleState?.textLength || 0);
       books.forEach(book => {
         const percent = book.content.length
           ? Math.min(100, Math.round((Number(book.progress || 0) / book.content.length) * 100))
@@ -242,8 +309,10 @@
           <div class="book-info">
             <p class="book-name">${escapeText(book.title)}</p>
             <div class="book-progress">${percent ? `继续阅读 · ${percent}%` : '尚未开始'}</div>
+            ${bookLinesMarkup(book.id)}
           </div>`;
         grid.insertBefore(link, formatNote);
+        updateBookLines(link.querySelector('.book-reading-lines'), readingLines[book.id], book.content.length, book.progress);
       });
       formatNote.hidden = books.length > 0;
     }
@@ -256,6 +325,7 @@
 
     window.addEventListener('pageshow', () => {
       grid.querySelectorAll('.book.is-opening').forEach(link => link.classList.remove('is-opening'));
+      renderBooks();
     });
 
     importButton.addEventListener('click', () => fileInput.click());
