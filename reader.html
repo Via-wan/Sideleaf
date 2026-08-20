@@ -50,6 +50,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
+      <small class="build-version">Sideleaf 0.2.0</small>
     </div>
 
     <div class="page-wrap">
@@ -161,6 +162,13 @@
     font-variant-numeric: tabular-nums;
   }
   #pagination-tester input { width: 100%; accent-color: var(--primary); }
+  #pagination-tester .build-version {
+    grid-column: 1 / -1;
+    color: rgba(138, 131, 121, .72);
+    text-align: right;
+    font-size: 10px;
+    letter-spacing: .04em;
+  }
   #pagination-tester .page-wrap {
     position: relative;
     flex: 1 1 auto;
