@@ -58,6 +58,25 @@
       <div class="measure-text" aria-hidden="true"></div>
     </div>
 
+    <nav class="page-tools" aria-label="本页工具" hidden>
+      <button id="open-notes" type="button">本页批注</button>
+      <span aria-hidden="true"></span>
+      <button id="send-context" type="button">递给峥</button>
+    </nav>
+
+    <section class="notes-sheet" aria-hidden="true" hidden>
+      <div class="notes-head">
+        <strong>本页批注</strong>
+        <button id="close-notes" type="button" aria-label="关闭批注">完成</button>
+      </div>
+      <div id="notes-list" class="notes-list"></div>
+      <label class="note-compose">
+        <span>在这一页留一句</span>
+        <textarea id="note-input" rows="3" placeholder="想起什么，就钉在这里。"></textarea>
+      </label>
+      <button id="save-note" class="save-note" type="button">留下批注</button>
+    </section>
+
   </section>
 </div>
 
@@ -204,6 +223,102 @@
     visibility: hidden;
     pointer-events: none;
   }
+  [hidden] { display: none !important; }
+  #pagination-tester .page-tools {
+    position: fixed;
+    z-index: 30;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: grid;
+    grid-template-columns: auto 1px auto;
+    align-items: center;
+    gap: 15px;
+    padding: 8px 15px;
+    border: 1px solid rgba(71, 62, 51, .12);
+    border-radius: 999px;
+    background: rgba(248, 244, 235, .95);
+    box-shadow: 0 10px 30px rgba(62, 52, 42, .16);
+    backdrop-filter: blur(16px);
+  }
+  #pagination-tester .page-tools span {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+  }
+  #pagination-tester .page-tools button,
+  #pagination-tester .notes-sheet button {
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .notes-sheet {
+    position: fixed;
+    z-index: 40;
+    left: 50%;
+    bottom: 0;
+    width: min(100%, 720px);
+    max-height: min(72svh, 620px);
+    transform: translateX(-50%);
+    overflow: auto;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    border: 1px solid var(--border);
+    border-bottom: 0;
+    border-radius: 22px 22px 0 0;
+    background: #fbf7ef;
+    box-shadow: 0 -12px 40px rgba(56, 45, 36, .18);
+  }
+  #pagination-tester .notes-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  #pagination-tester .notes-head strong { font-size: 16px; }
+  #pagination-tester .notes-head button { color: var(--primary); }
+  #pagination-tester .notes-list {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  #pagination-tester .note-item,
+  #pagination-tester .notes-empty {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: rgba(143, 111, 96, .08);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+  #pagination-tester .notes-empty { color: var(--muted-foreground); }
+  #pagination-tester .note-compose span {
+    display: block;
+    margin: 0 0 7px 2px;
+    color: var(--muted-foreground);
+    font-size: 13px;
+  }
+  #pagination-tester .note-compose textarea {
+    width: 100%;
+    resize: none;
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    outline: none;
+    background: #fffaf2;
+    color: var(--foreground);
+    font: 400 15px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .note-compose textarea:focus { border-color: rgba(143, 111, 96, .48); }
+  #pagination-tester .notes-sheet .save-note {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px 16px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fffaf4;
+  }
   @media (max-width: 560px) {
     #pagination-tester .tester-controls {
       grid-template-columns: auto 1fr;
@@ -237,6 +352,14 @@
     const typeToggle = root.querySelector('.type-toggle');
     const controls = root.querySelector('.tester-controls');
     const chapterName = root.querySelector('.chapter-name');
+    const pageTools = root.querySelector('.page-tools');
+    const openNotes = root.querySelector('#open-notes');
+    const closeNotes = root.querySelector('#close-notes');
+    const notesSheet = root.querySelector('.notes-sheet');
+    const notesList = root.querySelector('#notes-list');
+    const noteInput = root.querySelector('#note-input');
+    const saveNote = root.querySelector('#save-note');
+    const sendContext = root.querySelector('#send-context');
 
     const defaultText = [
       '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
@@ -251,10 +374,12 @@
 
     const booksKey = 'sideleaf.books.v1';
     const settingsKey = 'sideleaf.settings.v1';
+    const notesKey = 'sideleaf.notes.v1';
     const bookId = new URLSearchParams(window.location.search).get('book');
     let storedBooks = [];
     try { storedBooks = JSON.parse(localStorage.getItem(booksKey) || '[]'); } catch (_) {}
     const activeBook = storedBooks.find(book => book.id === bookId);
+    const activeBookId = activeBook?.id || 'sideleaf-sample-rain';
     const text = activeBook?.content || defaultText;
     const initialAnchor = Number(activeBook?.progress) || 0;
 
@@ -322,6 +447,7 @@
         activeBook.updatedAt = Date.now();
         localStorage.setItem(booksKey, JSON.stringify(storedBooks));
       }
+      if (!notesSheet.hidden) renderNotes();
     }
 
     function repaginate() {
@@ -349,6 +475,79 @@
       }));
     }
 
+    function readNotes() {
+      try { return JSON.parse(localStorage.getItem(notesKey) || '[]'); }
+      catch (_) { return []; }
+    }
+
+    function notesOnPage() {
+      const page = pages[index];
+      if (!page) return [];
+      return readNotes().filter(note =>
+        note.bookId === activeBookId && note.anchor >= page.start && note.anchor < page.end
+      );
+    }
+
+    function renderNotes() {
+      const notes = notesOnPage();
+      notesList.replaceChildren();
+      if (!notes.length) {
+        const empty = document.createElement('p');
+        empty.className = 'notes-empty';
+        empty.textContent = '这一页还没有批注。';
+        notesList.appendChild(empty);
+        return;
+      }
+      notes.forEach(note => {
+        const item = document.createElement('p');
+        item.className = 'note-item';
+        item.textContent = note.text;
+        notesList.appendChild(item);
+      });
+    }
+
+    function showNotes() {
+      renderNotes();
+      notesSheet.hidden = false;
+      notesSheet.setAttribute('aria-hidden', 'false');
+      pageTools.hidden = true;
+    }
+
+    function hideNotes() {
+      notesSheet.hidden = true;
+      notesSheet.setAttribute('aria-hidden', 'true');
+      noteInput.blur();
+    }
+
+    async function copyContext() {
+      const page = pages[index];
+      if (!page) return;
+      const from = Math.max(0, page.start - 2000);
+      const to = Math.min(text.length, page.end + 2000);
+      const relatedNotes = readNotes().filter(note =>
+        note.bookId === activeBookId && note.anchor >= from && note.anchor < to
+      );
+      const noteBlock = relatedNotes.length
+        ? relatedNotes.map((note, i) => `${i + 1}. ${note.text}`).join('\n')
+        : '无';
+      const packet = [
+        `【Sideleaf｜${chapterName.textContent}｜${index + 1}/${pages.length}】`,
+        '以下是当前页前后约 2000 字，用于找回阅读位置；不要默认我已读完其中后文。',
+        '',
+        text.slice(from, to),
+        '',
+        '【相关批注】',
+        noteBlock
+      ].join('\n');
+      try {
+        await navigator.clipboard.writeText(packet);
+        sendContext.textContent = '已复制，去找峥';
+      } catch (_) {
+        sendContext.textContent = '复制失败，再点一次';
+      }
+      window.setTimeout(() => { sendContext.textContent = '递给峥'; }, 1800);
+    }
+
     function turn(delta) {
       const next = index + delta;
       if (next < 0 || next >= pages.length) return;
@@ -359,6 +558,26 @@
     typeToggle.addEventListener('click', () => {
       const open = controls.classList.toggle('is-open');
       typeToggle.setAttribute('aria-expanded', String(open));
+    });
+
+    openNotes.addEventListener('click', showNotes);
+    closeNotes.addEventListener('click', hideNotes);
+    sendContext.addEventListener('click', copyContext);
+    saveNote.addEventListener('click', () => {
+      const value = noteInput.value.trim();
+      const page = pages[index];
+      if (!value || !page) return;
+      const notes = readNotes();
+      notes.push({
+        id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        bookId: activeBookId,
+        anchor: Math.floor((page.start + page.end) / 2),
+        text: value,
+        createdAt: Date.now()
+      });
+      localStorage.setItem(notesKey, JSON.stringify(notes));
+      noteInput.value = '';
+      renderNotes();
     });
 
     fontSlider.addEventListener('input', () => {
@@ -393,6 +612,11 @@
       const position = (event.clientX - bounds.left) / bounds.width;
       if (position < .35) turn(-1);
       if (position > .65) turn(1);
+      if (position >= .35 && position <= .65) {
+        pageTools.hidden = !pageTools.hidden;
+        controls.classList.remove('is-open');
+        typeToggle.setAttribute('aria-expanded', 'false');
+      }
     });
 
     sheet.addEventListener('keydown', event => {
