@@ -75,7 +75,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.4.2</small>
+      <small class="build-version">Sideleaf 0.4.3</small>
     </div>
 
     <div class="page-wrap">
@@ -115,10 +115,16 @@
         <button id="close-notes" type="button" aria-label="关闭批注">完成</button>
       </div>
       <div id="notes-list" class="notes-list"></div>
-      <label class="note-compose">
-        <span>在这一页留一句</span>
+      <div class="note-compose">
+        <div class="note-compose-head">
+          <label for="note-input">在这一页留一句</label>
+          <div class="note-author-switch" role="group" aria-label="批注署名">
+            <button type="button" class="is-active" data-note-author="wish" aria-pressed="true">愿</button>
+            <button type="button" data-note-author="zheng" aria-pressed="false">峥</button>
+          </div>
+        </div>
         <textarea id="note-input" rows="3" placeholder="想起什么，就钉在这里。"></textarea>
-      </label>
+      </div>
       <button id="save-note" class="save-note" type="button">留下批注</button>
     </section>
 
@@ -428,6 +434,14 @@
     margin: 0;
     white-space: pre-wrap;
   }
+  #pagination-tester .note-content { min-width: 0; }
+  #pagination-tester .note-author {
+    display: block;
+    margin-bottom: 3px;
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 650;
+  }
   #pagination-tester .note-more {
     min-width: 30px;
     padding: 2px 4px;
@@ -450,11 +464,36 @@
   }
   #pagination-tester .note-actions .delete-note { color: #9a655f; }
   #pagination-tester .notes-empty { color: var(--muted-foreground); }
-  #pagination-tester .note-compose span {
-    display: block;
-    margin: 0 0 7px 2px;
+  #pagination-tester .note-compose-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 2px 8px;
+  }
+  #pagination-tester .note-compose-head > label {
     color: var(--muted-foreground);
     font-size: 13px;
+  }
+  #pagination-tester .note-author-switch {
+    display: inline-grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 999px;
+    background: rgba(143, 111, 96, .09);
+  }
+  #pagination-tester .note-author-switch button {
+    min-width: 34px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+  }
+  #pagination-tester .note-author-switch button.is-active {
+    background: rgba(255, 250, 242, .94);
+    color: var(--primary);
+    box-shadow: 0 1px 4px rgba(75, 59, 48, .10);
   }
   #pagination-tester .note-compose textarea {
     width: 100%;
@@ -593,6 +632,7 @@
     const notesList = root.querySelector('#notes-list');
     const noteInput = root.querySelector('#note-input');
     const saveNote = root.querySelector('#save-note');
+    const noteAuthorButtons = [...root.querySelectorAll('[data-note-author]')];
     const sendContext = root.querySelector('#send-context');
     const wishLineStatus = root.querySelector('#wish-line-status');
     const zhengLineStatus = root.querySelector('#zheng-line-status');
@@ -719,6 +759,7 @@
     let ignoreNextClick = false;
     let resizeTimer;
     let editingNoteId = null;
+    let composingNoteAuthor = 'wish';
     let drawerStartX = 0;
     let dismissedOverlayByPointer = false;
 
@@ -844,9 +885,30 @@
       }));
     }
 
+    function normalizeNoteAuthor(author) {
+      return author === 'zheng' ? 'zheng' : 'wish';
+    }
+
+    function noteAuthorLabel(author) {
+      return normalizeNoteAuthor(author) === 'zheng' ? '峥' : '愿';
+    }
+
+    function setNoteAuthor(author) {
+      composingNoteAuthor = normalizeNoteAuthor(author);
+      noteAuthorButtons.forEach(button => {
+        const selected = button.dataset.noteAuthor === composingNoteAuthor;
+        button.classList.toggle('is-active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    }
+
     function readNotes() {
-      try { return JSON.parse(localStorage.getItem(notesKey) || '[]'); }
-      catch (_) { return []; }
+      try {
+        const notes = JSON.parse(localStorage.getItem(notesKey) || '[]');
+        return Array.isArray(notes)
+          ? notes.map(note => ({ ...note, author: normalizeNoteAuthor(note.author) }))
+          : [];
+      } catch (_) { return []; }
     }
 
     function notesOnPage() {
@@ -870,9 +932,15 @@
       notes.forEach(note => {
         const item = document.createElement('article');
         item.className = 'note-item';
+        const noteContent = document.createElement('div');
+        noteContent.className = 'note-content';
+        const noteAuthor = document.createElement('small');
+        noteAuthor.className = 'note-author';
+        noteAuthor.textContent = noteAuthorLabel(note.author);
         const noteText = document.createElement('p');
         noteText.className = 'note-text';
         noteText.textContent = note.text;
+        noteContent.append(noteAuthor, noteText);
 
         const more = document.createElement('button');
         more.className = 'note-more';
@@ -897,6 +965,7 @@
         edit.addEventListener('click', () => {
           editingNoteId = note.id;
           noteInput.value = note.text;
+          setNoteAuthor(note.author);
           saveNote.textContent = '保存修改';
           noteInput.focus();
           actions.hidden = true;
@@ -912,13 +981,14 @@
           if (editingNoteId === note.id) {
             editingNoteId = null;
             noteInput.value = '';
+            setNoteAuthor('wish');
             saveNote.textContent = '留下批注';
           }
           renderNotes();
         });
 
         actions.append(edit, remove);
-        item.append(noteText, more, actions);
+        item.append(noteContent, more, actions);
         notesList.appendChild(item);
       });
     }
@@ -936,6 +1006,7 @@
       noteInput.blur();
       editingNoteId = null;
       noteInput.value = '';
+      setNoteAuthor('wish');
       saveNote.textContent = '留下批注';
     }
 
@@ -948,7 +1019,7 @@
         note.bookId === activeBookId && note.anchor >= from && note.anchor < to
       );
       const noteBlock = relatedNotes.length
-        ? relatedNotes.map((note, i) => `${i + 1}. ${note.text}`).join('\n')
+        ? relatedNotes.map((note, i) => `${i + 1}. ${noteAuthorLabel(note.author)}：${note.text}`).join('\n')
         : '无';
       const packet = [
         `【Sideleaf｜${chapterName.textContent}｜${index + 1}/${pages.length}】`,
@@ -1060,6 +1131,9 @@
     openNotes.addEventListener('click', showNotes);
     closeNotes.addEventListener('click', hideNotes);
     sendContext.addEventListener('click', copyContext);
+    noteAuthorButtons.forEach(button => {
+      button.addEventListener('click', () => setNoteAuthor(button.dataset.noteAuthor));
+    });
     markZhengLine.addEventListener('click', () => {
       const page = pages[index];
       if (!page) return;
@@ -1096,6 +1170,7 @@
         const target = notes.find(note => note.id === editingNoteId);
         if (target) {
           target.text = value;
+          target.author = composingNoteAuthor;
           target.updatedAt = Date.now();
         }
       } else {
@@ -1104,6 +1179,7 @@
           bookId: activeBookId,
           anchor: Math.floor((page.start + page.end) / 2),
           text: value,
+          author: composingNoteAuthor,
           createdAt: Date.now(),
           updatedAt: Date.now()
         });
@@ -1111,6 +1187,7 @@
       localStorage.setItem(notesKey, JSON.stringify(notes));
       editingNoteId = null;
       noteInput.value = '';
+      setNoteAuthor('wish');
       saveNote.textContent = '留下批注';
       renderNotes();
     });
