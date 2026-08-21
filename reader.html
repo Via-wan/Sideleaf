@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.10.1</small>
+      <small class="build-version">Sideleaf 0.10.2</small>
     </div>
 
     <div class="page-wrap">
@@ -294,6 +294,9 @@
     line-height: var(--reader-leading);
     letter-spacing: .025em;
     white-space: pre-wrap;
+    line-break: strict;
+    word-break: normal;
+    overflow-wrap: normal;
     text-align: justify;
   }
   #pagination-tester .page-text,
@@ -1123,6 +1126,26 @@
       return measure.scrollHeight <= height + 1;
     }
 
+    const prohibitedPageStart = /[，。！？、；：）》」』】〕〉〗”’％‰℃°…—～·]/;
+    const prohibitedPageEnd = /[（《「『【〔〈〖“‘]/;
+
+    function adjustPageEnd(start, end, hardLimit) {
+      let adjusted = end;
+      if (end < hardLimit && end < text.length && prohibitedPageStart.test(text[end])) {
+        let punctuationStart = end;
+        while (punctuationStart > start && prohibitedPageStart.test(text[punctuationStart - 1])) {
+          punctuationStart -= 1;
+        }
+        if (punctuationStart > start + 1 && !/\s/.test(text[punctuationStart - 1])) {
+          adjusted = punctuationStart - 1;
+        }
+      }
+      while (adjusted > start + 1 && prohibitedPageEnd.test(text[adjusted - 1])) {
+        adjusted -= 1;
+      }
+      return Math.max(start + 1, adjusted);
+    }
+
     function paginate(anchor = 0) {
       const availableHeight = pageText.clientHeight;
       if (!availableHeight || !pageText.clientWidth) return;
@@ -1148,7 +1171,7 @@
             high = middle - 1;
           }
         }
-        const end = Math.max(start + 1, best);
+        const end = adjustPageEnd(start, Math.max(start + 1, best), nextPageBreak);
         const rawPageText = text.slice(start, end);
         const leadingSpace = rawPageText.match(/^\s*/)?.[0].length || 0;
         const trailingSpace = rawPageText.match(/\s*$/)?.[0].length || 0;
