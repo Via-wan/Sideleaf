@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.7.2</small>
+      <small class="build-version">Sideleaf 0.7.3</small>
     </div>
 
     <div class="page-wrap">
@@ -461,7 +461,7 @@
   #pagination-tester .selection-handle {
     position: fixed;
     width: 34px;
-    height: 42px;
+    height: calc(var(--selection-line-height, 1.6em) + 12px);
     padding: 0;
     border: 0;
     background: transparent;
@@ -474,7 +474,7 @@
     position: absolute;
     left: 50%;
     width: 2px;
-    height: 18px;
+    height: var(--selection-line-height, 1.6em);
     border-radius: 999px;
     background: var(--wish);
     transform: translateX(-50%);
@@ -491,15 +491,15 @@
     transform: translateX(-50%);
   }
   #pagination-tester .selection-handle.is-start {
-    transform: translate(-50%, -34px);
+    transform: translateX(-50%);
   }
-  #pagination-tester .selection-handle.is-start::before { bottom: 0; }
-  #pagination-tester .selection-handle.is-start::after { top: 5px; }
+  #pagination-tester .selection-handle.is-start::before { top: 12px; }
+  #pagination-tester .selection-handle.is-start::after { top: 0; }
   #pagination-tester .selection-handle.is-end {
-    transform: translate(-50%, -8px);
+    transform: translateX(-50%);
   }
   #pagination-tester .selection-handle.is-end::before { top: 0; }
-  #pagination-tester .selection-handle.is-end::after { bottom: 5px; }
+  #pagination-tester .selection-handle.is-end::after { bottom: 0; }
   #pagination-tester .selection-handles.is-dragging .selection-handle:not(.is-dragging) {
     opacity: .45;
   }
@@ -1375,9 +1375,11 @@
       const first = rects[0];
       const last = rects[rects.length - 1];
       selectionHandleStart.style.left = `${first.left}px`;
-      selectionHandleStart.style.top = `${first.top}px`;
+      selectionHandleStart.style.top = `${first.top - 12}px`;
+      selectionHandleStart.style.setProperty('--selection-line-height', `${first.height}px`);
       selectionHandleEnd.style.left = `${last.right}px`;
-      selectionHandleEnd.style.top = `${last.bottom}px`;
+      selectionHandleEnd.style.top = `${last.top}px`;
+      selectionHandleEnd.style.setProperty('--selection-line-height', `${last.height}px`);
       selectionHandles.hidden = false;
     }
 
