@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.12.0</small>
+      <small class="build-version">Sideleaf 0.13.0</small>
     </div>
 
     <div class="page-wrap">
@@ -916,6 +916,7 @@
 </style>
 
 <script src="./sideleaf-library.js"></script>
+<script src="./sideleaf-sync.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
@@ -1207,6 +1208,7 @@
         activeBook.updatedAt = readingState.updatedAt;
         localStorage.setItem(booksKey, JSON.stringify(storedBooks));
       }
+      SideleafSync.markDirty(localStorage, [readingLinesKey, booksKey]);
     }
 
     function renderReadingLines() {
@@ -1330,6 +1332,7 @@
         fontSize: Number(fontSlider.value),
         lineHeight: Number(lineSlider.value)
       }));
+      SideleafSync.markDirty(localStorage, [settingsKey]);
     }
 
     function normalizeNoteAuthor(author) {
@@ -1468,6 +1471,8 @@
           }
           const nextNotes = readNotes().filter(item => item.id !== note.id);
           localStorage.setItem(notesKey, JSON.stringify(nextNotes));
+          SideleafSync.markDirty(localStorage, [notesKey]);
+          SideleafSync.queueDeletion(localStorage, { entity:'annotation-message', id:note.id });
           if (focusedNoteIds) focusedNoteIds = focusedNoteIds.filter(id => id !== note.id);
           if (editingNoteId === note.id) {
             editingNoteId = null;
@@ -1977,6 +1982,7 @@
         });
       }
       localStorage.setItem(chapterJournalsKey, JSON.stringify(journals));
+      SideleafSync.markDirty(localStorage, [chapterJournalsKey]);
       activeJournalOriginal = value;
       chapterJournalInput.value = value;
       syncChapterJournalControls();
@@ -2081,6 +2087,8 @@
       });
       if (!existing) requests.push(request);
       localStorage.setItem(readingRequestsKey, JSON.stringify(requests.slice(-100)));
+      SideleafSync.markDirty(localStorage, [readingRequestsKey]);
+      await SideleafSync.syncNow(localStorage);
 
       const relatedNotes = readNotes().filter(note =>
         note.bookId === activeBookId && (
@@ -2324,6 +2332,7 @@
         });
       }
       localStorage.setItem(notesKey, JSON.stringify(notes));
+      SideleafSync.markDirty(localStorage, [notesKey]);
       if (activeSelection) {
         focusedNoteIds = notes.filter(note =>
           note.bookId === activeBookId
@@ -2440,6 +2449,7 @@
       resizeTimer = window.setTimeout(repaginate, 80);
     });
     observer.observe(pageText);
+    SideleafSync.start(localStorage);
     applyTypography();
     paginate(initialAnchor);
     renderToc();
