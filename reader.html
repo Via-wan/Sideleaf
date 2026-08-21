@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.9.0</small>
+      <small class="build-version">Sideleaf 0.9.1</small>
     </div>
 
     <div class="page-wrap">
@@ -617,7 +617,9 @@
     top: 22%;
     width: min(calc(100% - 32px), 390px);
     max-height: min(56svh, 500px);
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     padding: 16px;
     border: 1px solid var(--border);
     border-radius: 18px;
@@ -626,6 +628,7 @@
     backdrop-filter: blur(18px);
     overscroll-behavior: contain;
   }
+  #pagination-tester .notes-sheet[hidden] { display: none; }
   #pagination-tester .notes-head {
     display: flex;
     align-items: center;
@@ -647,34 +650,39 @@
   #pagination-tester .notes-list {
     display: flex;
     flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 0;
     gap: 10px;
     margin-bottom: 14px;
+    padding: 0 2px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
   #pagination-tester .note-item {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 4px;
-    width: fit-content;
+    position: relative;
+    display: block;
+    width: 100%;
     min-width: 88px;
-    max-width: 88%;
+    max-width: none;
     margin: 0;
+    padding: 0 28px;
     font-size: 14px;
     line-height: 1.58;
   }
   #pagination-tester .note-item.is-wish {
-    align-self: flex-end;
-    margin-left: 34px;
+    align-self: stretch;
   }
   #pagination-tester .note-item.is-zheng {
-    align-self: flex-start;
-    margin-right: 34px;
+    align-self: stretch;
   }
   #pagination-tester .note-text {
     margin: 0;
     white-space: pre-wrap;
   }
   #pagination-tester .note-content {
+    width: fit-content;
+    max-width: 100%;
     min-width: 0;
     padding: 9px 12px 10px;
     border: 1px solid transparent;
@@ -682,13 +690,13 @@
     overflow-wrap: anywhere;
   }
   #pagination-tester .note-item.is-wish .note-content {
-    justify-self: end;
+    margin-left: auto;
     border-color: rgba(201, 130, 100, .18);
     border-bottom-right-radius: 4px;
     background: rgba(201, 130, 100, .16);
   }
   #pagination-tester .note-item.is-zheng .note-content {
-    justify-self: start;
+    margin-right: auto;
     border-color: rgba(101, 117, 114, .18);
     border-bottom-left-radius: 4px;
     background: rgba(101, 117, 114, .14);
@@ -711,14 +719,18 @@
   #pagination-tester .note-item.is-wish .note-author { color: var(--wish); }
   #pagination-tester .note-item.is-zheng .note-author { color: var(--zheng); }
   #pagination-tester .note-more {
+    position: absolute;
+    top: 50%;
     min-width: 22px;
     padding: 2px 0;
     color: var(--muted-foreground) !important;
     font-size: 15px !important;
     letter-spacing: .08em;
+    transform: translateY(-50%);
   }
+  #pagination-tester .note-item.is-wish .note-more { left: 2px; }
+  #pagination-tester .note-item.is-zheng .note-more { right: 2px; }
   #pagination-tester .note-actions {
-    grid-column: 1 / -1;
     display: flex;
     justify-content: flex-end;
     gap: 8px;
@@ -1452,6 +1464,7 @@
       const viewportHeight = viewport?.height || window.innerHeight;
       const margin = 14;
       const gap = 10;
+      notesSheet.style.maxHeight = `${Math.max(180, Math.min(500, viewportHeight - margin * 2))}px`;
       const panelWidth = notesSheet.offsetWidth;
       const panelHeight = notesSheet.offsetHeight;
       const center = rect.left + rect.width / 2;
