@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.8.1</small>
+      <small class="build-version">Sideleaf 0.8.2</small>
     </div>
 
     <div class="page-wrap">
@@ -1726,10 +1726,25 @@
 
     function chapterUnitForTocIndex(tocIndex) {
       const safeIndex = Math.max(0, Math.min(tocEntries.length - 1, tocIndex));
-      const entry = tocEntries[safeIndex];
+      const ancestors = [];
+      let expectedLevel = tocEntries[safeIndex]?.level || 1;
+      for (let entryIndex = safeIndex; entryIndex >= 0 && expectedLevel > 0; entryIndex -= 1) {
+        const item = tocEntries[entryIndex];
+        if (item.level === expectedLevel) {
+          ancestors.unshift(entryIndex);
+          expectedLevel -= 1;
+        }
+      }
+      const explicitChapter = [...ancestors].reverse().find(entryIndex =>
+        /^(?:第.{1,12}[章回]|chapter\s*[\divxlcdm-]*)/i.test(tocEntries[entryIndex].title.trim())
+      );
+      const topEntry = tocEntries[ancestors[0]];
+      const topIsContainer = topEntry && /^(?:第.{1,12}[卷部篇]|part\s*[\divxlcdm-]*|volume\s*[\divxlcdm-]*)/i.test(topEntry.title.trim());
+      const chapterIndex = explicitChapter ?? (topIsContainer && ancestors.length > 1 ? ancestors[1] : ancestors[0]) ?? safeIndex;
+      const entry = tocEntries[chapterIndex];
       if (!entry) return null;
       let end = text.length;
-      for (let nextIndex = safeIndex + 1; nextIndex < tocEntries.length; nextIndex += 1) {
+      for (let nextIndex = chapterIndex + 1; nextIndex < tocEntries.length; nextIndex += 1) {
         const next = tocEntries[nextIndex];
         if (next.level <= entry.level) {
           end = next.anchor;
@@ -1737,13 +1752,14 @@
         }
       }
       const path = [];
-      for (let entryIndex = 0; entryIndex <= safeIndex; entryIndex += 1) {
+      for (let entryIndex = 0; entryIndex <= chapterIndex; entryIndex += 1) {
         const item = tocEntries[entryIndex];
         path[item.level - 1] = item.title;
         path.length = item.level;
       }
       return {
         key: `${entry.level}:${entry.anchor}:${entry.title}`,
+        tocIndex: chapterIndex,
         title: entry.title,
         path: path.filter(Boolean),
         level: entry.level,
@@ -1758,9 +1774,16 @@
 
     function chapterJournalForUnit(unit, journals = readChapterJournals()) {
       if (!unit) return null;
-      return journals.find(journal =>
+      const exact = journals.find(journal =>
         journal.bookId === activeBookId && journal.chapterKey === unit.key
-      ) || null;
+      );
+      if (exact) return exact;
+      const legacy = journals.filter(journal =>
+        journal.bookId === activeBookId
+        && Number(journal.chapterAnchor) >= unit.anchor
+        && Number(journal.chapterAnchor) < unit.end
+      );
+      return legacy.length === 1 ? legacy[0] : null;
     }
 
     function chapterJournalStateText() {
@@ -1810,8 +1833,11 @@
       const existing = chapterJournalForUnit(activeJournalUnit, journals);
       if (existing) {
         existing.text = value;
+        existing.chapterKey = activeJournalUnit.key;
         existing.chapterTitle = activeJournalUnit.title;
         existing.chapterPath = activeJournalUnit.path;
+        existing.chapterLevel = activeJournalUnit.level;
+        existing.chapterAnchor = activeJournalUnit.anchor;
         existing.chapterEnd = activeJournalUnit.end;
         existing.updatedAt = Date.now();
       } else {
@@ -1933,7 +1959,7 @@
         title.textContent = entry.title;
         button.appendChild(title);
         const unit = chapterUnitForTocIndex(entryIndex);
-        if (chapterJournalForUnit(unit, journals)) {
+        if (entryIndex === unit?.tocIndex && chapterJournalForUnit(unit, journals)) {
           const mark = document.createElement('i');
           mark.className = 'toc-journal-mark';
           mark.setAttribute('aria-label', '已有章节札记');
