@@ -2,6 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { webcrypto } = require('node:crypto');
 const SideleafBackup = require('../sideleaf-backup.js');
+const SideleafLibrary = require('../sideleaf-library.js');
 
 class MemoryStorage {
   constructor(initial = {}) {
@@ -23,17 +24,22 @@ const original = {
 
 test('完整备份包含所有 Sideleaf 数据，但不夹带其他站点数据', async () => {
   const storage = new MemoryStorage({ ...original, unrelated: 'nope' });
+  SideleafLibrary.ensure(storage);
   const backup = await SideleafBackup.create(storage, {
     appVersion: 'test',
     now: new Date('2026-08-21T00:00:00.000Z'),
     crypto: webcrypto
   });
-  assert.deepEqual(backup.storage, original);
+  const backedUpBooks = JSON.parse(backup.storage['sideleaf.books.v1']);
+  assert.equal(backedUpBooks.length, 2);
+  assert.equal(backedUpBooks[0].id, 'sideleaf-sample-rain');
+  assert.equal(backedUpBooks[0].content, SideleafLibrary.BUILT_IN_BOOKS[0].content);
+  assert.equal(backup.storage.unrelated, undefined);
   assert.equal(backup.schemaVersion, 1);
   assert.match(backup.integrity.value, /^[a-f0-9]{64}$/);
   const parsed = await SideleafBackup.parse(JSON.stringify(backup), { crypto: webcrypto });
-  assert.deepEqual(parsed.storage, original);
-  assert.equal(SideleafBackup.summarize(parsed.storage, { builtInBooks: 1 }).books, 2);
+  assert.deepEqual(parsed.storage, backup.storage);
+  assert.equal(SideleafBackup.summarize(parsed.storage).books, 2);
 });
 
 test('内容被改过的备份会被完整性校验拒绝', async () => {

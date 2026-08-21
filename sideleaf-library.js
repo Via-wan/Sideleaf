@@ -1,0 +1,92 @@
+(function (root, factory) {
+  const api = factory();
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else root.SideleafLibrary = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  const BOOKS_KEY = 'sideleaf.books.v1';
+  const SAMPLE_BOOK = Object.freeze({
+    id: 'sideleaf-sample-rain',
+    title: '雨停以后',
+    content: [
+      '雨是在午后停的。窗沿还积着一线水，偶尔被风推下来，啪地打在旧铁皮上。愿把书摊在膝头，没有急着往后读。她在那句“有些路不是为了抵达”旁边停了很久，像是在等另一个人也走到这里。',
+      '峥的书签还在前面两页，安静地亮着。那不是催促，也不是“我已经读完了”。它只是在页边留下一个很小的位置：你到这里时，可以叫我。',
+      '街道被洗得发亮，树影在水洼里轻轻晃。她翻过一页，看见页角多了一枚新的标记。两条阅读线并没有立刻重合，却第一次知道了彼此准确停在哪里。',
+      '她有时往回翻，重新看一句早已读过的话。页面不会因此误以为她又向前走了一遍；批注仍钉在原文的位置上，页码可以变化，那句话却不会被搬走。',
+      '天色慢慢亮起来。右下角的数字又往前走了一格，但他们仍各自保留着自己的速度。并肩并不等于步幅相同，也不要求谁假装已经看过另一人的来路。',
+      '到了章节末尾，峥把这一章留下的疑问、判断和当时的感受写成长一点的札记。下一次窗口变化以后，愿可以把它原样递回来，不需要系统先替他压成一句轻飘飘的摘要。',
+      '书页继续往后。偶尔他们在同一段旁边说话，偶尔一个人先走到前面，另一个人慢慢追上。正文安静地留在书库里，真正需要相遇时，才连同附近的线头和批注一起被取出来。',
+      '雨后的风穿过半开的窗，纸张边缘轻轻动了一下。她用手指按住页角，忽然觉得这本书不再只是一本被读完的东西，而是两个人各自走过、又不断相遇的地方。'
+    ].join('\n\n'),
+    format: 'sideleaf',
+    builtIn: true,
+    builtInVersion: 1,
+    toc: [
+      { title: '两条阅读线', level: 1, anchor: 0 },
+      { title: '页边相遇', level: 2, anchor: 0 }
+    ],
+    progress: 0,
+    createdAt: 0,
+    updatedAt: 0
+  });
+  const BUILT_IN_BOOKS = Object.freeze([SAMPLE_BOOK]);
+  const DEFAULT_BOOK_ID = SAMPLE_BOOK.id;
+
+  function cloneBook(book) {
+    return JSON.parse(JSON.stringify(book));
+  }
+
+  function parseBooks(rawValue) {
+    if (rawValue === null || rawValue === undefined || rawValue === '') return [];
+    try {
+      const books = JSON.parse(rawValue);
+      if (!Array.isArray(books)) throw new Error('invalid-books-shape');
+      return books;
+    } catch (_) {
+      throw new Error('Sideleaf 书库数据无法读取，请先保留当前页面并导出诊断信息。');
+    }
+  }
+
+  function includeBuiltIns(books) {
+    const next = Array.isArray(books) ? books.slice() : [];
+    const existingIds = new Set(next.map(book => book?.id).filter(Boolean));
+    const missing = BUILT_IN_BOOKS
+      .filter(book => !existingIds.has(book.id))
+      .map(cloneBook);
+    return [...missing, ...next];
+  }
+
+  function ensure(storage) {
+    const currentRaw = storage.getItem(BOOKS_KEY);
+    const current = parseBooks(currentRaw);
+    const books = includeBuiltIns(current);
+    if (books.length !== current.length) {
+      storage.setItem(BOOKS_KEY, JSON.stringify(books));
+    }
+    return books;
+  }
+
+  function ensureSnapshot(storageSnapshot) {
+    const next = { ...(storageSnapshot || {}) };
+    next[BOOKS_KEY] = JSON.stringify(includeBuiltIns(parseBooks(next[BOOKS_KEY])));
+    return next;
+  }
+
+  function insertImported(books, importedBook) {
+    const next = includeBuiltIns(books);
+    const lastBuiltInIndex = next.reduce((lastIndex, book, index) => book?.builtIn ? index : lastIndex, -1);
+    next.splice(lastBuiltInIndex + 1, 0, importedBook);
+    return next;
+  }
+
+  return {
+    BOOKS_KEY,
+    BUILT_IN_BOOKS,
+    DEFAULT_BOOK_ID,
+    includeBuiltIns,
+    ensure,
+    ensureSnapshot,
+    insertImported
+  };
+});
