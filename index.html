@@ -181,6 +181,7 @@
     font: 560 15px/1.2 inherit;
   }
   .import-button:active { transform: translateX(-50%) scale(.98); }
+  .import-button:disabled { opacity: .72; }
   .format-note {
     grid-column: 1 / -1;
     margin: 2px 0 0;
@@ -220,13 +221,14 @@
           </div>
         </div>
       </a>
-      <div id="format-note" class="format-note">先放一本小样章在这里。你也可以从“文件”里导入 TXT 或 Markdown。</div>
+      <div id="format-note" class="format-note">先放一本小样章在这里。你也可以从“文件”里导入 EPUB、TXT 或 Markdown。</div>
     </section>
   </main>
 
-  <input id="book-file" type="file" accept=".txt,.md,.markdown,text/plain,text/markdown" hidden>
+  <input id="book-file" type="file" accept=".epub,.txt,.md,.markdown,application/epub+zip,text/plain,text/markdown" hidden>
   <button id="import-button" class="import-button" type="button">＋ 导入一本书</button>
 
+<script src="./vendor/jszip.min.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
@@ -289,6 +291,198 @@
       return span.innerHTML;
     }
 
+    function localNameOf(element) {
+      return (element?.localName || element?.nodeName || '').replace(/^.*:/, '').toLowerCase();
+    }
+
+    function elementsByLocalName(root, name) {
+      const target = name.toLowerCase();
+      return [...root.getElementsByTagName('*')].filter(element => localNameOf(element) === target);
+    }
+
+    function parseXml(source, label) {
+      const documentNode = new DOMParser().parseFromString(source, 'application/xml');
+      if (documentNode.querySelector('parsererror')) throw new Error(`invalid-${label}`);
+      return documentNode;
+    }
+
+    function resolveArchivePath(basePath, relativePath) {
+      const cleanRelative = String(relativePath || '').split('#')[0];
+      const slash = basePath.lastIndexOf('/');
+      const directory = slash >= 0 ? basePath.slice(0, slash + 1) : '';
+      const resolved = new URL(cleanRelative, `https://sideleaf.invalid/${directory}`).pathname.slice(1);
+      try { return decodeURIComponent(resolved); }
+      catch (_) { return resolved; }
+    }
+
+    function normalizeBookText(value) {
+      return value
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .replace(/\n[ \t]+/g, '\n')
+        .replace(/[ \t]{2,}/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    }
+
+    function extractEpubDocument(source) {
+      const documentNode = new DOMParser().parseFromString(source, 'text/html');
+      documentNode.querySelectorAll('script, style, noscript, svg, nav').forEach(node => node.remove());
+      const rootNode = documentNode.body || documentNode.documentElement;
+      const chunks = [];
+      let headingCount = 0;
+      const blockNames = new Set(['address', 'article', 'aside', 'blockquote', 'div', 'figcaption', 'figure', 'footer', 'header', 'li', 'main', 'ol', 'p', 'pre', 'section', 'table', 'tr', 'ul']);
+
+      function walk(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          chunks.push(node.nodeValue || '');
+          return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const name = localNameOf(node);
+        if (name === 'br') {
+          chunks.push('\n');
+          return;
+        }
+        const heading = name.match(/^h([1-6])$/);
+        if (heading) {
+          const title = normalizeBookText(node.textContent || '');
+          if (title) {
+            const level = Math.min(3, Number(heading[1]));
+            chunks.push(`\n\n${'#'.repeat(level)} ${title}\n\n`);
+            headingCount += 1;
+          }
+          return;
+        }
+        const isBlock = blockNames.has(name);
+        if (isBlock) chunks.push('\n');
+        [...node.childNodes].forEach(walk);
+        if (isBlock) chunks.push('\n');
+      }
+
+      walk(rootNode);
+      return { text: normalizeBookText(chunks.join('')), headingCount };
+    }
+
+    async function readEpubNavigation(archive, packagePath, packageDocument, manifest) {
+      const entriesByPath = new Map();
+      const addEntry = (path, title, level) => {
+        if (!path || !title) return;
+        const entries = entriesByPath.get(path) || [];
+        entries.push({ title: normalizeBookText(title), level: Math.min(3, Math.max(1, level)) });
+        entriesByPath.set(path, entries);
+      };
+      const manifestItems = [...manifest.values()];
+      const navItem = manifestItems.find(item => item.properties.split(/\s+/).includes('nav'));
+      if (navItem) {
+        const navEntry = archive.file(navItem.path);
+        if (navEntry) {
+          const navigationDocument = parseXml(await navEntry.async('string'), 'navigation');
+          const navigationRoots = elementsByLocalName(navigationDocument, 'nav');
+          const tocRoot = navigationRoots.find(node =>
+            [...node.attributes].some(attribute => localNameOf(attribute) === 'type' && attribute.value.split(/\s+/).includes('toc'))
+          ) || navigationRoots[0];
+          elementsByLocalName(tocRoot || navigationDocument, 'a').forEach(link => {
+            const href = link.getAttribute('href');
+            if (!href) return;
+            let level = 0;
+            for (let node = link.parentElement; node && node !== tocRoot; node = node.parentElement) {
+              if (localNameOf(node) === 'li') level += 1;
+            }
+            addEntry(resolveArchivePath(navItem.path, href), link.textContent || '', level || 1);
+          });
+        }
+      }
+
+      if (!entriesByPath.size) {
+        const spine = elementsByLocalName(packageDocument, 'spine')[0];
+        const ncxItem = manifest.get(spine?.getAttribute('toc'))
+          || manifestItems.find(item => /ncx/i.test(item.mediaType));
+        const ncxEntry = ncxItem && archive.file(ncxItem.path);
+        if (ncxEntry) {
+          const ncxDocument = parseXml(await ncxEntry.async('string'), 'ncx');
+          elementsByLocalName(ncxDocument, 'navpoint').forEach(point => {
+            const contentNode = elementsByLocalName(point, 'content')[0];
+            const labelNode = elementsByLocalName(point, 'navlabel')[0];
+            const source = contentNode?.getAttribute('src');
+            let level = 1;
+            for (let node = point.parentElement; node; node = node.parentElement) {
+              if (localNameOf(node) === 'navpoint') level += 1;
+            }
+            if (source) addEntry(resolveArchivePath(ncxItem.path, source), labelNode?.textContent || '', level);
+          });
+        }
+      }
+      return entriesByPath;
+    }
+
+    async function parseEpub(file) {
+      if (!window.JSZip) throw new Error('epub-engine-unavailable');
+      const archive = await window.JSZip.loadAsync(await file.arrayBuffer());
+      const containerEntry = archive.file('META-INF/container.xml');
+      if (!containerEntry) throw new Error('missing-container');
+      const container = parseXml(await containerEntry.async('string'), 'container');
+      const rootfile = elementsByLocalName(container, 'rootfile')[0];
+      const packagePath = rootfile?.getAttribute('full-path');
+      if (!packagePath) throw new Error('missing-package');
+
+      const packageEntry = archive.file(packagePath);
+      if (!packageEntry) throw new Error('missing-package-file');
+      const packageDocument = parseXml(await packageEntry.async('string'), 'package');
+      const metadataTitle = elementsByLocalName(packageDocument, 'title')
+        .map(element => normalizeBookText(element.textContent || ''))
+        .find(Boolean);
+      const manifest = new Map();
+      elementsByLocalName(packageDocument, 'item').forEach(item => {
+        const id = item.getAttribute('id');
+        const href = item.getAttribute('href');
+        if (!id || !href) return;
+        manifest.set(id, {
+          path: resolveArchivePath(packagePath, href),
+          mediaType: item.getAttribute('media-type') || '',
+          properties: item.getAttribute('properties') || ''
+        });
+      });
+
+      const spineItems = elementsByLocalName(packageDocument, 'itemref')
+        .filter(item => (item.getAttribute('linear') || '').toLowerCase() !== 'no')
+        .map(item => manifest.get(item.getAttribute('idref')))
+        .filter(item => item && /(?:xhtml|html)/i.test(item.mediaType));
+      if (!spineItems.length) throw new Error('empty-spine');
+      const navigationEntries = await readEpubNavigation(archive, packagePath, packageDocument, manifest);
+
+      const sections = [];
+      for (const item of spineItems) {
+        const entry = archive.file(item.path);
+        if (!entry) continue;
+        const extracted = extractEpubDocument(await entry.async('string'));
+        if (!extracted.text) continue;
+        const navigation = navigationEntries.get(item.path)?.[0];
+        const heading = extracted.headingCount === 0 && navigation
+          ? `${'#'.repeat(navigation.level)} ${navigation.title}\n\n`
+          : '';
+        sections.push(`${heading}${extracted.text}`);
+      }
+      const content = normalizeBookText(sections.join('\n\n'));
+      if (!content) throw new Error('empty-epub');
+      return {
+        title: metadataTitle || file.name.replace(/\.epub$/i, '') || '未命名',
+        content,
+        format: 'epub'
+      };
+    }
+
+    async function parseBookFile(file) {
+      if (/\.epub$/i.test(file.name) || file.type === 'application/epub+zip') return parseEpub(file);
+      const content = normalizeBookText((await file.text()).replace(/\r\n/g, '\n'));
+      if (!content) throw new Error('empty-text');
+      return {
+        title: file.name.replace(/\.(txt|md|markdown)$/i, '') || '未命名',
+        content,
+        format: /\.md|\.markdown$/i.test(file.name) ? 'markdown' : 'text'
+      };
+    }
+
     function renderBooks() {
       grid.querySelectorAll('[data-imported]').forEach(node => node.remove());
       const books = readBooks();
@@ -335,19 +529,30 @@
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files?.[0];
       if (!file) return;
+      const originalLabel = importButton.textContent;
+      importButton.disabled = true;
+      importButton.textContent = '正在导入…';
       try {
-        const content = (await file.text()).replace(/\r\n/g, '\n').trim();
-        if (!content) throw new Error('empty');
-        const title = file.name.replace(/\.(txt|md|markdown)$/i, '') || '未命名';
+        const parsed = await parseBookFile(file);
         const books = readBooks();
         const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        books.unshift({ id, title, content, progress: 0, createdAt: Date.now(), updatedAt: Date.now() });
+        books.unshift({
+          id,
+          title: parsed.title,
+          content: parsed.content,
+          format: parsed.format,
+          progress: 0,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
         localStorage.setItem(booksKey, JSON.stringify(books));
         renderBooks();
       } catch (_) {
-        window.alert('这本书暂时没有导入成功。请先试试 UTF-8 编码的 TXT 或 Markdown 文件。');
+        window.alert('这本书暂时没有导入成功。Sideleaf 目前支持未加密的 EPUB，以及 UTF-8 编码的 TXT 或 Markdown。');
       } finally {
         fileInput.value = '';
+        importButton.disabled = false;
+        importButton.textContent = originalLabel;
       }
     });
 
