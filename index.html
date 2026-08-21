@@ -308,6 +308,7 @@
 
     function resolveArchivePath(basePath, relativePath) {
       const cleanRelative = String(relativePath || '').split('#')[0];
+      if (!cleanRelative) return basePath;
       const slash = basePath.lastIndexOf('/');
       const directory = slash >= 0 ? basePath.slice(0, slash + 1) : '';
       const resolved = new URL(cleanRelative, `https://sideleaf.invalid/${directory}`).pathname.slice(1);
@@ -325,51 +326,89 @@
         .trim();
     }
 
-    function extractEpubDocument(source) {
+    function extractEpubDocument(source, navigation = []) {
       const documentNode = new DOMParser().parseFromString(source, 'text/html');
       documentNode.querySelectorAll('script, style, noscript, svg, nav').forEach(node => node.remove());
       const rootNode = documentNode.body || documentNode.documentElement;
-      const chunks = [];
-      let headingCount = 0;
+      let output = '';
+      const toc = [];
+      const usedNavigation = new Set();
       const blockNames = new Set(['address', 'article', 'aside', 'blockquote', 'div', 'figcaption', 'figure', 'footer', 'header', 'li', 'main', 'ol', 'p', 'pre', 'section', 'table', 'tr', 'ul']);
+
+      function addToc(title, level, anchor = output.length) {
+        const normalizedTitle = normalizeBookText(title || '');
+        if (!normalizedTitle) return;
+        if (toc.some(entry => entry.anchor === anchor && entry.title === normalizedTitle)) return;
+        toc.push({ title: normalizedTitle, level: Math.min(3, Math.max(1, Number(level) || 1)), anchor });
+      }
+
+      function ensureBreak(count = 2) {
+        if (!output) return;
+        output = output.replace(/[ \t]+$/g, '');
+        const trailing = output.match(/\n*$/)?.[0].length || 0;
+        if (trailing < count) output += '\n'.repeat(count - trailing);
+      }
+
+      function recordNavigation(node) {
+        const id = node.getAttribute?.('id') || node.getAttribute?.('xml:id');
+        if (!id) return;
+        navigation.forEach((entry, entryIndex) => {
+          if (entry.fragment !== id || usedNavigation.has(entryIndex)) return;
+          addToc(entry.title, entry.level);
+          usedNavigation.add(entryIndex);
+        });
+      }
+
+      navigation.forEach((entry, entryIndex) => {
+        if (entry.fragment) return;
+        addToc(entry.title, entry.level, 0);
+        usedNavigation.add(entryIndex);
+      });
 
       function walk(node) {
         if (node.nodeType === Node.TEXT_NODE) {
-          chunks.push(node.nodeValue || '');
+          const value = (node.nodeValue || '').replace(/\s+/g, ' ');
+          if (!value.trim()) return;
+          output += !output || output.endsWith('\n') ? value.trimStart() : value;
           return;
         }
         if (node.nodeType !== Node.ELEMENT_NODE) return;
+        recordNavigation(node);
         const name = localNameOf(node);
         if (name === 'br') {
-          chunks.push('\n');
+          ensureBreak(1);
           return;
         }
         const heading = name.match(/^h([1-6])$/);
         if (heading) {
           const title = normalizeBookText(node.textContent || '');
-          if (title) {
-            const level = Math.min(3, Number(heading[1]));
-            chunks.push(`\n\n${'#'.repeat(level)} ${title}\n\n`);
-            headingCount += 1;
-          }
+          const headingId = node.getAttribute('id') || node.getAttribute('xml:id');
+          const matchedNavigation = navigation.some((entry, entryIndex) =>
+            usedNavigation.has(entryIndex) && entry.fragment === headingId
+          );
+          if (title && !matchedNavigation) addToc(title, Math.min(3, Number(heading[1])));
           return;
         }
         const isBlock = blockNames.has(name);
-        if (isBlock) chunks.push('\n');
+        if (isBlock) ensureBreak(2);
         [...node.childNodes].forEach(walk);
-        if (isBlock) chunks.push('\n');
+        if (isBlock) ensureBreak(2);
       }
 
       walk(rootNode);
-      return { text: normalizeBookText(chunks.join('')), headingCount };
+      return { text: normalizeBookText(output), toc };
     }
 
     async function readEpubNavigation(archive, packagePath, packageDocument, manifest) {
       const entriesByPath = new Map();
-      const addEntry = (path, title, level) => {
+      const addEntry = (basePath, href, title, level) => {
+        const [relativePath, rawFragment = ''] = String(href || '').split('#');
+        const path = resolveArchivePath(basePath, relativePath);
         if (!path || !title) return;
         const entries = entriesByPath.get(path) || [];
-        entries.push({ title: normalizeBookText(title), level: Math.min(3, Math.max(1, level)) });
+        let fragment = rawFragment;
+        try { fragment = decodeURIComponent(rawFragment); } catch (_) {}
+        entries.push({ title: normalizeBookText(title), level: Math.min(3, Math.max(1, level)), fragment });
         entriesByPath.set(path, entries);
       };
       const manifestItems = [...manifest.values()];
@@ -389,7 +428,7 @@
             for (let node = link.parentElement; node && node !== tocRoot; node = node.parentElement) {
               if (localNameOf(node) === 'li') level += 1;
             }
-            addEntry(resolveArchivePath(navItem.path, href), link.textContent || '', level || 1);
+            addEntry(navItem.path, href, link.textContent || '', level || 1);
           });
         }
       }
@@ -409,7 +448,7 @@
             for (let node = point.parentElement; node; node = node.parentElement) {
               if (localNameOf(node) === 'navpoint') level += 1;
             }
-            if (source) addEntry(resolveArchivePath(ncxItem.path, source), labelNode?.textContent || '', level);
+            if (source) addEntry(ncxItem.path, source, labelNode?.textContent || '', level);
           });
         }
       }
@@ -451,24 +490,33 @@
       if (!spineItems.length) throw new Error('empty-spine');
       const navigationEntries = await readEpubNavigation(archive, packagePath, packageDocument, manifest);
 
-      const sections = [];
+      let content = '';
+      const toc = [];
       for (const item of spineItems) {
         const entry = archive.file(item.path);
         if (!entry) continue;
-        const extracted = extractEpubDocument(await entry.async('string'));
+        const extracted = extractEpubDocument(
+          await entry.async('string'),
+          navigationEntries.get(item.path) || []
+        );
         if (!extracted.text) continue;
-        const navigation = navigationEntries.get(item.path)?.[0];
-        const heading = extracted.headingCount === 0 && navigation
-          ? `${'#'.repeat(navigation.level)} ${navigation.title}\n\n`
-          : '';
-        sections.push(`${heading}${extracted.text}`);
+        if (content) content += '\n\n';
+        const sectionStart = content.length;
+        extracted.toc.forEach(tocEntry => toc.push({ ...tocEntry, anchor: sectionStart + tocEntry.anchor }));
+        content += extracted.text;
       }
-      const content = normalizeBookText(sections.join('\n\n'));
+      content = normalizeBookText(content);
       if (!content) throw new Error('empty-epub');
       return {
         title: metadataTitle || file.name.replace(/\.epub$/i, '') || '未命名',
         content,
-        format: 'epub'
+        format: 'epub',
+        importSchemaVersion: 2,
+        toc: toc
+          .filter((entry, entryIndex, entries) => !entries.slice(0, entryIndex).some(previous =>
+            previous.anchor === entry.anchor && previous.title === entry.title
+          ))
+          .sort((a, b) => a.anchor - b.anchor)
       };
     }
 
@@ -535,16 +583,27 @@
       try {
         const parsed = await parseBookFile(file);
         const books = readBooks();
-        const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-        books.unshift({
-          id,
+        const legacyIndex = parsed.format === 'epub'
+          ? books.findIndex(book =>
+              book.title === parsed.title
+              && book.format === 'epub'
+              && Number(book.importSchemaVersion || 1) < 2
+            )
+          : -1;
+        const previous = legacyIndex >= 0 ? books[legacyIndex] : null;
+        const imported = {
+          id: previous?.id || window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
           title: parsed.title,
           content: parsed.content,
           format: parsed.format,
-          progress: 0,
-          createdAt: Date.now(),
+          importSchemaVersion: parsed.importSchemaVersion,
+          toc: parsed.toc,
+          progress: previous?.progress || 0,
+          createdAt: previous?.createdAt || Date.now(),
           updatedAt: Date.now()
-        });
+        };
+        if (legacyIndex >= 0) books.splice(legacyIndex, 1);
+        books.unshift(imported);
         localStorage.setItem(booksKey, JSON.stringify(books));
         renderBooks();
       } catch (_) {

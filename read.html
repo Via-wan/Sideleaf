@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.10.0</small>
+      <small class="build-version">Sideleaf 0.10.1</small>
     </div>
 
     <div class="page-wrap">
@@ -1031,6 +1031,23 @@
           { title: '页边相遇', level: 2, anchor: 0 }
         ];
       }
+      if (Array.isArray(activeBook.toc) && activeBook.toc.length) {
+        const normalizedBookTitle = (activeBook.title || '').replace(/[\s　·:：_《》〈〉「」『』-]+/g, '').toLowerCase();
+        const structuredEntries = activeBook.toc
+          .map(entry => ({
+            title: String(entry.title || '').trim(),
+            level: Math.min(3, Math.max(1, Number(entry.level) || 1)),
+            anchor: clampAnchor(entry.anchor)
+          }))
+          .filter(entry => {
+            const normalizedTitle = entry.title.replace(/[\s　·:：_《》〈〉「」『』-]+/g, '').toLowerCase();
+            return entry.title
+              && normalizedTitle !== normalizedBookTitle
+              && !/^(?:目录|目次|contents?)$/i.test(entry.title);
+          })
+          .sort((a, b) => a.anchor - b.anchor);
+        if (structuredEntries.length) return structuredEntries;
+      }
       const entries = [];
       let offset = 0;
       let markdownLevelShift = 0;
@@ -1110,10 +1127,17 @@
       const availableHeight = pageText.clientHeight;
       if (!availableHeight || !pageText.clientWidth) return;
       const nextPages = [];
+      const pageBreakAnchors = [...new Set(tocEntries
+        .map(entry => Number(entry.anchor))
+        .filter(entryAnchor => Number.isFinite(entryAnchor) && entryAnchor > 0 && entryAnchor < text.length))]
+        .sort((a, b) => a - b);
+      let pageBreakIndex = 0;
       let start = 0;
       while (start < text.length) {
+        while (pageBreakAnchors[pageBreakIndex] <= start) pageBreakIndex += 1;
+        const nextPageBreak = pageBreakAnchors[pageBreakIndex] || text.length;
         let low = start + 1;
-        let high = text.length;
+        let high = Math.min(text.length, nextPageBreak, start + 6000);
         let best = low;
         while (low <= high) {
           const middle = Math.floor((low + high) / 2);
