@@ -366,6 +366,7 @@
         <button id="data-close" class="sheet-close" type="button">完成</button>
       </div>
       <p id="current-data-summary" class="data-summary"></p>
+      <p id="core-sync-status" class="data-summary"></p>
       <div id="data-actions" class="data-actions">
         <button id="export-backup" class="data-action" type="button">
           导出完整备份
@@ -394,6 +395,7 @@
 <script src="./vendor/jszip.min.js"></script>
 <script src="./sideleaf-library.js"></script>
 <script src="./sideleaf-backup.js"></script>
+<script src="./sideleaf-sync.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     let refreshing = false;
@@ -408,7 +410,7 @@
   }
 
   (() => {
-    const appVersion = '0.12.0';
+    const appVersion = '0.13.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -419,6 +421,7 @@
     const dataBackdrop = document.getElementById('data-backdrop');
     const dataClose = document.getElementById('data-close');
     const currentDataSummary = document.getElementById('current-data-summary');
+    const coreSyncStatus = document.getElementById('core-sync-status');
     const dataActions = document.getElementById('data-actions');
     const exportBackup = document.getElementById('export-backup');
     const chooseBackup = document.getElementById('choose-backup');
@@ -449,6 +452,15 @@
     function refreshDataSummary() {
       const summary = SideleafBackup.summarize(SideleafBackup.collect(localStorage));
       currentDataSummary.textContent = `当前：${summaryText(summary)}`;
+      refreshCoreSyncStatus();
+    }
+
+    function refreshCoreSyncStatus(override = '') {
+      const sync = SideleafSync.status(localStorage);
+      if (override) coreSyncStatus.textContent = override;
+      else if (!sync.connected) coreSyncStatus.textContent = 'Core：尚未连接';
+      else if (sync.pending) coreSyncStatus.textContent = `Core：已连接 · ${sync.pending} 类变化等待同步`;
+      else coreSyncStatus.textContent = 'Core：已连接 · 本机变化已同步';
     }
 
     function openDataSheet() {
@@ -563,6 +575,7 @@
       }
       try {
         const undo = SideleafBackup.replace(localStorage, pendingBackup.storage);
+        SideleafSync.markDirty(localStorage);
         resetRestorePanel();
         closeDataSheet();
         renderBooks();
@@ -914,6 +927,7 @@
       if (!undoRestoreAction) return;
       try {
         undoRestoreAction();
+        SideleafSync.markDirty(localStorage);
         undoRestoreAction = null;
         renderBooks();
         showToast('刚才的恢复已经撤销。');
@@ -954,6 +968,7 @@
         if (legacyIndex >= 0) books.splice(legacyIndex, 1);
         const nextBooks = SideleafLibrary.insertImported(books, imported);
         localStorage.setItem(booksKey, JSON.stringify(nextBooks));
+        SideleafSync.markDirty(localStorage, [booksKey]);
         renderBooks();
       } catch (_) {
         window.alert('这本书暂时没有导入成功。Sideleaf 目前支持未加密的 EPUB，以及 UTF-8 编码的 TXT 或 Markdown。');
@@ -964,6 +979,14 @@
       }
     });
 
+    SideleafSync.start(localStorage, {
+      onStatus(event) {
+        if (event.state === 'connected') showToast('这台 Sideleaf 已连接到 Core。');
+        if (event.state === 'syncing') refreshCoreSyncStatus('Core：正在同步本机变化…');
+        else if (event.state === 'offline') refreshCoreSyncStatus('Core：变化已留在本机，联网后补送');
+        else refreshCoreSyncStatus();
+      }
+    });
     renderBooks();
   })();
 </script>
