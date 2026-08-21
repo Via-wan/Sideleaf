@@ -421,7 +421,7 @@
   }
 
   (() => {
-    const appVersion = '0.11.0';
+    const appVersion = '0.11.1';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -458,7 +458,7 @@
     }
 
     function refreshDataSummary() {
-      const summary = SideleafBackup.summarize(SideleafBackup.collect(localStorage));
+      const summary = SideleafBackup.summarize(SideleafBackup.collect(localStorage), { builtInBooks: 1 });
       currentDataSummary.textContent = `当前：${summaryText(summary)}`;
     }
 
@@ -548,7 +548,7 @@
       chooseBackup.disabled = true;
       try {
         pendingBackup = await SideleafBackup.parse(await file.text());
-        const summary = SideleafBackup.summarize(pendingBackup.storage);
+        const summary = SideleafBackup.summarize(pendingBackup.storage, { builtInBooks: 1 });
         const exportedAt = new Intl.DateTimeFormat('zh-CN', {
           year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
         }).format(new Date(pendingBackup.exportedAt));

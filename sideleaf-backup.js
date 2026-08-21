@@ -40,7 +40,7 @@
     }
   }
 
-  function summarize(storage) {
+  function summarize(storage, options = {}) {
     const books = parseKnown(storage, 'sideleaf.books.v1', []);
     const notes = parseKnown(storage, 'sideleaf.notes.v1', []);
     const lines = parseKnown(storage, 'sideleaf.reading-lines.v1', {});
@@ -48,7 +48,7 @@
     const requests = parseKnown(storage, 'sideleaf.read-requests.v1', []);
     const bytes = Object.entries(storage).reduce((total, [key, value]) => total + key.length + String(value).length, 0) * 2;
     return {
-      books: Array.isArray(books) ? books.length : 0,
+      books: (Array.isArray(books) ? books.length : 0) + Math.max(0, Number(options.builtInBooks) || 0),
       notes: Array.isArray(notes) ? notes.length : 0,
       readingLines: isPlainObject(lines) ? Object.keys(lines).length : 0,
       journals: Array.isArray(journals) ? journals.length : 0,
