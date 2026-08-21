@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.10.2</small>
+      <small class="build-version">Sideleaf 0.10.3</small>
     </div>
 
     <div class="page-wrap">
@@ -94,7 +94,7 @@
     </div>
 
     <nav id="page-tools" class="page-tools" data-light-popover aria-label="本页工具" hidden>
-      <button id="send-context" type="button">递给峥</button>
+      <button id="send-context" type="button" aria-label="整理当前页及前文给峥回顾">回望</button>
       <span aria-hidden="true"></span>
       <button id="open-reading-lines" type="button" data-light-popover-trigger aria-expanded="false" aria-controls="reading-lines-panel">阅读线</button>
       <span aria-hidden="true"></span>
@@ -2015,7 +2015,8 @@
       const page = pages[index];
       if (!page) return;
       const from = Math.max(0, page.start - 2000);
-      const to = Math.min(text.length, page.end + 2000);
+      const to = page.end;
+      const zhengPage = pageOrdinalForAnchor(readingState.zheng.current);
       const relatedNotes = readNotes().filter(note =>
         note.bookId === activeBookId && (
           isRangeNote(note)
@@ -2030,8 +2031,14 @@
           }).join('\n')
         : '无';
       const packet = [
-        `【Sideleaf｜${chapterName.textContent}｜${index + 1}/${pages.length}】`,
-        '以下是当前页前后约 2000 字，用于找回阅读位置；不要默认我已读完其中后文。',
+        '【Sideleaf｜回望】',
+        `书名：${activeBook?.title || '雨停以后'}`,
+        `章节：${chapterName.textContent}`,
+        `愿所在页：${index + 1}/${pages.length}`,
+        `峥的阅读线：${zhengPage ? `${zhengPage}/${pages.length}` : '尚未开始'}`,
+        '',
+        '以下内容由当前页全文及当前页之前约 2000 字组成，只用于帮峥找回走到这里以前的阅读现场。',
+        '这不是正式阅读请求；不要据此把后文视为已读，也不要移动峥的阅读线。',
         '',
         text.slice(from, to),
         '',
@@ -2040,11 +2047,11 @@
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
-        sendContext.textContent = '已复制，去找峥';
+        sendContext.textContent = '前文已整理';
       } catch (_) {
         sendContext.textContent = '复制失败，再点一次';
       }
-      window.setTimeout(() => { sendContext.textContent = '递给峥'; }, 1800);
+      window.setTimeout(() => { sendContext.textContent = '回望'; }, 1800);
     }
 
     function turn(delta) {
