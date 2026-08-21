@@ -27,6 +27,8 @@
     --card: #fcfaf7;
     --card-foreground: #2c2924;
     --primary: #8f6f60;
+    --wish: #c98264;
+    --zheng: #657572;
     --space-3: 12px;
     --space-4: 16px;
     --space-5: 20px;
@@ -75,7 +77,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.5.4</small>
+      <small class="build-version">Sideleaf 0.6.0</small>
     </div>
 
     <div class="page-wrap">
@@ -111,7 +113,7 @@
       <button id="annotate-selection" type="button">批注</button>
     </div>
 
-    <section class="notes-sheet" aria-hidden="true" hidden>
+    <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句批注" aria-hidden="true" hidden>
       <div class="notes-head">
         <strong>批注</strong>
         <button id="close-notes" type="button" aria-label="关闭批注">完成</button>
@@ -275,9 +277,25 @@
   }
   #pagination-tester .annotation-highlight {
     padding-bottom: .04em;
-    border-bottom: 1.5px solid rgba(143, 111, 96, .72);
-    background: linear-gradient(to top, rgba(181, 142, 119, .12) 0 .42em, transparent .42em);
+    border-bottom: 1.5px solid transparent;
     cursor: pointer;
+  }
+  #pagination-tester .annotation-highlight.is-wish {
+    border-bottom-color: rgba(201, 130, 100, .88);
+    background: linear-gradient(to top, rgba(201, 130, 100, .14) 0 .42em, transparent .42em);
+  }
+  #pagination-tester .annotation-highlight.is-zheng {
+    border-bottom-color: rgba(101, 117, 114, .88);
+    background: linear-gradient(to top, rgba(101, 117, 114, .14) 0 .42em, transparent .42em);
+  }
+  #pagination-tester .annotation-highlight.is-both {
+    border-bottom-color: rgba(143, 123, 109, .88);
+    background:
+      linear-gradient(to top, rgba(201, 130, 100, .13) 0 .34em, transparent .34em),
+      linear-gradient(to top, rgba(101, 117, 114, .10) 0 .58em, transparent .58em);
+  }
+  #pagination-tester .page-text::selection {
+    background: rgba(201, 130, 100, .26);
   }
   #pagination-tester .page-number {
     flex: 0 0 1em;
@@ -415,18 +433,18 @@
   #pagination-tester .notes-sheet {
     position: fixed;
     z-index: 40;
-    left: 50%;
-    bottom: 0;
-    width: min(100%, 720px);
-    max-height: min(72svh, 620px);
-    transform: translateX(-50%);
+    left: 16px;
+    top: 22%;
+    width: min(calc(100% - 32px), 390px);
+    max-height: min(56svh, 500px);
     overflow: auto;
-    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    padding: 16px;
     border: 1px solid var(--border);
-    border-bottom: 0;
-    border-radius: 22px 22px 0 0;
-    background: #fbf7ef;
-    box-shadow: 0 -12px 40px rgba(56, 45, 36, .18);
+    border-radius: 18px;
+    background: rgba(251, 247, 239, .98);
+    box-shadow: 0 14px 42px rgba(56, 45, 36, .20);
+    backdrop-filter: blur(18px);
+    overscroll-behavior: contain;
   }
   #pagination-tester .notes-head {
     display: flex;
@@ -465,6 +483,7 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     gap: 8px;
+    border-left: 2px solid transparent;
   }
   #pagination-tester .note-text {
     margin: 0;
@@ -474,10 +493,13 @@
   #pagination-tester .note-author {
     display: block;
     margin-bottom: 3px;
-    color: var(--primary);
     font-size: 11px;
     font-weight: 650;
   }
+  #pagination-tester .note-item.is-wish { border-left-color: var(--wish); }
+  #pagination-tester .note-item.is-wish .note-author { color: var(--wish); }
+  #pagination-tester .note-item.is-zheng { border-left-color: var(--zheng); }
+  #pagination-tester .note-item.is-zheng .note-author { color: var(--zheng); }
   #pagination-tester .note-more {
     min-width: 30px;
     padding: 2px 4px;
@@ -528,9 +550,10 @@
   }
   #pagination-tester .note-author-switch button.is-active {
     background: rgba(255, 250, 242, .94);
-    color: var(--primary);
     box-shadow: 0 1px 4px rgba(75, 59, 48, .10);
   }
+  #pagination-tester .note-compose[data-author="wish"] .note-author-switch button.is-active { color: var(--wish); }
+  #pagination-tester .note-compose[data-author="zheng"] .note-author-switch button.is-active { color: var(--zheng); }
   #pagination-tester .note-compose textarea {
     width: 100%;
     resize: none;
@@ -800,6 +823,7 @@
     let composingNoteAuthor = 'wish';
     let activeSelection = null;
     let focusedNoteIds = null;
+    let notesAnchorRect = null;
     let drawerStartX = 0;
     let dismissedOverlayByPointer = false;
 
@@ -938,6 +962,8 @@
         }
         const mark = document.createElement('span');
         mark.className = 'annotation-highlight';
+        const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
+        mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
         mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
         mark.textContent = content;
         fragment.appendChild(mark);
@@ -995,6 +1021,7 @@
 
     function setNoteAuthor(author) {
       composingNoteAuthor = normalizeNoteAuthor(author);
+      noteCompose.dataset.author = composingNoteAuthor;
       noteAuthorButtons.forEach(button => {
         const selected = button.dataset.noteAuthor === composingNoteAuthor;
         button.classList.toggle('is-active', selected);
@@ -1039,6 +1066,7 @@
       notes.forEach(note => {
         const item = document.createElement('article');
         item.className = 'note-item';
+        item.classList.add(note.author === 'zheng' ? 'is-zheng' : 'is-wish');
         const noteContent = document.createElement('div');
         noteContent.className = 'note-content';
         const noteAuthor = document.createElement('small');
@@ -1111,13 +1139,52 @@
       });
     }
 
-    function showNotes() {
+    function rememberRect(rect) {
+      if (!rect) return null;
+      return {
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        bottom: rect.bottom,
+        width: rect.width,
+        height: rect.height
+      };
+    }
+
+    function positionNotes(rect = notesAnchorRect) {
+      if (!rect || notesSheet.hidden) return;
+      const viewport = window.visualViewport;
+      const viewportLeft = viewport?.offsetLeft || 0;
+      const viewportTop = viewport?.offsetTop || 0;
+      const viewportWidth = viewport?.width || window.innerWidth;
+      const viewportHeight = viewport?.height || window.innerHeight;
+      const margin = 14;
+      const gap = 10;
+      const panelWidth = notesSheet.offsetWidth;
+      const panelHeight = notesSheet.offsetHeight;
+      const center = rect.left + rect.width / 2;
+      const left = Math.max(
+        viewportLeft + margin,
+        Math.min(viewportLeft + viewportWidth - panelWidth - margin, center - panelWidth / 2)
+      );
+      const below = rect.bottom + gap;
+      const above = rect.top - panelHeight - gap;
+      const top = below + panelHeight <= viewportTop + viewportHeight - margin
+        ? below
+        : Math.max(viewportTop + margin, above);
+      notesSheet.style.left = `${left}px`;
+      notesSheet.style.top = `${top}px`;
+    }
+
+    function showNotes(anchorRect = activeSelection?.anchorRect) {
+      notesAnchorRect = rememberRect(anchorRect) || notesAnchorRect;
       selectionQuote.hidden = !activeSelection;
       selectionQuote.textContent = activeSelection?.quote || '';
       renderNotes();
       notesSheet.hidden = false;
       notesSheet.setAttribute('aria-hidden', 'false');
       closeLightPopovers();
+      window.requestAnimationFrame(() => positionNotes());
     }
 
     function hideNotes() {
@@ -1133,6 +1200,7 @@
       selectionQuote.hidden = true;
       activeSelection = null;
       focusedNoteIds = null;
+      notesAnchorRect = null;
     }
 
     function hideSelectionToolbar() {
@@ -1189,7 +1257,9 @@
         prefix: text.slice(Math.max(0, start - 60), start),
         suffix: text.slice(end, Math.min(text.length, end + 60))
       };
-      const rect = range.getBoundingClientRect();
+      const rangeRects = Array.from(range.getClientRects());
+      const rect = rangeRects[rangeRects.length - 1] || range.getBoundingClientRect();
+      activeSelection.anchorRect = rememberRect(rect);
       selectionToolbar.style.left = `${Math.max(46, Math.min(window.innerWidth - 46, rect.left + rect.width / 2))}px`;
       selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
       selectionToolbar.hidden = false;
@@ -1206,11 +1276,11 @@
       saveNote.hidden = false;
       hideSelectionToolbar();
       window.getSelection()?.removeAllRanges();
-      showNotes();
+      showNotes(activeSelection.anchorRect);
       window.setTimeout(() => noteInput.focus(), 80);
     }
 
-    function showHighlightedNotes(noteIds) {
+    function showHighlightedNotes(noteIds, anchorRect) {
       const notes = readNotes().filter(note => noteIds.includes(note.id));
       if (!notes.length) return;
       const first = notes[0];
@@ -1222,7 +1292,7 @@
       focusedNoteIds = noteIds;
       noteCompose.hidden = true;
       saveNote.hidden = true;
-      showNotes();
+      showNotes(anchorRect);
     }
 
     async function copyContext() {
@@ -1264,6 +1334,7 @@
     function turn(delta) {
       const next = index + delta;
       if (next < 0 || next >= pages.length) return;
+      hideNotes();
       index = next;
       render();
     }
@@ -1382,6 +1453,11 @@
 
     document.addEventListener('pointerdown', event => {
       let dismissed = false;
+      const annotationTarget = event.target.closest('.annotation-highlight');
+      if (!notesSheet.hidden && !notesSheet.contains(event.target) && !annotationTarget && !selectionToolbar.contains(event.target)) {
+        hideNotes();
+        dismissed = true;
+      }
       root.querySelectorAll('[data-light-popover-trigger][aria-expanded="true"]').forEach(trigger => {
         const panel = lightPopoverFor(trigger);
         if (!panel || panel.contains(event.target) || trigger.contains(event.target)) return;
@@ -1479,7 +1555,7 @@
       const annotation = event.target.closest('.annotation-highlight');
       if (annotation) {
         const noteIds = (annotation.dataset.noteIds || '').split(',').filter(Boolean);
-        showHighlightedNotes(noteIds);
+        showHighlightedNotes(noteIds, annotation.getBoundingClientRect());
         return;
       }
       if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
@@ -1497,6 +1573,9 @@
       window.clearTimeout(selectionTimer);
       selectionTimer = window.setTimeout(updateSelectionToolbar, 80);
     });
+
+    window.visualViewport?.addEventListener('resize', () => positionNotes());
+    window.visualViewport?.addEventListener('scroll', () => positionNotes());
 
     sheet.addEventListener('keydown', event => {
       if (event.key === 'ArrowLeft') turn(-1);
