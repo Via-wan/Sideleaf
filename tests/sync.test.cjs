@@ -98,3 +98,33 @@ test('断网时保留脏数据，恢复后只发送变化过的分类', async ()
   assert.equal(sent.books, undefined);
   assert.equal(SideleafSync.status(storage).pending, 0);
 });
+
+test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态', async () => {
+  const storage = new MemoryStorage({
+    [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
+    'sideleaf.reading-lines.v1': JSON.stringify({
+      'book-1':{ wish:{ current:88 }, zheng:{ current:null, furthest:null }, schemaVersion:2 }
+    }),
+    'sideleaf.notes.v1': JSON.stringify([{ id:'wish-note', author:'wish', text:'愿先说。' }]),
+    'sideleaf.read-requests.v1': JSON.stringify([{ id:'request-1', status:'pending', bookId:'book-1' }])
+  });
+  let sent;
+  await SideleafSync.syncNow(storage, { fetch:async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({
+      ok:true,
+      state:{
+        readingLines:{ 'book-1':{ zheng:{ current:120, furthest:120, updatedAt:2 } } },
+        notes:[{ id:'zheng-note', bookId:'book-1', author:'zheng', text:'峥接住了。' }],
+        requests:[{ id:'request-1', status:'completed', completedAt:3, updatedAt:3 }]
+      }
+    }), { status:200 });
+  } });
+  assert.deepEqual(sent, { clientStorage:{} });
+  const lines = JSON.parse(storage.getItem('sideleaf.reading-lines.v1'));
+  assert.equal(lines['book-1'].wish.current, 88);
+  assert.equal(lines['book-1'].zheng.current, 120);
+  const notes = JSON.parse(storage.getItem('sideleaf.notes.v1'));
+  assert.deepEqual(notes.map(note => note.id), ['wish-note', 'zheng-note']);
+  assert.equal(JSON.parse(storage.getItem('sideleaf.read-requests.v1'))[0].status, 'completed');
+});

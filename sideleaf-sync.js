@@ -79,12 +79,64 @@
     return snapshot;
   }
 
+  function applyServerState(storage, state) {
+    if (!state || typeof state !== 'object') return false;
+    let changed = false;
+    if (state.readingLines && typeof state.readingLines === 'object') {
+      const local = parseJson(storage.getItem('sideleaf.reading-lines.v1'), {});
+      Object.entries(state.readingLines).forEach(([bookId, incoming]) => {
+        if (!incoming?.zheng) return;
+        local[bookId] = {
+          ...(local[bookId] || {}),
+          zheng:{ ...(local[bookId]?.zheng || {}), ...incoming.zheng },
+          schemaVersion:2,
+          updatedAt:Math.max(Number(local[bookId]?.updatedAt || 0), Number(incoming.zheng.updatedAt || 0))
+        };
+        changed = true;
+      });
+      if (changed) storage.setItem('sideleaf.reading-lines.v1', JSON.stringify(local));
+    }
+    if (Array.isArray(state.notes) && state.notes.length) {
+      const localNotes = parseJson(storage.getItem('sideleaf.notes.v1'), []);
+      const notes = Array.isArray(localNotes) ? localNotes : [];
+      const byId = new Map(notes.map((note, index) => [note.id, index]));
+      state.notes.forEach(note => {
+        if (!note || note.author !== 'zheng' || typeof note.id !== 'string') return;
+        const index = byId.get(note.id);
+        if (index === undefined) {
+          byId.set(note.id, notes.length);
+          notes.push(note);
+        } else {
+          notes[index] = { ...notes[index], ...note };
+        }
+        changed = true;
+      });
+      storage.setItem('sideleaf.notes.v1', JSON.stringify(notes));
+    }
+    if (Array.isArray(state.requests) && state.requests.length) {
+      const localRequests = parseJson(storage.getItem('sideleaf.read-requests.v1'), []);
+      const requests = Array.isArray(localRequests) ? localRequests : [];
+      const byId = new Map(requests.map((request, index) => [request.id, index]));
+      state.requests.forEach(request => {
+        const index = byId.get(request?.id);
+        if (index === undefined) return;
+        requests[index] = { ...requests[index], ...request };
+        changed = true;
+      });
+      storage.setItem('sideleaf.read-requests.v1', JSON.stringify(requests));
+    }
+    if (changed && typeof globalThis.dispatchEvent === 'function' && typeof globalThis.CustomEvent === 'function') {
+      globalThis.dispatchEvent(new CustomEvent('sideleaf:core-state', { detail:state }));
+    }
+    return changed;
+  }
+
   async function syncNow(storage, options = {}) {
     if (inFlight) return inFlight;
     clearTimeout(timer);
     const auth = readAuth(storage);
     const dirty = readDirty(storage);
-    if (!auth || !Object.keys(dirty).length) return { ok:false, skipped:true };
+    if (!auth) return { ok:false, skipped:true };
     const fetchImpl = options.fetch || globalThis.fetch;
     if (typeof fetchImpl !== 'function') return { ok:false, skipped:true };
     inFlight = (async () => {
@@ -100,6 +152,7 @@
           if (response.status === 401) emit('authorization-error');
           throw new Error(result.error || `同步失败（HTTP ${response.status}）。`);
         }
+        applyServerState(storage, result.state);
         const current = readDirty(storage);
         Object.entries(dirty).forEach(([key, stamp]) => {
           if (current[key] === stamp) {
@@ -207,5 +260,5 @@
     };
   }
 
-  return { AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS, markDirty, queueDeletion, syncNow, pairWithCode, acceptPairing, start, status, snapshotFor };
+  return { AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS, markDirty, queueDeletion, syncNow, pairWithCode, acceptPairing, start, status, snapshotFor, applyServerState };
 });
