@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.7.0</small>
+      <small class="build-version">Sideleaf 0.7.1</small>
     </div>
 
     <div class="page-wrap">
@@ -115,6 +115,10 @@
 
     <div id="selection-toolbar" class="selection-toolbar" hidden>
       <button id="annotate-selection" type="button">批注</button>
+    </div>
+    <div id="selection-handles" class="selection-handles" aria-hidden="true" hidden>
+      <button class="selection-handle is-start" type="button" data-selection-edge="start" tabindex="-1" aria-label="调整选区开头"></button>
+      <button class="selection-handle is-end" type="button" data-selection-edge="end" tabindex="-1" aria-label="调整选区结尾"></button>
     </div>
 
     <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句批注" aria-hidden="true" hidden>
@@ -304,9 +308,9 @@
       linear-gradient(to top, rgba(101, 117, 114, .10) 0 .58em, transparent .58em);
   }
   #pagination-tester .active-selection-highlight {
-    padding: .04em .03em;
-    border-radius: .18em;
-    background: #e7b7a2 !important;
+    padding: 0;
+    border-radius: 0;
+    background: rgba(201, 130, 100, .20) !important;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
@@ -447,6 +451,55 @@
     background: transparent;
     color: var(--wish);
     font: 650 13px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .selection-handles {
+    position: fixed;
+    z-index: 44;
+    inset: 0;
+    pointer-events: none;
+  }
+  #pagination-tester .selection-handle {
+    position: fixed;
+    width: 34px;
+    height: 42px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #pagination-tester .selection-handle::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    width: 2px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--wish);
+  }
+  #pagination-tester .selection-handle::after {
+    content: '';
+    position: absolute;
+    left: 11px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--wish);
+    box-shadow: 0 1px 4px rgba(105, 76, 61, .18);
+  }
+  #pagination-tester .selection-handle.is-start {
+    transform: translate(-50%, -34px);
+  }
+  #pagination-tester .selection-handle.is-start::before { bottom: 0; }
+  #pagination-tester .selection-handle.is-start::after { top: 5px; }
+  #pagination-tester .selection-handle.is-end {
+    transform: translate(-50%, -8px);
+  }
+  #pagination-tester .selection-handle.is-end::before { top: 0; }
+  #pagination-tester .selection-handle.is-end::after { bottom: 5px; }
+  #pagination-tester .selection-handles.is-dragging .selection-handle:not(.is-dragging) {
+    opacity: .45;
   }
   #pagination-tester .notes-sheet {
     position: fixed;
@@ -713,6 +766,9 @@
     const noteAuthorButtons = [...root.querySelectorAll('[data-note-author]')];
     const selectionToolbar = root.querySelector('#selection-toolbar');
     const annotateSelection = root.querySelector('#annotate-selection');
+    const selectionHandles = root.querySelector('#selection-handles');
+    const selectionHandleStart = root.querySelector('[data-selection-edge="start"]');
+    const selectionHandleEnd = root.querySelector('[data-selection-edge="end"]');
     const selectionQuote = root.querySelector('#selection-quote');
     const sendContext = root.querySelector('#send-context');
     const wishLineStatus = root.querySelector('#wish-line-status');
@@ -850,6 +906,8 @@
     let longPressTriggered = false;
     let longPressStartX = 0;
     let longPressStartY = 0;
+    let draggingSelectionEdge = null;
+    let selectionDragFrame = null;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -1236,6 +1294,7 @@
       saveNote.hidden = true;
       selectionQuote.hidden = true;
       activeSelection = null;
+      hideSelectionHandles();
       focusedNoteIds = null;
       notesAnchorRect = null;
       const page = pages[index];
@@ -1244,6 +1303,14 @@
 
     function hideSelectionToolbar() {
       selectionToolbar.hidden = true;
+    }
+
+    function hideSelectionHandles() {
+      selectionHandles.hidden = true;
+      selectionHandles.classList.remove('is-dragging');
+      selectionHandleStart.classList.remove('is-dragging');
+      selectionHandleEnd.classList.remove('is-dragging');
+      draggingSelectionEdge = null;
     }
 
     function clearLongPress() {
@@ -1292,6 +1359,43 @@
       selectionToolbar.hidden = false;
     }
 
+    function selectionRects() {
+      return [...pageText.querySelectorAll('.active-selection-highlight')]
+        .flatMap(highlight => [...highlight.getClientRects()])
+        .filter(rect => rect.width > 0 && rect.height > 0);
+    }
+
+    function positionSelectionHandles(rects = selectionRects()) {
+      if (!rects.length || !activeSelection) {
+        hideSelectionHandles();
+        return;
+      }
+      const first = rects[0];
+      const last = rects[rects.length - 1];
+      selectionHandleStart.style.left = `${first.left}px`;
+      selectionHandleStart.style.top = `${first.top}px`;
+      selectionHandleEnd.style.left = `${last.right}px`;
+      selectionHandleEnd.style.top = `${last.bottom}px`;
+      selectionHandles.hidden = false;
+    }
+
+    function updateActiveSelection(start, end) {
+      if (!activeSelection || end <= start) return false;
+      activeSelection.start = start;
+      activeSelection.end = end;
+      activeSelection.quote = text.slice(start, end);
+      activeSelection.prefix = text.slice(Math.max(0, start - 60), start);
+      activeSelection.suffix = text.slice(end, Math.min(text.length, end + 60));
+      renderPageContent(pages[index]);
+      const rects = selectionRects();
+      if (!rects.length) return false;
+      const last = rects[rects.length - 1];
+      activeSelection.anchorRect = rememberRect(last);
+      positionSelectionHandles(rects);
+      if (!draggingSelectionEdge) positionSelectionToolbar(last);
+      return true;
+    }
+
     function selectSentenceAt(clientX, clientY) {
       const anchor = pageAnchorFromPoint(clientX, clientY);
       if (anchor === null) return false;
@@ -1306,15 +1410,83 @@
       focusedNoteIds = null;
       renderPageContent(pages[index]);
       window.requestAnimationFrame(() => {
-        const highlights = pageText.querySelectorAll('.active-selection-highlight');
-        const highlight = highlights[highlights.length - 1];
-        if (!highlight) return;
-        const rects = Array.from(highlight.getClientRects());
-        const rect = rects[rects.length - 1] || highlight.getBoundingClientRect();
+        const rects = selectionRects();
+        if (!rects.length) return;
+        const rect = rects[rects.length - 1];
         activeSelection.anchorRect = rememberRect(rect);
+        positionSelectionHandles(rects);
         positionSelectionToolbar(rect);
       });
       return true;
+    }
+
+    function startSelectionDrag(event) {
+      if (!activeSelection) return;
+      event.preventDefault();
+      event.stopPropagation();
+      draggingSelectionEdge = event.currentTarget.dataset.selectionEdge;
+      selectionHandles.classList.add('is-dragging');
+      event.currentTarget.classList.add('is-dragging');
+      hideSelectionToolbar();
+      try { event.currentTarget.setPointerCapture(event.pointerId); } catch (_) {}
+    }
+
+    function moveSelectionDrag(event) {
+      if (!draggingSelectionEdge || !activeSelection) return;
+      event.preventDefault();
+      const clientX = event.clientX;
+      const clientY = event.clientY;
+      const handle = event.currentTarget;
+      window.cancelAnimationFrame(selectionDragFrame);
+      selectionDragFrame = window.requestAnimationFrame(() => {
+        const page = pages[index];
+        handle.style.pointerEvents = 'none';
+        const anchor = pageAnchorFromPoint(clientX, clientY);
+        handle.style.pointerEvents = '';
+        if (!page || anchor === null) return;
+        if (draggingSelectionEdge === 'start') {
+          const start = Math.max(page.displayStart, Math.min(anchor, activeSelection.end - 1));
+          updateActiveSelection(start, activeSelection.end);
+        } else {
+          const end = Math.min(page.displayEnd, Math.max(anchor, activeSelection.start + 1));
+          updateActiveSelection(activeSelection.start, end);
+        }
+      });
+    }
+
+    function endSelectionDrag(event) {
+      if (!draggingSelectionEdge) return;
+      event.preventDefault();
+      event.stopPropagation();
+      window.cancelAnimationFrame(selectionDragFrame);
+      const page = pages[index];
+      event.currentTarget.style.pointerEvents = 'none';
+      const anchor = pageAnchorFromPoint(event.clientX, event.clientY);
+      event.currentTarget.style.pointerEvents = '';
+      if (page && anchor !== null && activeSelection) {
+        if (draggingSelectionEdge === 'start') {
+          updateActiveSelection(
+            Math.max(page.displayStart, Math.min(anchor, activeSelection.end - 1)),
+            activeSelection.end
+          );
+        } else {
+          updateActiveSelection(
+            activeSelection.start,
+            Math.min(page.displayEnd, Math.max(anchor, activeSelection.start + 1))
+          );
+        }
+      }
+      draggingSelectionEdge = null;
+      selectionHandles.classList.remove('is-dragging');
+      selectionHandleStart.classList.remove('is-dragging');
+      selectionHandleEnd.classList.remove('is-dragging');
+      const rects = selectionRects();
+      const last = rects[rects.length - 1];
+      if (last) {
+        activeSelection.anchorRect = rememberRect(last);
+        positionSelectionHandles(rects);
+        positionSelectionToolbar(last);
+      }
     }
 
     function selectionOffsets(range) {
@@ -1383,6 +1555,7 @@
       noteCompose.hidden = false;
       saveNote.hidden = false;
       hideSelectionToolbar();
+      hideSelectionHandles();
       window.getSelection()?.removeAllRanges();
       showNotes(activeSelection.anchorRect);
       window.setTimeout(() => noteInput.focus(), 80);
@@ -1538,6 +1711,12 @@
     annotateSelection.addEventListener('click', event => {
       if (event.detail === 0) composeForSelection();
     });
+    [selectionHandleStart, selectionHandleEnd].forEach(handle => {
+      handle.addEventListener('pointerdown', startSelectionDrag);
+      handle.addEventListener('pointermove', moveSelectionDrag);
+      handle.addEventListener('pointerup', endSelectionDrag);
+      handle.addEventListener('pointercancel', endSelectionDrag);
+    });
     sendContext.addEventListener('click', copyContext);
     noteAuthorButtons.forEach(button => {
       button.addEventListener('click', () => setNoteAuthor(button.dataset.noteAuthor));
@@ -1563,15 +1742,17 @@
       let dismissed = false;
       const annotationTarget = event.target.closest('.annotation-highlight');
       const customSelectionTarget = event.target.closest('.active-selection-highlight');
+      const selectionHandleTarget = event.target.closest('.selection-handle');
       if (!notesSheet.hidden && !notesSheet.contains(event.target) && !annotationTarget && !selectionToolbar.contains(event.target)) {
         hideNotes();
         dismissed = true;
       }
-      if (!activeSelection || !notesSheet.hidden || selectionToolbar.contains(event.target) || customSelectionTarget || annotationTarget) {
+      if (!activeSelection || !notesSheet.hidden || selectionToolbar.contains(event.target) || selectionHandleTarget || customSelectionTarget || annotationTarget) {
         // Keep the current sentence selected while interacting with its own controls.
       } else {
         activeSelection = null;
         hideSelectionToolbar();
+        hideSelectionHandles();
         renderPageContent(pages[index]);
         dismissed = true;
       }
