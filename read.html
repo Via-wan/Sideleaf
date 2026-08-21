@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.8.2</small>
+      <small class="build-version">Sideleaf 0.9.0</small>
     </div>
 
     <div class="page-wrap">
@@ -144,22 +144,22 @@
 
     <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句批注" aria-hidden="true" hidden>
       <div class="notes-head">
-        <strong>批注</strong>
+        <strong>原句对话</strong>
         <button id="close-notes" type="button" aria-label="关闭批注">完成</button>
       </div>
       <blockquote id="selection-quote" class="selection-quote" hidden></blockquote>
       <div id="notes-list" class="notes-list"></div>
       <div id="note-compose" class="note-compose" hidden>
         <div class="note-compose-head">
-          <label for="note-input">在这句话旁边留一句</label>
+          <label for="note-input">继续说一句</label>
           <div class="note-author-switch" role="group" aria-label="批注署名">
             <button type="button" class="is-active" data-note-author="wish" aria-pressed="true">愿</button>
             <button type="button" data-note-author="zheng" aria-pressed="false">峥</button>
           </div>
         </div>
-        <textarea id="note-input" rows="3" placeholder="想起什么，就钉在这里。"></textarea>
+        <textarea id="note-input" rows="3" placeholder="愿或峥，接着说。"></textarea>
       </div>
-      <button id="save-note" class="save-note" type="button" hidden>留下批注</button>
+      <button id="save-note" class="save-note" type="button" hidden>发送</button>
     </section>
 
     <div class="toc-backdrop" aria-hidden="true"></div>
@@ -645,46 +645,76 @@
     line-height: 1.55;
   }
   #pagination-tester .notes-list {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 10px;
     margin-bottom: 14px;
-  }
-  #pagination-tester .note-item,
-  #pagination-tester .notes-empty {
-    margin: 0;
-    padding: 12px 14px;
-    border-radius: 12px;
-    background: rgba(143, 111, 96, .08);
-    font-size: 14px;
-    line-height: 1.65;
   }
   #pagination-tester .note-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-    gap: 8px;
-    border-left: 2px solid transparent;
+    align-items: end;
+    gap: 4px;
+    width: fit-content;
+    min-width: 88px;
+    max-width: 88%;
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.58;
+  }
+  #pagination-tester .note-item.is-wish {
+    align-self: flex-end;
+    margin-left: 34px;
+  }
+  #pagination-tester .note-item.is-zheng {
+    align-self: flex-start;
+    margin-right: 34px;
   }
   #pagination-tester .note-text {
     margin: 0;
     white-space: pre-wrap;
   }
-  #pagination-tester .note-content { min-width: 0; }
-  #pagination-tester .note-author {
-    display: block;
+  #pagination-tester .note-content {
+    min-width: 0;
+    padding: 9px 12px 10px;
+    border: 1px solid transparent;
+    border-radius: 14px;
+    overflow-wrap: anywhere;
+  }
+  #pagination-tester .note-item.is-wish .note-content {
+    justify-self: end;
+    border-color: rgba(201, 130, 100, .18);
+    border-bottom-right-radius: 4px;
+    background: rgba(201, 130, 100, .16);
+  }
+  #pagination-tester .note-item.is-zheng .note-content {
+    justify-self: start;
+    border-color: rgba(101, 117, 114, .18);
+    border-bottom-left-radius: 4px;
+    background: rgba(101, 117, 114, .14);
+  }
+  #pagination-tester .note-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
     margin-bottom: 3px;
+  }
+  #pagination-tester .note-author {
     font-size: 11px;
     font-weight: 650;
   }
-  #pagination-tester .note-item.is-wish { border-left-color: var(--wish); }
+  #pagination-tester .note-time {
+    color: rgba(71, 62, 51, .45);
+    font-size: 9px;
+    font-variant-numeric: tabular-nums;
+  }
   #pagination-tester .note-item.is-wish .note-author { color: var(--wish); }
-  #pagination-tester .note-item.is-zheng { border-left-color: var(--zheng); }
   #pagination-tester .note-item.is-zheng .note-author { color: var(--zheng); }
   #pagination-tester .note-more {
-    min-width: 30px;
-    padding: 2px 4px;
+    min-width: 22px;
+    padding: 2px 0;
     color: var(--muted-foreground) !important;
-    font-size: 18px !important;
+    font-size: 15px !important;
     letter-spacing: .08em;
   }
   #pagination-tester .note-actions {
@@ -692,8 +722,7 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    padding-top: 5px;
-    border-top: 1px solid rgba(71, 62, 51, .08);
+    padding: 3px 2px 0;
   }
   #pagination-tester .note-actions button {
     padding: 5px 8px;
@@ -701,7 +730,17 @@
     font-size: 13px;
   }
   #pagination-tester .note-actions .delete-note { color: #9a655f; }
-  #pagination-tester .notes-empty { color: var(--muted-foreground); }
+  #pagination-tester .notes-empty {
+    margin: 0;
+    padding: 9px 4px 4px;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    text-align: center;
+  }
+  #pagination-tester .note-compose {
+    padding-top: 12px;
+    border-top: 1px solid rgba(71, 62, 51, .09);
+  }
   #pagination-tester .note-compose-head {
     display: flex;
     align-items: center;
@@ -1284,17 +1323,29 @@
       );
     }
 
+    function formatNoteTime(timestamp) {
+      const value = Number(timestamp);
+      if (!Number.isFinite(value) || value <= 0) return '';
+      return new Intl.DateTimeFormat('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(new Date(value));
+    }
+
     function renderNotes() {
       const pageNotes = notesOnPage();
-      const notes = focusedNoteIds === null
+      const notes = (focusedNoteIds === null
         ? pageNotes
-        : pageNotes.filter(note => focusedNoteIds.includes(note.id));
+        : pageNotes.filter(note => focusedNoteIds.includes(note.id)))
+        .sort((a, b) => Number(a.createdAt || a.updatedAt || 0) - Number(b.createdAt || b.updatedAt || 0));
       notesList.replaceChildren();
       if (!notes.length) {
         const empty = document.createElement('p');
         empty.className = 'notes-empty';
-        empty.textContent = activeSelection ? '这段原文还没有批注。' : '这里还没有批注。';
+        empty.textContent = activeSelection ? '这句话旁边还没有人开口。' : '这里还没有对话。';
         notesList.appendChild(empty);
+        if (!notesSheet.hidden) window.requestAnimationFrame(() => positionNotes());
         return;
       }
       notes.forEach(note => {
@@ -1306,10 +1357,16 @@
         const noteAuthor = document.createElement('small');
         noteAuthor.className = 'note-author';
         noteAuthor.textContent = noteAuthorLabel(note.author);
+        const noteTime = document.createElement('time');
+        noteTime.className = 'note-time';
+        noteTime.textContent = formatNoteTime(note.createdAt || note.updatedAt);
+        const noteMeta = document.createElement('div');
+        noteMeta.className = 'note-meta';
+        noteMeta.append(noteAuthor, noteTime);
         const noteText = document.createElement('p');
         noteText.className = 'note-text';
         noteText.textContent = note.text;
-        noteContent.append(noteAuthor, noteText);
+        noteContent.append(noteMeta, noteText);
 
         const more = document.createElement('button');
         more.className = 'note-more';
@@ -1361,7 +1418,7 @@
             editingNoteId = null;
             noteInput.value = '';
             setNoteAuthor('wish');
-            saveNote.textContent = '留下批注';
+            saveNote.textContent = '发送';
           }
           renderPageContent(pages[index]);
           renderNotes();
@@ -1371,6 +1428,7 @@
         item.append(noteContent, more, actions);
         notesList.appendChild(item);
       });
+      if (!notesSheet.hidden) window.requestAnimationFrame(() => positionNotes());
     }
 
     function rememberRect(rect) {
@@ -1428,7 +1486,7 @@
       editingNoteId = null;
       noteInput.value = '';
       setNoteAuthor('wish');
-      saveNote.textContent = '留下批注';
+      saveNote.textContent = '发送';
       noteCompose.hidden = true;
       saveNote.hidden = true;
       selectionQuote.hidden = true;
@@ -1692,7 +1750,7 @@
       editingNoteId = null;
       noteInput.value = '';
       setNoteAuthor('wish');
-      saveNote.textContent = '留下批注';
+      saveNote.textContent = '发送';
       noteCompose.hidden = false;
       saveNote.hidden = false;
       hideSelectionToolbar();
@@ -1709,11 +1767,17 @@
       activeSelection = isRangeNote(first) ? {
         start: Number(first.rangeStart),
         end: Number(first.rangeEnd),
-        quote: first.quote || text.slice(Number(first.rangeStart), Number(first.rangeEnd))
+        quote: first.quote || text.slice(Number(first.rangeStart), Number(first.rangeEnd)),
+        prefix: first.prefix || text.slice(Math.max(0, Number(first.rangeStart) - 60), Number(first.rangeStart)),
+        suffix: first.suffix || text.slice(Number(first.rangeEnd), Math.min(text.length, Number(first.rangeEnd) + 60))
       } : null;
       focusedNoteIds = noteIds;
-      noteCompose.hidden = true;
-      saveNote.hidden = true;
+      editingNoteId = null;
+      noteInput.value = '';
+      setNoteAuthor('wish');
+      saveNote.textContent = '发送';
+      noteCompose.hidden = false;
+      saveNote.hidden = false;
       showNotes(anchorRect);
     }
 
@@ -2135,7 +2199,7 @@
       editingNoteId = null;
       noteInput.value = '';
       setNoteAuthor('wish');
-      saveNote.textContent = '留下批注';
+      saveNote.textContent = '发送';
       renderPageContent(page);
       renderNotes();
     });
