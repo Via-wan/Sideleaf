@@ -38,6 +38,34 @@ test('一次性配对后保存受限设备凭证并立即同步现有数据', as
   assert.equal(replaced, '/Sideleaf/');
 });
 
+test('从桌面 PWA 手动粘贴配对码，并立即同步这份书架', async () => {
+  const storage = new MemoryStorage({
+    'sideleaf.books.v1': JSON.stringify([
+      { id:'book-1', title:'雨停以后', content:'正文一' },
+      { id:'book-2', title:'索拉里斯星', content:'正文二' }
+    ]),
+    'sideleaf.notes.v1': '[]'
+  });
+  const calls = [];
+  const fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith('/api/device/pair')) {
+      assert.equal(JSON.parse(init.body).code, 'one-time-code');
+      return new Response(JSON.stringify({ token:'device-token', deviceId:'device-2', deviceName:'愿的桌面 Sideleaf' }), { status:200 });
+    }
+    return new Response(JSON.stringify({ ok:true, merged:{} }), { status:200 });
+  };
+  await SideleafSync.pairWithCode(storage, {
+    baseUrl:'https://core.example/',
+    code:'  one-time-code  ',
+    fetch
+  });
+  assert.equal(SideleafSync.status(storage).connected, true);
+  assert.equal(calls.length, 2);
+  assert.equal(JSON.parse(calls[1].init.body).books.length, 2);
+  assert.equal(JSON.parse(storage.getItem(SideleafSync.AUTH_KEY)).baseUrl, 'https://core.example');
+});
+
 test('明确删除批注时发送一次可重试的删除动作', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' })
