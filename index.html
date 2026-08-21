@@ -302,7 +302,31 @@
   }
   .data-action.danger-confirm { background: #765548; }
   .data-action:disabled { opacity: .58; }
-  .restore-panel[hidden] { display: none; }
+  .restore-panel[hidden],
+  .connect-panel[hidden] { display: none; }
+  .connect-field { margin-bottom: 14px; }
+  .connect-field label {
+    display: block;
+    margin: 0 2px 7px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .connect-field input {
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    outline: none;
+    background: #fffdfa;
+    color: var(--ink);
+    caret-color: var(--accent);
+    font: 15px/1.3 inherit;
+  }
+  .connect-field input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201,130,100,.13);
+  }
   .restore-warning {
     margin: -5px 2px 14px;
     color: #805d50;
@@ -376,6 +400,10 @@
           从备份恢复
           <small>先检查文件与内容，确认后才会替换现有数据</small>
         </button>
+        <button id="connect-core" class="data-action" type="button">
+          连接 Sideleaf Core
+          <small>把 Core 生成的一次性配对码交给这份桌面书架</small>
+        </button>
       </div>
       <div id="restore-panel" class="restore-panel" hidden>
         <div id="restore-preview" class="restore-preview"></div>
@@ -383,6 +411,21 @@
         <div class="data-actions">
           <button id="cancel-restore" class="data-action" type="button">换一份备份</button>
           <button id="confirm-restore" class="data-action primary" type="button">恢复这份备份</button>
+        </div>
+      </div>
+      <div id="connect-panel" class="connect-panel" hidden>
+        <p class="restore-warning">请在真正装着书的桌面 Sideleaf 里完成这一步。配对后，会把这台设备现有的完整书架合并进 Core。</p>
+        <div class="connect-field">
+          <label for="core-url">Sideleaf Core 地址</label>
+          <input id="core-url" type="url" inputmode="url" autocapitalize="off" spellcheck="false" value="https://sideleaf-core-production.up.railway.app">
+        </div>
+        <div class="connect-field">
+          <label for="pairing-code">一次性配对码</label>
+          <input id="pairing-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="粘贴 Core 刚刚生成的配对码">
+        </div>
+        <div class="data-actions">
+          <button id="cancel-connect" class="data-action" type="button">返回</button>
+          <button id="confirm-connect" class="data-action primary" type="button">连接并同步这份书架</button>
         </div>
       </div>
     </section>
@@ -410,7 +453,7 @@
   }
 
   (() => {
-    const appVersion = '0.13.0';
+    const appVersion = '0.13.1';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -425,11 +468,17 @@
     const dataActions = document.getElementById('data-actions');
     const exportBackup = document.getElementById('export-backup');
     const chooseBackup = document.getElementById('choose-backup');
+    const connectCore = document.getElementById('connect-core');
     const backupFile = document.getElementById('backup-file');
     const restorePanel = document.getElementById('restore-panel');
     const restorePreview = document.getElementById('restore-preview');
     const cancelRestore = document.getElementById('cancel-restore');
     const confirmRestore = document.getElementById('confirm-restore');
+    const connectPanel = document.getElementById('connect-panel');
+    const coreUrl = document.getElementById('core-url');
+    const pairingCode = document.getElementById('pairing-code');
+    const cancelConnect = document.getElementById('cancel-connect');
+    const confirmConnect = document.getElementById('confirm-connect');
     const backupToast = document.getElementById('backup-toast');
     const toastMessage = document.getElementById('toast-message');
     const undoRestore = document.getElementById('undo-restore');
@@ -472,6 +521,8 @@
     function closeDataSheet() {
       dataBackdrop.classList.remove('is-open');
       dataBackdrop.setAttribute('aria-hidden', 'true');
+      resetRestorePanel();
+      resetConnectPanel();
     }
 
     function resetRestorePanel() {
@@ -482,6 +533,39 @@
       confirmRestore.classList.remove('danger-confirm');
       confirmRestore.textContent = '恢复这份备份';
       confirmRestore.dataset.armed = '';
+    }
+
+    function resetConnectPanel() {
+      connectPanel.hidden = true;
+      dataActions.hidden = false;
+      pairingCode.value = '';
+      confirmConnect.disabled = false;
+      confirmConnect.textContent = '连接并同步这份书架';
+    }
+
+    function openConnectPanel() {
+      resetRestorePanel();
+      dataActions.hidden = true;
+      connectPanel.hidden = false;
+      window.setTimeout(() => pairingCode.focus(), 50);
+    }
+
+    async function connectThisShelf() {
+      confirmConnect.disabled = true;
+      confirmConnect.textContent = '正在连接并同步…';
+      try {
+        await SideleafSync.pairWithCode(localStorage, {
+          baseUrl:coreUrl.value,
+          code:pairingCode.value
+        });
+        resetConnectPanel();
+        refreshCoreSyncStatus();
+        showToast('这份桌面书架已经连接到 Core。');
+      } catch (error) {
+        confirmConnect.disabled = false;
+        confirmConnect.textContent = '连接并同步这份书架';
+        window.alert(error?.message || '这次没有连接成功，请重新生成配对码。');
+      }
     }
 
     function showToast(message, undoAction = null) {
@@ -917,12 +1001,15 @@
     });
     exportBackup.addEventListener('click', exportCompleteBackup);
     chooseBackup.addEventListener('click', () => backupFile.click());
+    connectCore.addEventListener('click', openConnectPanel);
     backupFile.addEventListener('change', inspectBackupFile);
     cancelRestore.addEventListener('click', () => {
       resetRestorePanel();
       backupFile.click();
     });
     confirmRestore.addEventListener('click', restorePendingBackup);
+    cancelConnect.addEventListener('click', resetConnectPanel);
+    confirmConnect.addEventListener('click', connectThisShelf);
     undoRestore.addEventListener('click', () => {
       if (!undoRestoreAction) return;
       try {

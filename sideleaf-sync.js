@@ -137,15 +137,12 @@
     markDirty(storage, [DELETIONS_KEY]);
   }
 
-  async function acceptPairing(storage, options = {}) {
-    const locationObject = options.location || globalThis.location;
-    if (!locationObject?.href) return false;
-    const current = new URL(locationObject.href);
-    const code = current.searchParams.get('sideleaf_pair');
-    const rawCore = current.searchParams.get('sideleaf_core');
-    if (!code || !rawCore) return false;
-    const baseUrl = normalizeCoreUrl(rawCore);
+  async function pairWithCode(storage, options = {}) {
+    const baseUrl = normalizeCoreUrl(options.baseUrl);
+    const code = String(options.code || '').trim();
+    if (!code) throw new Error('请先粘贴一次性配对码。');
     const fetchImpl = options.fetch || globalThis.fetch;
+    if (typeof fetchImpl !== 'function') throw new Error('这台设备暂时不能连接 Sideleaf Core。');
     emit('pairing');
     const response = await fetchImpl(`${baseUrl}/api/device/pair`, {
       method:'POST',
@@ -164,13 +161,24 @@
       deviceName:result.deviceName,
       connectedAt:Date.now()
     }));
+    markDirty(storage, SYNCABLE_KEYS);
+    await syncNow(storage, { fetch:fetchImpl });
+    emit('connected');
+    return true;
+  }
+
+  async function acceptPairing(storage, options = {}) {
+    const locationObject = options.location || globalThis.location;
+    if (!locationObject?.href) return false;
+    const current = new URL(locationObject.href);
+    const code = current.searchParams.get('sideleaf_pair');
+    const rawCore = current.searchParams.get('sideleaf_core');
+    if (!code || !rawCore) return false;
+    await pairWithCode(storage, { baseUrl:rawCore, code, fetch:options.fetch });
     current.searchParams.delete('sideleaf_pair');
     current.searchParams.delete('sideleaf_core');
     const historyObject = options.history || globalThis.history;
     historyObject?.replaceState?.(null, '', `${current.pathname}${current.search}${current.hash}`);
-    markDirty(storage, SYNCABLE_KEYS);
-    await syncNow(storage, { fetch:fetchImpl });
-    emit('connected');
     return true;
   }
 
@@ -199,5 +207,5 @@
     };
   }
 
-  return { AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS, markDirty, queueDeletion, syncNow, acceptPairing, start, status, snapshotFor };
+  return { AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS, markDirty, queueDeletion, syncNow, pairWithCode, acceptPairing, start, status, snapshotFor };
 });
