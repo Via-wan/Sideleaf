@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.7.3</small>
+      <small class="build-version">Sideleaf 0.8.0</small>
     </div>
 
     <div class="page-wrap">
@@ -97,6 +97,8 @@
       <button id="send-context" type="button">递给峥</button>
       <span aria-hidden="true"></span>
       <button id="open-reading-lines" type="button" data-light-popover-trigger aria-expanded="false" aria-controls="reading-lines-panel">阅读线</button>
+      <span aria-hidden="true"></span>
+      <button id="open-chapter-journal" type="button">章节札记</button>
     </nav>
 
     <section id="reading-lines-panel" class="reading-lines-panel" data-light-popover aria-label="两条阅读线" hidden>
@@ -111,6 +113,25 @@
       </div>
       <button id="mark-zheng-line" class="mark-zheng-line" type="button">把峥的书签放在本页</button>
       <p class="reading-lines-note">愿的线跟着当前页面移动；峥的线只在你明确放下书签时移动。</p>
+    </section>
+
+    <section id="chapter-journal" class="chapter-journal" role="dialog" aria-modal="false" aria-labelledby="chapter-journal-heading" aria-hidden="true" hidden>
+      <div class="chapter-journal-head">
+        <div>
+          <strong id="chapter-journal-heading">峥的章节札记</strong>
+          <small id="chapter-journal-title"></small>
+        </div>
+        <button id="close-chapter-journal" type="button">完成</button>
+      </div>
+      <textarea id="chapter-journal-input" rows="9" placeholder="把这一章的情节、疑问、判断和当时的感受完整留下来。"></textarea>
+      <div class="chapter-journal-meta">
+        <span id="chapter-journal-status">尚未留下札记</span>
+        <span id="chapter-journal-count">0 字</span>
+      </div>
+      <div class="chapter-journal-actions">
+        <button id="copy-chapter-journal" type="button" disabled>递给峥</button>
+        <button id="save-chapter-journal" type="button" disabled>保存札记</button>
+      </div>
     </section>
 
     <div id="selection-toolbar" class="selection-toolbar" hidden>
@@ -349,7 +370,7 @@
     bottom: calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: auto 1px auto;
+    grid-template-columns: auto 1px auto 1px auto;
     align-items: center;
     gap: 15px;
     padding: 8px 15px;
@@ -433,6 +454,92 @@
     color: var(--muted-foreground);
     font-size: 11px;
     line-height: 1.55;
+  }
+  #pagination-tester .chapter-journal {
+    position: fixed;
+    z-index: 38;
+    left: 50%;
+    bottom: calc(18px + env(safe-area-inset-bottom));
+    width: min(calc(100% - 32px), 430px);
+    max-height: min(74svh, 620px);
+    overflow: auto;
+    transform: translateX(-50%);
+    padding: 17px;
+    border: 1px solid rgba(71, 62, 51, .12);
+    border-radius: 20px;
+    background: rgba(252, 250, 247, .985);
+    box-shadow: 0 16px 44px rgba(62, 52, 42, .18);
+    backdrop-filter: blur(18px);
+  }
+  #pagination-tester .chapter-journal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+  #pagination-tester .chapter-journal-head > div {
+    display: grid;
+    min-width: 0;
+    gap: 4px;
+  }
+  #pagination-tester .chapter-journal-head strong { font-size: 16px; }
+  #pagination-tester .chapter-journal-head small {
+    overflow: hidden;
+    color: var(--muted-foreground);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #pagination-tester .chapter-journal-head button {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    color: var(--primary);
+    font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .chapter-journal textarea {
+    width: 100%;
+    min-height: 220px;
+    resize: vertical;
+    padding: 13px 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    outline: none;
+    background: #fffaf2;
+    color: var(--foreground);
+    caret-color: var(--wish);
+    font: 400 16px/1.68 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .chapter-journal textarea:focus { border-color: rgba(201, 130, 100, .48); }
+  #pagination-tester .chapter-journal-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 8px 2px 0;
+    color: var(--muted-foreground);
+    font-size: 11px;
+  }
+  #pagination-tester .chapter-journal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1.45fr;
+    gap: 9px;
+    margin-top: 13px;
+  }
+  #pagination-tester .chapter-journal-actions button {
+    padding: 12px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(143, 111, 96, .10);
+    color: var(--primary);
+    font: 600 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .chapter-journal-actions #save-chapter-journal {
+    background: var(--primary);
+    color: #fffaf4;
+  }
+  #pagination-tester .chapter-journal-actions button:disabled {
+    opacity: .38;
   }
   #pagination-tester .selection-toolbar {
     position: fixed;
@@ -687,6 +794,10 @@
   #pagination-tester .toc-head strong { font-size: 19px; }
   #pagination-tester .toc-list { display: grid; gap: 4px; }
   #pagination-tester .toc-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
     width: 100%;
     padding: 11px 10px;
     border: 0;
@@ -713,6 +824,20 @@
     background: rgba(143, 111, 96, .10);
     color: var(--primary);
     font-weight: 600;
+  }
+  #pagination-tester .toc-entry-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #pagination-tester .toc-journal-mark {
+    flex: 0 0 auto;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--zheng);
+    box-shadow: 0 0 0 3px rgba(101, 117, 114, .10);
   }
   @media (max-width: 560px) {
     #pagination-tester .tester-controls {
@@ -778,6 +903,15 @@
     const wishLineFill = root.querySelector('#wish-line-fill');
     const zhengLineFill = root.querySelector('#zheng-line-fill');
     const markZhengLine = root.querySelector('#mark-zheng-line');
+    const openChapterJournal = root.querySelector('#open-chapter-journal');
+    const chapterJournal = root.querySelector('#chapter-journal');
+    const closeChapterJournal = root.querySelector('#close-chapter-journal');
+    const chapterJournalTitle = root.querySelector('#chapter-journal-title');
+    const chapterJournalInput = root.querySelector('#chapter-journal-input');
+    const chapterJournalStatus = root.querySelector('#chapter-journal-status');
+    const chapterJournalCount = root.querySelector('#chapter-journal-count');
+    const copyChapterJournal = root.querySelector('#copy-chapter-journal');
+    const saveChapterJournal = root.querySelector('#save-chapter-journal');
     const tocDrawer = root.querySelector('.toc-drawer');
     const tocBackdrop = root.querySelector('.toc-backdrop');
     const tocList = root.querySelector('#toc-list');
@@ -798,6 +932,7 @@
     const settingsKey = 'sideleaf.settings.v1';
     const notesKey = 'sideleaf.notes.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
+    const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
     const bookId = new URLSearchParams(window.location.search).get('book');
     let storedBooks = [];
     try { storedBooks = JSON.parse(localStorage.getItem(booksKey) || '[]'); } catch (_) {}
@@ -910,6 +1045,8 @@
     let longPressStartY = 0;
     let draggingSelectionEdge = null;
     let selectionDragFrame = null;
+    let activeJournalUnit = null;
+    let activeJournalOriginal = '';
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -1580,6 +1717,149 @@
       showNotes(anchorRect);
     }
 
+    function readChapterJournals() {
+      try {
+        const journals = JSON.parse(localStorage.getItem(chapterJournalsKey) || '[]');
+        return Array.isArray(journals) ? journals : [];
+      } catch (_) { return []; }
+    }
+
+    function chapterUnitForTocIndex(tocIndex) {
+      const safeIndex = Math.max(0, Math.min(tocEntries.length - 1, tocIndex));
+      const entry = tocEntries[safeIndex];
+      if (!entry) return null;
+      let end = text.length;
+      for (let nextIndex = safeIndex + 1; nextIndex < tocEntries.length; nextIndex += 1) {
+        const next = tocEntries[nextIndex];
+        if (next.level <= entry.level) {
+          end = next.anchor;
+          break;
+        }
+      }
+      const path = [];
+      for (let entryIndex = 0; entryIndex <= safeIndex; entryIndex += 1) {
+        const item = tocEntries[entryIndex];
+        path[item.level - 1] = item.title;
+        path.length = item.level;
+      }
+      return {
+        key: `${entry.level}:${entry.anchor}:${entry.title}`,
+        title: entry.title,
+        path: path.filter(Boolean),
+        level: entry.level,
+        anchor: entry.anchor,
+        end
+      };
+    }
+
+    function currentChapterUnit() {
+      return chapterUnitForTocIndex(resolveTocIndex(pages[index]));
+    }
+
+    function chapterJournalForUnit(unit, journals = readChapterJournals()) {
+      if (!unit) return null;
+      return journals.find(journal =>
+        journal.bookId === activeBookId && journal.chapterKey === unit.key
+      ) || null;
+    }
+
+    function chapterJournalStateText() {
+      const value = chapterJournalInput.value.trim();
+      if (!value) return '尚未留下札记';
+      if (value !== activeJournalOriginal) return '有尚未保存的修改';
+      const saved = chapterJournalForUnit(activeJournalUnit);
+      return saved ? '札记已保存' : '尚未留下札记';
+    }
+
+    function syncChapterJournalControls() {
+      const value = chapterJournalInput.value.trim();
+      chapterJournalCount.textContent = `${[...value].length} 字`;
+      chapterJournalStatus.textContent = chapterJournalStateText();
+      saveChapterJournal.disabled = !value || value === activeJournalOriginal;
+      copyChapterJournal.disabled = !value;
+    }
+
+    function openCurrentChapterJournal() {
+      const unit = currentChapterUnit();
+      if (!unit) return;
+      const saved = chapterJournalForUnit(unit);
+      activeJournalUnit = unit;
+      activeJournalOriginal = saved?.text || '';
+      chapterJournalTitle.textContent = unit.path.join(' · ');
+      chapterJournalInput.value = activeJournalOriginal;
+      chapterJournal.hidden = false;
+      chapterJournal.setAttribute('aria-hidden', 'false');
+      closeLightPopovers();
+      closeToc();
+      if (!notesSheet.hidden) hideNotes();
+      syncChapterJournalControls();
+    }
+
+    function closeCurrentChapterJournal() {
+      chapterJournal.hidden = true;
+      chapterJournal.setAttribute('aria-hidden', 'true');
+      chapterJournalInput.blur();
+      activeJournalUnit = null;
+      activeJournalOriginal = '';
+    }
+
+    function saveCurrentChapterJournal() {
+      const value = chapterJournalInput.value.trim();
+      if (!activeJournalUnit || !value) return;
+      const journals = readChapterJournals();
+      const existing = chapterJournalForUnit(activeJournalUnit, journals);
+      if (existing) {
+        existing.text = value;
+        existing.chapterTitle = activeJournalUnit.title;
+        existing.chapterPath = activeJournalUnit.path;
+        existing.chapterEnd = activeJournalUnit.end;
+        existing.updatedAt = Date.now();
+      } else {
+        journals.push({
+          id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+          bookId: activeBookId,
+          bookTitle: activeBook?.title || '雨停以后',
+          chapterKey: activeJournalUnit.key,
+          chapterTitle: activeJournalUnit.title,
+          chapterPath: activeJournalUnit.path,
+          chapterLevel: activeJournalUnit.level,
+          chapterAnchor: activeJournalUnit.anchor,
+          chapterEnd: activeJournalUnit.end,
+          text: value,
+          createdAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      }
+      localStorage.setItem(chapterJournalsKey, JSON.stringify(journals));
+      activeJournalOriginal = value;
+      chapterJournalInput.value = value;
+      syncChapterJournalControls();
+      renderToc();
+    }
+
+    async function copyCurrentChapterJournal() {
+      const value = chapterJournalInput.value.trim();
+      if (!activeJournalUnit || !value) return;
+      const packet = [
+        '【Sideleaf｜峥的章节札记】',
+        `书名：${activeBook?.title || '雨停以后'}`,
+        `章节：${activeJournalUnit.path.join(' · ')}`,
+        '',
+        '以下是峥此前为这一章节留下的完整札记，请原样阅读，不要先替它压成一层短摘要。',
+        '',
+        value
+      ].join('\n');
+      try {
+        await navigator.clipboard.writeText(packet);
+        chapterJournalStatus.textContent = '已复制，去找峥';
+      } catch (_) {
+        chapterJournalStatus.textContent = '复制失败，再点一次';
+      }
+      window.setTimeout(() => {
+        if (!chapterJournal.hidden) syncChapterJournalControls();
+      }, 1800);
+    }
+
     async function copyContext() {
       const page = pages[index];
       if (!page) return;
@@ -1619,6 +1899,7 @@
     function turn(delta) {
       const next = index + delta;
       if (next < 0 || next >= pages.length) return;
+      if (!chapterJournal.hidden) closeCurrentChapterJournal();
       hideNotes();
       index = next;
       render();
@@ -1642,11 +1923,22 @@
 
     function renderToc() {
       tocList.replaceChildren();
-      tocEntries.forEach(entry => {
+      const journals = readChapterJournals();
+      tocEntries.forEach((entry, entryIndex) => {
         const button = document.createElement('button');
         button.type = 'button';
         button.className = `toc-entry level-${entry.level}`;
-        button.textContent = entry.title;
+        const title = document.createElement('span');
+        title.className = 'toc-entry-title';
+        title.textContent = entry.title;
+        button.appendChild(title);
+        const unit = chapterUnitForTocIndex(entryIndex);
+        if (chapterJournalForUnit(unit, journals)) {
+          const mark = document.createElement('i');
+          mark.className = 'toc-journal-mark';
+          mark.setAttribute('aria-label', '已有章节札记');
+          button.appendChild(mark);
+        }
         button.addEventListener('click', () => {
           const targetIndex = pages.findIndex((page, pageIndex) =>
             entry.anchor >= page.start && (entry.anchor < page.end || pageIndex === pages.length - 1)
@@ -1688,6 +1980,7 @@
     }
 
     function openToc() {
+      if (!chapterJournal.hidden) closeCurrentChapterJournal();
       renderToc();
       root.classList.add('toc-open');
       tocDrawer.setAttribute('aria-hidden', 'false');
@@ -1722,6 +2015,11 @@
       handle.addEventListener('pointercancel', endSelectionDrag);
     });
     sendContext.addEventListener('click', copyContext);
+    openChapterJournal.addEventListener('click', openCurrentChapterJournal);
+    closeChapterJournal.addEventListener('click', closeCurrentChapterJournal);
+    chapterJournalInput.addEventListener('input', syncChapterJournalControls);
+    saveChapterJournal.addEventListener('click', saveCurrentChapterJournal);
+    copyChapterJournal.addEventListener('click', copyCurrentChapterJournal);
     noteAuthorButtons.forEach(button => {
       button.addEventListener('click', () => setNoteAuthor(button.dataset.noteAuthor));
     });
@@ -1747,6 +2045,10 @@
       const annotationTarget = event.target.closest('.annotation-highlight');
       const customSelectionTarget = event.target.closest('.active-selection-highlight');
       const selectionHandleTarget = event.target.closest('.selection-handle');
+      if (!chapterJournal.hidden && !chapterJournal.contains(event.target) && !openChapterJournal.contains(event.target)) {
+        closeCurrentChapterJournal();
+        dismissed = true;
+      }
       if (!notesSheet.hidden && !notesSheet.contains(event.target) && !annotationTarget && !selectionToolbar.contains(event.target)) {
         hideNotes();
         dismissed = true;
