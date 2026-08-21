@@ -351,21 +351,7 @@
     </header>
 
     <section id="book-grid" class="book-grid" aria-label="书架">
-      <a class="book" href="./read.html">
-        <div class="cover">
-          <span class="cover-title">雨停以后</span>
-          <span class="leaf-mark">SIDELEAF</span>
-        </div>
-        <div class="book-info">
-          <p class="book-name">雨停以后</p>
-          <div class="book-progress">排版样章</div>
-          <div class="book-reading-lines" data-book-lines="sideleaf-sample-rain" aria-label="愿与峥的阅读进度">
-            <div class="book-reading-line wish"><span>愿</span><div class="book-reading-track"><i></i></div></div>
-            <div class="book-reading-line zheng"><span>峥</span><div class="book-reading-track"><i></i></div></div>
-          </div>
-        </div>
-      </a>
-      <div id="format-note" class="format-note">先放一本小样章在这里。你也可以从“文件”里导入 EPUB、TXT 或 Markdown。</div>
+      <div id="format-note" class="format-note" hidden>先放一本小样章在这里。你也可以从“文件”里导入 EPUB、TXT 或 Markdown。</div>
     </section>
   </main>
 
@@ -406,6 +392,7 @@
   </div>
 
 <script src="./vendor/jszip.min.js"></script>
+<script src="./sideleaf-library.js"></script>
 <script src="./sideleaf-backup.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
@@ -421,7 +408,7 @@
   }
 
   (() => {
-    const appVersion = '0.11.1';
+    const appVersion = '0.12.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -447,6 +434,8 @@
     let undoRestoreAction = null;
     let toastTimer = 0;
 
+    SideleafLibrary.ensure(localStorage);
+
     function formatBytes(bytes) {
       if (bytes < 1024) return `${bytes} B`;
       if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -458,7 +447,7 @@
     }
 
     function refreshDataSummary() {
-      const summary = SideleafBackup.summarize(SideleafBackup.collect(localStorage), { builtInBooks: 1 });
+      const summary = SideleafBackup.summarize(SideleafBackup.collect(localStorage));
       currentDataSummary.textContent = `当前：${summaryText(summary)}`;
     }
 
@@ -548,7 +537,8 @@
       chooseBackup.disabled = true;
       try {
         pendingBackup = await SideleafBackup.parse(await file.text());
-        const summary = SideleafBackup.summarize(pendingBackup.storage, { builtInBooks: 1 });
+        pendingBackup.storage = SideleafLibrary.ensureSnapshot(pendingBackup.storage);
+        const summary = SideleafBackup.summarize(pendingBackup.storage);
         const exportedAt = new Intl.DateTimeFormat('zh-CN', {
           year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
         }).format(new Date(pendingBackup.exportedAt));
@@ -586,8 +576,7 @@
     }
 
     function readBooks() {
-      try { return JSON.parse(localStorage.getItem(booksKey) || '[]'); }
-      catch (_) { return []; }
+      return SideleafLibrary.ensure(localStorage);
     }
 
     function readReadingLines() {
@@ -867,19 +856,16 @@
     }
 
     function renderBooks() {
-      grid.querySelectorAll('[data-imported]').forEach(node => node.remove());
+      grid.querySelectorAll('[data-book-card]').forEach(node => node.remove());
       const books = readBooks();
       const readingLines = readReadingLines();
-      const sampleLines = grid.querySelector('[data-book-lines="sideleaf-sample-rain"]');
-      const sampleState = readingLines['sideleaf-sample-rain'];
-      updateBookLines(sampleLines, sampleState, sampleState?.textLength || 0);
       books.forEach(book => {
         const percent = book.content.length
           ? Math.min(100, Math.round((Number(book.progress || 0) / book.content.length) * 100))
           : 0;
         const link = document.createElement('a');
         link.className = 'book';
-        link.dataset.imported = 'true';
+        link.dataset.bookCard = 'true';
         link.href = `./read.html?book=${encodeURIComponent(book.id)}`;
         link.innerHTML = `
           <div class="cover">
@@ -888,7 +874,7 @@
           </div>
           <div class="book-info">
             <p class="book-name">${escapeText(book.title)}</p>
-            <div class="book-progress">${percent ? `继续阅读 · ${percent}%` : '尚未开始'}</div>
+            <div class="book-progress">${percent ? `继续阅读 · ${percent}%` : book.builtIn ? '排版样章' : '尚未开始'}</div>
             ${bookLinesMarkup(book.id)}
           </div>`;
         grid.insertBefore(link, formatNote);
@@ -966,8 +952,8 @@
           updatedAt: Date.now()
         };
         if (legacyIndex >= 0) books.splice(legacyIndex, 1);
-        books.unshift(imported);
-        localStorage.setItem(booksKey, JSON.stringify(books));
+        const nextBooks = SideleafLibrary.insertImported(books, imported);
+        localStorage.setItem(booksKey, JSON.stringify(nextBooks));
         renderBooks();
       } catch (_) {
         window.alert('这本书暂时没有导入成功。Sideleaf 目前支持未加密的 EPUB，以及 UTF-8 编码的 TXT 或 Markdown。');
