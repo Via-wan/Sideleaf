@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.10.3</small>
+      <small class="build-version">Sideleaf 0.10.4</small>
     </div>
 
     <div class="page-wrap">
@@ -95,6 +95,8 @@
 
     <nav id="page-tools" class="page-tools" data-light-popover aria-label="本页工具" hidden>
       <button id="send-context" type="button" aria-label="整理当前页及前文给峥回顾">回望</button>
+      <span aria-hidden="true"></span>
+      <button id="request-zheng-read" type="button" aria-label="请峥正式阅读当前页">峥来读</button>
       <span aria-hidden="true"></span>
       <button id="open-reading-lines" type="button" data-light-popover-trigger aria-expanded="false" aria-controls="reading-lines-panel">阅读线</button>
       <span aria-hidden="true"></span>
@@ -373,10 +375,10 @@
     bottom: calc(18px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     display: grid;
-    grid-template-columns: auto 1px auto 1px auto;
+    grid-template-columns: auto 1px auto 1px auto 1px auto;
     align-items: center;
-    gap: 15px;
-    padding: 8px 15px;
+    gap: 10px;
+    padding: 8px 12px;
     border: 1px solid rgba(71, 62, 51, .12);
     border-radius: 999px;
     background: rgba(252, 250, 247, .95);
@@ -953,6 +955,7 @@
     const selectionHandleEnd = root.querySelector('[data-selection-edge="end"]');
     const selectionQuote = root.querySelector('#selection-quote');
     const sendContext = root.querySelector('#send-context');
+    const requestZhengRead = root.querySelector('#request-zheng-read');
     const wishLineStatus = root.querySelector('#wish-line-status');
     const zhengLineStatus = root.querySelector('#zheng-line-status');
     const wishLineFill = root.querySelector('#wish-line-fill');
@@ -988,6 +991,7 @@
     const notesKey = 'sideleaf.notes.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
+    const readingRequestsKey = 'sideleaf.read-requests.v1';
     const bookId = new URLSearchParams(window.location.search).get('book');
     let storedBooks = [];
     try { storedBooks = JSON.parse(localStorage.getItem(booksKey) || '[]'); } catch (_) {}
@@ -1368,6 +1372,13 @@
         return Array.isArray(notes)
           ? notes.map(note => ({ ...note, author: normalizeNoteAuthor(note.author) }))
           : [];
+      } catch (_) { return []; }
+    }
+
+    function readReadingRequests() {
+      try {
+        const requests = JSON.parse(localStorage.getItem(readingRequestsKey) || '[]');
+        return Array.isArray(requests) ? requests : [];
       } catch (_) { return []; }
     }
 
@@ -2054,6 +2065,77 @@
       window.setTimeout(() => { sendContext.textContent = '回望'; }, 1800);
     }
 
+    async function requestCurrentPageReading() {
+      const page = pages[index];
+      if (!page) return;
+      const from = page.displayStart;
+      const to = page.displayEnd;
+      const now = Date.now();
+      const requests = readReadingRequests();
+      const existing = requests.find(request =>
+        request.bookId === activeBookId
+        && request.rangeStart === from
+        && request.rangeEnd === to
+        && request.status === 'pending'
+      );
+      const unit = currentChapterUnit();
+      const request = existing || {
+        id: window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+        bookId: activeBookId,
+        createdAt: now
+      };
+      Object.assign(request, {
+        bookTitle: activeBook?.title || '雨停以后',
+        chapterTitle: unit?.title || chapterName.textContent,
+        chapterPath: unit?.path || [chapterName.textContent],
+        rangeStart: from,
+        rangeEnd: to,
+        pageNumber: index + 1,
+        totalPages: pages.length,
+        status: 'pending',
+        requestedAt: now
+      });
+      if (!existing) requests.push(request);
+      localStorage.setItem(readingRequestsKey, JSON.stringify(requests.slice(-100)));
+
+      const relatedNotes = readNotes().filter(note =>
+        note.bookId === activeBookId && (
+          isRangeNote(note)
+            ? Number(note.rangeStart) < to && Number(note.rangeEnd) > from
+            : note.anchor >= from && note.anchor < to
+        )
+      );
+      const noteBlock = relatedNotes.length
+        ? relatedNotes.map((note, i) => {
+            const quote = isRangeNote(note) ? `「${note.quote || text.slice(note.rangeStart, note.rangeEnd)}」` : '（旧页边批注）';
+            return `${i + 1}. ${noteAuthorLabel(note.author)}｜${quote}：${note.text}`;
+          }).join('\n')
+        : '无';
+      const packet = [
+        '【Sideleaf｜峥来读】',
+        `书名：${request.bookTitle}`,
+        `章节：${request.chapterPath.join(' · ')}`,
+        `页码：${request.pageNumber}/${request.totalPages}`,
+        `阅读请求：${request.id}`,
+        '',
+        '以下是愿明确请峥正式阅读的当前页。请实际读完本页后，再更新峥的阅读线或留下批注。',
+        '这条请求本身不代表峥已经读过，也不会自动移动峥的阅读线。',
+        '',
+        '【正文】',
+        text.slice(from, to),
+        '',
+        '【本页原句对话】',
+        noteBlock
+      ].join('\n');
+      try {
+        await navigator.clipboard.writeText(packet);
+        requestZhengRead.textContent = existing ? '已再叫峥' : '已叫峥';
+      } catch (_) {
+        requestZhengRead.textContent = '已登记';
+      }
+      window.setTimeout(() => { requestZhengRead.textContent = '峥来读'; }, 1800);
+    }
+
     function turn(delta) {
       const next = index + delta;
       if (next < 0 || next >= pages.length) return;
@@ -2173,6 +2255,7 @@
       handle.addEventListener('pointercancel', endSelectionDrag);
     });
     sendContext.addEventListener('click', copyContext);
+    requestZhengRead.addEventListener('click', requestCurrentPageReading);
     openChapterJournal.addEventListener('click', openCurrentChapterJournal);
     closeChapterJournal.addEventListener('click', closeCurrentChapterJournal);
     chapterJournalInput.addEventListener('input', syncChapterJournalControls);
