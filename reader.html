@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.6.2</small>
+      <small class="build-version">Sideleaf 0.7.0</small>
     </div>
 
     <div class="page-wrap">
@@ -271,13 +271,18 @@
     white-space: pre-wrap;
     text-align: justify;
   }
+  #pagination-tester .page-text,
+  #pagination-tester .page-text * {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
   #pagination-tester .page-text {
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
     margin-right: 18px !important;
     margin-left: 18px !important;
-    user-select: text;
   }
   #pagination-tester .annotation-highlight {
     padding-bottom: .04em;
@@ -297,6 +302,13 @@
     background:
       linear-gradient(to top, rgba(201, 130, 100, .13) 0 .34em, transparent .34em),
       linear-gradient(to top, rgba(101, 117, 114, .10) 0 .58em, transparent .58em);
+  }
+  #pagination-tester .active-selection-highlight {
+    padding: .04em .03em;
+    border-radius: .18em;
+    background: #e7b7a2 !important;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
   #pagination-tester .page-text,
   #pagination-tester .page-text * {
@@ -834,6 +846,10 @@
     let notesAnchorRect = null;
     let drawerStartX = 0;
     let dismissedOverlayByPointer = false;
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    let longPressStartX = 0;
+    let longPressStartY = 0;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -945,7 +961,12 @@
 
     function renderPageContent(page) {
       const annotations = rangeNotesForPage(page);
-      if (!annotations.length) {
+      const selection = activeSelection
+        && activeSelection.start < page.displayEnd
+        && activeSelection.end > page.displayStart
+        ? activeSelection
+        : null;
+      if (!annotations.length && !selection) {
         pageText.textContent = page.text;
         return;
       }
@@ -954,6 +975,10 @@
         boundaries.add(Math.max(page.displayStart, Number(note.rangeStart)));
         boundaries.add(Math.min(page.displayEnd, Number(note.rangeEnd)));
       });
+      if (selection) {
+        boundaries.add(Math.max(page.displayStart, selection.start));
+        boundaries.add(Math.min(page.displayEnd, selection.end));
+      }
       const points = [...boundaries].sort((a, b) => a - b);
       const fragment = document.createDocumentFragment();
       for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
@@ -963,16 +988,20 @@
         const matchingNotes = annotations.filter(note =>
           Number(note.rangeStart) < to && Number(note.rangeEnd) > from
         );
+        const selected = selection && selection.start < to && selection.end > from;
         const content = text.slice(from, to);
-        if (!matchingNotes.length) {
+        if (!matchingNotes.length && !selected) {
           fragment.appendChild(document.createTextNode(content));
           continue;
         }
         const mark = document.createElement('span');
-        mark.className = 'annotation-highlight';
-        const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
-        mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
-        mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+        if (matchingNotes.length) {
+          mark.classList.add('annotation-highlight');
+          const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
+          mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
+          mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+        }
+        if (selected) mark.classList.add('active-selection-highlight');
         mark.textContent = content;
         fragment.appendChild(mark);
       }
@@ -1209,10 +1238,83 @@
       activeSelection = null;
       focusedNoteIds = null;
       notesAnchorRect = null;
+      const page = pages[index];
+      if (page) renderPageContent(page);
     }
 
     function hideSelectionToolbar() {
       selectionToolbar.hidden = true;
+    }
+
+    function clearLongPress() {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = null;
+    }
+
+    function pageAnchorFromPoint(clientX, clientY) {
+      let node = null;
+      let offset = 0;
+      if (document.caretPositionFromPoint) {
+        const caret = document.caretPositionFromPoint(clientX, clientY);
+        node = caret?.offsetNode || null;
+        offset = caret?.offset || 0;
+      } else if (document.caretRangeFromPoint) {
+        const caret = document.caretRangeFromPoint(clientX, clientY);
+        node = caret?.startContainer || null;
+        offset = caret?.startOffset || 0;
+      }
+      if (!node || !pageText.contains(node)) return null;
+      const probe = document.createRange();
+      probe.selectNodeContents(pageText);
+      probe.setEnd(node, offset);
+      const page = pages[index];
+      return page ? page.displayStart + probe.toString().length : null;
+    }
+
+    function sentenceAt(anchor) {
+      const stop = character => /[。！？!?；;\n]/.test(character || '');
+      const closers = /[”’」』）》】]/;
+      let start = Math.max(0, Math.min(text.length - 1, anchor));
+      let end = start;
+      while (start > 0 && !stop(text[start - 1])) start -= 1;
+      while (start < text.length && /\s/.test(text[start])) start += 1;
+      while (end < text.length && !stop(text[end])) end += 1;
+      if (end < text.length) end += 1;
+      while (end < text.length && closers.test(text[end])) end += 1;
+      while (end > start && /\s/.test(text[end - 1])) end -= 1;
+      return end > start ? { start, end } : null;
+    }
+
+    function positionSelectionToolbar(rect) {
+      if (!rect) return;
+      selectionToolbar.style.left = `${Math.max(46, Math.min(window.innerWidth - 46, rect.left + rect.width / 2))}px`;
+      selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
+      selectionToolbar.hidden = false;
+    }
+
+    function selectSentenceAt(clientX, clientY) {
+      const anchor = pageAnchorFromPoint(clientX, clientY);
+      if (anchor === null) return false;
+      const sentence = sentenceAt(anchor);
+      if (!sentence) return false;
+      activeSelection = {
+        ...sentence,
+        quote: text.slice(sentence.start, sentence.end),
+        prefix: text.slice(Math.max(0, sentence.start - 60), sentence.start),
+        suffix: text.slice(sentence.end, Math.min(text.length, sentence.end + 60))
+      };
+      focusedNoteIds = null;
+      renderPageContent(pages[index]);
+      window.requestAnimationFrame(() => {
+        const highlights = pageText.querySelectorAll('.active-selection-highlight');
+        const highlight = highlights[highlights.length - 1];
+        if (!highlight) return;
+        const rects = Array.from(highlight.getClientRects());
+        const rect = rects[rects.length - 1] || highlight.getBoundingClientRect();
+        activeSelection.anchorRect = rememberRect(rect);
+        positionSelectionToolbar(rect);
+      });
+      return true;
     }
 
     function selectionOffsets(range) {
@@ -1268,9 +1370,7 @@
       const rangeRects = Array.from(range.getClientRects());
       const rect = rangeRects[rangeRects.length - 1] || range.getBoundingClientRect();
       activeSelection.anchorRect = rememberRect(rect);
-      selectionToolbar.style.left = `${Math.max(46, Math.min(window.innerWidth - 46, rect.left + rect.width / 2))}px`;
-      selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
-      selectionToolbar.hidden = false;
+      positionSelectionToolbar(rect);
     }
 
     function composeForSelection() {
@@ -1462,8 +1562,17 @@
     document.addEventListener('pointerdown', event => {
       let dismissed = false;
       const annotationTarget = event.target.closest('.annotation-highlight');
+      const customSelectionTarget = event.target.closest('.active-selection-highlight');
       if (!notesSheet.hidden && !notesSheet.contains(event.target) && !annotationTarget && !selectionToolbar.contains(event.target)) {
         hideNotes();
+        dismissed = true;
+      }
+      if (!activeSelection || !notesSheet.hidden || selectionToolbar.contains(event.target) || customSelectionTarget || annotationTarget) {
+        // Keep the current sentence selected while interacting with its own controls.
+      } else {
+        activeSelection = null;
+        hideSelectionToolbar();
+        renderPageContent(pages[index]);
         dismissed = true;
       }
       root.querySelectorAll('[data-light-popover-trigger][aria-expanded="true"]').forEach(trigger => {
@@ -1536,9 +1645,32 @@
     sheet.addEventListener('pointerdown', event => {
       startX = event.clientX;
       startY = event.clientY;
+      longPressStartX = event.clientX;
+      longPressStartY = event.clientY;
+      longPressTriggered = false;
+      clearLongPress();
+      if (pageText.contains(event.target)) {
+        longPressTimer = window.setTimeout(() => {
+          longPressTriggered = selectSentenceAt(longPressStartX, longPressStartY);
+          if (longPressTriggered) ignoreNextClick = true;
+        }, 430);
+      }
     });
 
+    sheet.addEventListener('pointermove', event => {
+      if (Math.hypot(event.clientX - longPressStartX, event.clientY - longPressStartY) > 10) clearLongPress();
+    });
+
+    sheet.addEventListener('pointercancel', clearLongPress);
+
+    pageText.addEventListener('contextmenu', event => event.preventDefault());
+
     sheet.addEventListener('pointerup', event => {
+      clearLongPress();
+      if (longPressTriggered) {
+        window.setTimeout(() => { ignoreNextClick = false; }, 450);
+        return;
+      }
       const dx = event.clientX - startX;
       const dy = event.clientY - startY;
       const bounds = sheet.getBoundingClientRect();
@@ -1566,6 +1698,7 @@
         showHighlightedNotes(noteIds, annotation.getBoundingClientRect());
         return;
       }
+      if (event.target.closest('.active-selection-highlight')) return;
       if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
       const bounds = sheet.getBoundingClientRect();
       const position = (event.clientX - bounds.left) / bounds.width;
