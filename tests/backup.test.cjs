@@ -33,6 +33,7 @@ test('完整备份包含所有 Sideleaf 数据，但不夹带其他站点数据'
   assert.match(backup.integrity.value, /^[a-f0-9]{64}$/);
   const parsed = await SideleafBackup.parse(JSON.stringify(backup), { crypto: webcrypto });
   assert.deepEqual(parsed.storage, original);
+  assert.equal(SideleafBackup.summarize(parsed.storage, { builtInBooks: 1 }).books, 2);
 });
 
 test('内容被改过的备份会被完整性校验拒绝', async () => {
