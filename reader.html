@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.18</small>
+      <small class="build-version">Sideleaf 0.15.19</small>
     </div>
 
     <div class="page-wrap">
@@ -110,7 +110,7 @@
     </nav>
 
     <section id="reading-lines-panel" class="reading-lines-panel" data-light-popover aria-label="两条阅读线" hidden>
-      <div class="reading-lines-head">两条阅读线</div>
+      <button id="mark-zheng-line" class="reading-bookmark" type="button" aria-label="把峥的书签放在本页" aria-pressed="false"></button>
       <div class="reading-line-row wish-line">
         <div class="reading-line-copy"><strong>愿</strong><span id="wish-line-status">现在这里</span></div>
         <div class="reading-line-track"><i id="wish-line-fill"></i></div>
@@ -119,21 +119,15 @@
         <div class="reading-line-copy"><strong>峥</strong><span id="zheng-line-status">还没开始</span></div>
         <div class="reading-line-track"><i id="zheng-line-fill"></i></div>
       </div>
-      <button id="mark-zheng-line" class="mark-zheng-line" type="button">把峥的书签放在本页</button>
       <p class="reading-lines-note">愿的线跟着当前页面移动；峥的线只在你明确放下书签时移动。</p>
     </section>
 
     <section id="chapter-journal" class="chapter-journal" role="dialog" aria-modal="false" aria-labelledby="chapter-journal-heading" aria-hidden="true" hidden>
       <div class="chapter-journal-head">
-        <div>
-          <strong id="chapter-journal-heading">峥的章节札记</strong>
-          <small id="chapter-journal-title"></small>
-        </div>
+        <strong id="chapter-journal-heading">札记</strong>
+        <button id="copy-chapter-journal" type="button" aria-label="递给峥" disabled>↑</button>
       </div>
       <div id="chapter-journal-body" class="chapter-journal-body is-empty">尚未留下札记</div>
-      <div class="chapter-journal-actions">
-        <button id="copy-chapter-journal" type="button" disabled>递给峥</button>
-      </div>
     </section>
 
     <div id="selection-toolbar" class="selection-toolbar" hidden>
@@ -453,23 +447,14 @@
     -webkit-backdrop-filter: blur(28px) saturate(1.28);
     backdrop-filter: blur(28px) saturate(1.28);
   }
-  #pagination-tester .reading-lines-head {
-    margin-bottom: 13px;
-    font-size: 15px;
-    font-weight: 650;
-  }
   #pagination-tester .reading-line-row {
     padding: 10px 12px 11px;
     border: 1px solid rgba(255, 255, 255, .60);
     border-radius: 16px;
+    background: rgba(252, 250, 247, .30);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
   }
-  #pagination-tester .reading-line-row.wish-line {
-    background: linear-gradient(145deg, rgba(241, 226, 220, .38), rgba(217, 184, 170, .20));
-  }
-  #pagination-tester .reading-line-row.zheng-line {
-    background: linear-gradient(145deg, rgba(222, 229, 227, .40), rgba(172, 188, 184, .22));
-  }
+  #pagination-tester .reading-bookmark + .reading-line-row { margin-top: 28px; }
   #pagination-tester .reading-line-row + .reading-line-row { margin-top: 9px; }
   #pagination-tester .reading-line-copy {
     display: flex;
@@ -499,17 +484,34 @@
   }
   #pagination-tester .wish-line .reading-line-track i { background: #a57f70; }
   #pagination-tester .zheng-line .reading-line-track i { background: #707b78; }
-  #pagination-tester .reading-lines-panel .mark-zheng-line {
-    width: 100%;
-    margin-top: 16px;
-    padding: 11px 14px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, .60);
-    background: linear-gradient(145deg, rgba(151, 118, 104, .88), rgba(132, 100, 87, .82));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, .28),
-      0 7px 18px rgba(104, 75, 63, .14);
-    color: #fffaf4;
+  #pagination-tester .reading-lines-panel .reading-bookmark {
+    position: absolute;
+    top: 13px;
+    right: 16px;
+    width: 22px;
+    height: 29px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px 3px 1px 1px;
+    background: var(--zheng);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+    filter: drop-shadow(0 4px 5px rgba(72, 94, 89, .18));
+  }
+  #pagination-tester .reading-lines-panel .reading-bookmark::after {
+    content: "★";
+    position: absolute;
+    left: 50%;
+    top: 13px;
+    color: rgba(252, 250, 247, .94);
+    font-size: 8px;
+    line-height: 1;
+    opacity: 0;
+    transform: translateX(-50%);
+    transition: opacity .16s ease;
+  }
+  #pagination-tester .reading-lines-panel .reading-bookmark.is-here::after {
+    opacity: 1;
   }
   #pagination-tester .reading-lines-note {
     margin: 10px 2px 0;
@@ -540,34 +542,41 @@
   }
   #pagination-tester .chapter-journal-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
     gap: 16px;
     margin-bottom: 14px;
   }
-  #pagination-tester .chapter-journal-head > div {
-    display: grid;
+  #pagination-tester .chapter-journal-head strong {
     min-width: 0;
-    gap: 4px;
-  }
-  #pagination-tester .chapter-journal-head strong { font-size: 16px; }
-  #pagination-tester .chapter-journal-head small {
     overflow: hidden;
     color: var(--muted-foreground);
-    font-size: 12px;
+    font-size: 16px;
+    font-weight: 400;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  #pagination-tester .chapter-journal-head button {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    padding: 0 0 2px;
+    border: 1px solid rgba(255, 255, 255, .72);
+    border-radius: 50%;
+    background: rgba(252, 250, 247, .48);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .82), 0 4px 12px rgba(79, 65, 56, .09);
+    color: var(--zheng);
+    font: 500 17px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .chapter-journal-head button:disabled { opacity: .30; }
   #pagination-tester .chapter-journal-body {
     width: 100%;
     min-height: 126px;
     padding: 13px 14px;
     border: 1px solid rgba(255, 255, 255, .64);
     border-radius: 18px;
-    background: linear-gradient(145deg, rgba(222, 229, 227, .54), rgba(172, 188, 184, .28));
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, .70),
-      inset 0 -1px 0 rgba(78, 101, 96, .08),
-      0 7px 18px rgba(72, 94, 89, .10);
+    background: rgba(252, 250, 247, .48);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .66);
     color: var(--zheng);
     font: 400 15px/1.72 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
     overflow-wrap: anywhere;
@@ -578,25 +587,6 @@
     place-items: center;
     color: rgba(84, 76, 68, .46);
     font-size: 13px;
-  }
-  #pagination-tester .chapter-journal-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 13px;
-  }
-  #pagination-tester .chapter-journal-actions button {
-    min-width: 104px;
-    padding: 10px 15px;
-    border: 0;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, .68);
-    background: linear-gradient(145deg, rgba(255, 255, 255, .56), rgba(231, 226, 222, .42));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), 0 5px 14px rgba(79, 65, 56, .09);
-    color: var(--primary);
-    font: 600 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-  }
-  #pagination-tester .chapter-journal-actions button:disabled {
-    opacity: .38;
   }
   #pagination-tester .selection-toolbar {
     position: fixed;
@@ -1099,7 +1089,7 @@
     const markZhengLine = root.querySelector('#mark-zheng-line');
     const openChapterJournal = root.querySelector('#open-chapter-journal');
     const chapterJournal = root.querySelector('#chapter-journal');
-    const chapterJournalTitle = root.querySelector('#chapter-journal-title');
+    const chapterJournalHeading = root.querySelector('#chapter-journal-heading');
     const chapterJournalBody = root.querySelector('#chapter-journal-body');
     const copyChapterJournal = root.querySelector('#copy-chapter-journal');
     const tocDrawer = root.querySelector('.toc-drawer');
@@ -1468,8 +1458,15 @@
       }
 
       const page = pages[index];
-      const zhengIsHere = page && readingState.zheng.current >= page.start && readingState.zheng.current < page.end;
-      markZhengLine.textContent = zhengIsHere ? '峥的书签在本页' : '把峥的书签放在本页';
+      const zhengIsHere = Boolean(
+        page
+        && readingState.zheng.current !== null
+        && readingState.zheng.current >= page.start
+        && readingState.zheng.current < page.end
+      );
+      markZhengLine.classList.toggle('is-here', zhengIsHere);
+      markZhengLine.setAttribute('aria-pressed', String(zhengIsHere));
+      markZhengLine.setAttribute('aria-label', zhengIsHere ? '峥的书签在本页' : '把峥的书签放在本页');
     }
 
     function isRangeNote(note) {
@@ -2313,7 +2310,7 @@
       const unit = currentChapterUnit();
       if (!unit) return;
       activeJournalUnit = unit;
-      chapterJournalTitle.textContent = unit.path.join(' · ');
+      chapterJournalHeading.textContent = `札记-${unit.title}`;
       chapterJournal.hidden = false;
       chapterJournal.setAttribute('aria-hidden', 'false');
       closeLightPopovers();
@@ -2342,12 +2339,12 @@
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
-        copyChapterJournal.textContent = '已递给峥';
+        copyChapterJournal.textContent = '✓';
       } catch (_) {
-        copyChapterJournal.textContent = '复制失败';
+        copyChapterJournal.textContent = '!';
       }
       window.setTimeout(() => {
-        copyChapterJournal.textContent = '递给峥';
+        copyChapterJournal.textContent = '↑';
       }, 1800);
     }
 
