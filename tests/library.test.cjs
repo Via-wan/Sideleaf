@@ -52,3 +52,20 @@ test('新增导入书统一排在全部内置书之后', () => {
   assert.equal(books[0].id, 'sideleaf-sample-rain');
   assert.deepEqual(books[1], imported);
 });
+
+test('阅读请求从视觉页扩展到完整段落', () => {
+  const text = '上一段。\n\n这一段开头。中间仍在继续，直到这里结束。\n\n下一段。';
+  const visibleStart = text.indexOf('中间');
+  const visibleEnd = text.indexOf('直到') + 2;
+  const range = SideleafLibrary.expandReadingRange(text, visibleStart, visibleEnd);
+  assert.equal(text.slice(range.start, range.end), '这一段开头。中间仍在继续，直到这里结束。');
+});
+
+test('超长段落改用完整句边界，不在句中截断', () => {
+  const secondSentence = `第二句${'很长'.repeat(110)}，视觉页从这里开始，仍然没有结束。`;
+  const text = `第一句已经结束。${secondSentence}第三句收尾。`;
+  const visibleStart = text.indexOf('视觉页');
+  const visibleEnd = text.indexOf('没有结束') + 2;
+  const range = SideleafLibrary.expandReadingRange(text, visibleStart, visibleEnd, { maxParagraphChars: 200 });
+  assert.equal(text.slice(range.start, range.end), secondSentence);
+});

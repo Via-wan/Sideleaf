@@ -80,6 +80,64 @@
     return next;
   }
 
+  const SENTENCE_END = /[。！？!?…]+[”’」』】）》〉]*\s*/g;
+
+  function paragraphStartAt(source, offset) {
+    const boundary = source.lastIndexOf('\n\n', Math.max(0, offset - 1));
+    if (boundary < 0) return 0;
+    let start = boundary + 2;
+    while (start < source.length && /[\r\n]/.test(source[start])) start += 1;
+    return start;
+  }
+
+  function paragraphEndAt(source, offset) {
+    const boundary = source.indexOf('\n\n', Math.max(0, offset));
+    return boundary < 0 ? source.length : boundary;
+  }
+
+  function sentenceStartAt(source, offset, paragraphStart) {
+    const fragment = source.slice(paragraphStart, offset);
+    SENTENCE_END.lastIndex = 0;
+    let match;
+    let start = paragraphStart;
+    while ((match = SENTENCE_END.exec(fragment))) {
+      start = paragraphStart + match.index + match[0].length;
+    }
+    return start;
+  }
+
+  function sentenceEndAt(source, offset, paragraphEnd) {
+    const fragment = source.slice(offset, paragraphEnd);
+    SENTENCE_END.lastIndex = 0;
+    const match = SENTENCE_END.exec(fragment);
+    return match ? offset + match.index + match[0].length : paragraphEnd;
+  }
+
+  function expandReadingRange(source, visibleStart, visibleEnd, options = {}) {
+    const text = String(source || '');
+    const start = Math.max(0, Math.min(text.length, Number(visibleStart) || 0));
+    const end = Math.max(start, Math.min(text.length, Number(visibleEnd) || 0));
+    const maxParagraphChars = Math.max(200, Number(options.maxParagraphChars) || 1800);
+    if (end <= start) return { start, end };
+
+    const startParagraphStart = paragraphStartAt(text, start);
+    const startParagraphEnd = paragraphEndAt(text, start);
+    const endParagraphStart = paragraphStartAt(text, Math.max(start, end - 1));
+    const endParagraphEnd = paragraphEndAt(text, end);
+
+    const expandedStart = startParagraphEnd - startParagraphStart <= maxParagraphChars
+      ? startParagraphStart
+      : sentenceStartAt(text, start, startParagraphStart);
+    const expandedEnd = endParagraphEnd - endParagraphStart <= maxParagraphChars
+      ? endParagraphEnd
+      : sentenceEndAt(text, end, endParagraphEnd);
+
+    return {
+      start: Math.max(0, Math.min(expandedStart, start)),
+      end: Math.max(end, Math.min(text.length, expandedEnd))
+    };
+  }
+
   return {
     BOOKS_KEY,
     BUILT_IN_BOOKS,
@@ -87,6 +145,7 @@
     includeBuiltIns,
     ensure,
     ensureSnapshot,
-    insertImported
+    insertImported,
+    expandReadingRange
   };
 });

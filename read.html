@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.14.0</small>
+      <small class="build-version">Sideleaf 0.14.1</small>
     </div>
 
     <div class="page-wrap">
@@ -332,6 +332,16 @@
     background:
       linear-gradient(to top, rgba(201, 130, 100, .13) 0 .34em, transparent .34em),
       linear-gradient(to top, rgba(101, 117, 114, .10) 0 .58em, transparent .58em);
+  }
+  #pagination-tester .zheng-read-marker {
+    display: inline-block;
+    width: .42em;
+    height: .42em;
+    margin-left: .14em;
+    border-radius: 999px;
+    background: var(--zheng);
+    box-shadow: 0 0 0 2px rgba(101, 117, 114, .12);
+    transform: translateY(-.08em);
   }
   #pagination-tester .active-selection-highlight {
     padding: 0;
@@ -1247,16 +1257,21 @@
 
     function renderPageContent(page) {
       const annotations = rangeNotesForPage(page);
+      const zhengMarkerOffset = readingState.zheng.current > page.displayStart
+        && readingState.zheng.current <= page.displayEnd
+        ? Number(readingState.zheng.current)
+        : null;
       const selection = activeSelection
         && activeSelection.start < page.displayEnd
         && activeSelection.end > page.displayStart
         ? activeSelection
         : null;
-      if (!annotations.length && !selection) {
+      if (!annotations.length && !selection && zhengMarkerOffset === null) {
         pageText.textContent = page.text;
         return;
       }
       const boundaries = new Set([page.displayStart, page.displayEnd]);
+      if (zhengMarkerOffset !== null) boundaries.add(zhengMarkerOffset);
       annotations.forEach(note => {
         boundaries.add(Math.max(page.displayStart, Number(note.rangeStart)));
         boundaries.add(Math.min(page.displayEnd, Number(note.rangeEnd)));
@@ -1278,18 +1293,26 @@
         const content = text.slice(from, to);
         if (!matchingNotes.length && !selected) {
           fragment.appendChild(document.createTextNode(content));
-          continue;
+        } else {
+          const mark = document.createElement('span');
+          if (matchingNotes.length) {
+            mark.classList.add('annotation-highlight');
+            const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
+            mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
+            mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+          }
+          if (selected) mark.classList.add('active-selection-highlight');
+          mark.textContent = content;
+          fragment.appendChild(mark);
         }
-        const mark = document.createElement('span');
-        if (matchingNotes.length) {
-          mark.classList.add('annotation-highlight');
-          const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
-          mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
-          mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+        if (zhengMarkerOffset === to) {
+          const marker = document.createElement('span');
+          marker.className = 'zheng-read-marker';
+          marker.setAttribute('role', 'img');
+          marker.setAttribute('aria-label', '峥读到这里');
+          marker.title = '峥读到这里';
+          fragment.appendChild(marker);
         }
-        if (selected) mark.classList.add('active-selection-highlight');
-        mark.textContent = content;
-        fragment.appendChild(mark);
       }
       pageText.replaceChildren(fragment);
     }
@@ -2058,8 +2081,9 @@
     async function requestCurrentPageReading() {
       const page = pages[index];
       if (!page) return;
-      const from = page.displayStart;
-      const to = page.displayEnd;
+      const readingRange = SideleafLibrary.expandReadingRange(text, page.displayStart, page.displayEnd);
+      const from = readingRange.start;
+      const to = readingRange.end;
       const now = Date.now();
       const requests = readReadingRequests();
       const existing = requests.find(request =>
@@ -2110,7 +2134,7 @@
         `页码：${request.pageNumber}/${request.totalPages}`,
         `阅读请求：${request.id}`,
         '',
-        '以下是愿明确请峥正式阅读的当前页。请实际读完本页后，再更新峥的阅读线或留下批注。',
+        '以下是愿明确请峥正式阅读的当前页内容，并已补齐到完整段落；超长段落按完整句补齐。请实际读完后，再更新峥的阅读线或留下批注。',
         '这条请求本身不代表峥已经读过，也不会自动移动峥的阅读线。',
         '',
         '【正文】',
@@ -2128,6 +2152,10 @@
       window.setTimeout(() => { requestZhengRead.textContent = '峥来读'; }, 1800);
     }
 
+    function syncZhengActivity() {
+      return SideleafSync.syncNow(localStorage);
+    }
+
     function turn(delta) {
       const next = index + delta;
       if (next < 0 || next >= pages.length) return;
@@ -2135,6 +2163,7 @@
       hideNotes();
       index = next;
       render();
+      void syncZhengActivity();
     }
 
     function resolveTocIndex(page) {
@@ -2178,6 +2207,7 @@
           if (targetIndex >= 0) {
             index = targetIndex;
             render();
+            void syncZhengActivity();
           }
           closeToc();
         });
