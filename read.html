@@ -29,6 +29,8 @@
     --primary: #8f6f60;
     --wish: #d18b55;
     --zheng: #657572;
+    --control-accent: #cf8b70;
+    --zheng-marker: #879792;
     --wish-mark: rgba(225, 184, 140, .42);
     --zheng-mark: rgba(172, 188, 184, .38);
     --space-3: 12px;
@@ -83,7 +85,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.10</small>
+      <small class="build-version">Sideleaf 0.15.11</small>
     </div>
 
     <div class="page-wrap">
@@ -214,8 +216,8 @@
     color: rgba(112, 105, 98, .62);
   }
   #pagination-tester .tester-controls input[type="range"] {
-    accent-color: #d18b55;
-    opacity: .88;
+    accent-color: var(--control-accent);
+    opacity: .86;
   }
   #pagination-tester .type-toggle {
     position: fixed;
@@ -358,8 +360,8 @@
     height: .42em;
     margin-left: .14em;
     border-radius: 999px;
-    background: var(--zheng);
-    box-shadow: 0 0 0 2px rgba(101, 117, 114, .12);
+    background: var(--zheng-marker);
+    box-shadow: 0 0 0 2px rgba(135, 151, 146, .10);
     transform: translateY(-.08em);
   }
   #pagination-tester .active-selection-highlight {
@@ -430,6 +432,10 @@
     background: transparent;
     color: var(--foreground);
     font: 500 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .page-tools button {
+    color: rgba(84, 76, 68, .62);
+    font-size: 12.5px;
   }
   #pagination-tester .reading-lines-panel {
     position: fixed;
@@ -628,16 +634,19 @@
     color: var(--foreground);
     font: 620 13px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
+  #pagination-tester .selection-toolbar #annotate-selection {
+    color: rgba(84, 76, 68, .78);
+  }
   #pagination-tester .selection-toolbar .like-selection {
     min-width: 36px;
     padding-inline: 10px;
-    color: var(--wish);
+    color: var(--control-accent);
     font-size: 20px;
     font-weight: 450;
     transform-origin: center;
   }
   #pagination-tester .selection-toolbar .like-selection.is-liked {
-    text-shadow: 0 3px 10px rgba(209, 139, 85, .24);
+    text-shadow: 0 3px 10px rgba(207, 139, 112, .22);
   }
   #pagination-tester .selection-toolbar .like-selection.did-toggle {
     animation: sideleaf-heart-pulse .28s cubic-bezier(.2, .8, .3, 1);
@@ -1199,6 +1208,7 @@
     let startX = 0;
     let startY = 0;
     let ignoreNextClick = false;
+    let pageTurnSuppressedUntil = 0;
     let resizeTimer;
     let editingNoteId = null;
     let composingNoteAuthor = 'wish';
@@ -1962,7 +1972,6 @@
       }
       localStorage.setItem(likesKey, JSON.stringify(likes));
       SideleafSync.markDirty(localStorage, [likesKey]);
-      renderPageContent(pages[index]);
       syncLikeSelectionButton();
       likeSelection.classList.remove('did-toggle');
       void likeSelection.offsetWidth;
@@ -2602,6 +2611,7 @@
     annotateSelection.addEventListener('pointerdown', event => {
       event.preventDefault();
       event.stopPropagation();
+      pageTurnSuppressedUntil = Date.now() + 800;
     });
     annotateSelection.addEventListener('pointerup', event => {
       event.preventDefault();
@@ -2618,6 +2628,7 @@
     likeSelection.addEventListener('pointerdown', event => {
       event.preventDefault();
       event.stopPropagation();
+      pageTurnSuppressedUntil = Date.now() + 800;
     });
     likeSelection.addEventListener('pointerup', event => {
       event.preventDefault();
@@ -2781,6 +2792,7 @@
 
     sheet.addEventListener('pointerup', event => {
       clearLongPress();
+      if (Date.now() < pageTurnSuppressedUntil) return;
       if (longPressTriggered) {
         window.setTimeout(() => { ignoreNextClick = false; }, 450);
         return;
@@ -2813,7 +2825,7 @@
         return;
       }
       if (event.target.closest('.active-selection-highlight')) return;
-      if (ignoreNextClick || window.getSelection()?.toString().trim()) return;
+      if (Date.now() < pageTurnSuppressedUntil || ignoreNextClick || window.getSelection()?.toString().trim()) return;
       const bounds = sheet.getBoundingClientRect();
       const position = (event.clientX - bounds.left) / bounds.width;
       if (position < .35) turn(-1);
