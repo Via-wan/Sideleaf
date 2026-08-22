@@ -76,6 +76,7 @@
       if (key === 'sideleaf.reading-lines.v1') snapshot.readingLines = parseJson(raw, {});
       if (key === 'sideleaf.notes.v1') snapshot.notes = parseJson(raw, []);
       if (key === 'sideleaf.chapter-journals.v1') snapshot.journals = parseJson(raw, []);
+      if (key === 'sideleaf.likes.v1') snapshot.likes = parseJson(raw, []);
       if (key === 'sideleaf.read-requests.v1') snapshot.requests = parseJson(raw, []);
     });
     return snapshot;
@@ -139,6 +140,24 @@
         storage.setItem('sideleaf.chapter-journals.v1', JSON.stringify(journals));
         changed = true;
       }
+    }
+    if (Array.isArray(state.likes)) {
+      const localLikes = parseJson(storage.getItem('sideleaf.likes.v1'), []);
+      let likes = Array.isArray(localLikes) ? localLikes : [];
+      if (state.likesReplaceZheng) likes = likes.filter(like => like?.author !== 'zheng');
+      const byId = new Map(likes.map((like, index) => [like.id, index]));
+      state.likes.forEach(like => {
+        if (!like?.id || like.author !== 'zheng') return;
+        const index = byId.get(like.id);
+        if (index === undefined) {
+          byId.set(like.id, likes.length);
+          likes.push(like);
+        } else {
+          likes[index] = { ...likes[index], ...like };
+        }
+      });
+      storage.setItem('sideleaf.likes.v1', JSON.stringify(likes));
+      changed = true;
     }
     if (Array.isArray(state.requests) && state.requests.length) {
       const localRequests = parseJson(storage.getItem('sideleaf.read-requests.v1'), []);

@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.15</small>
+      <small class="build-version">Sideleaf 0.15.16</small>
     </div>
 
     <div class="page-wrap">
@@ -1539,7 +1539,7 @@
             if (matchingNotes.length) mark.classList.add('annotation-highlight');
             else mark.classList.add('liked-highlight');
             const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
-            if (matchingLikes.length) authors.add('wish');
+            matchingLikes.forEach(like => authors.add(normalizeNoteAuthor(like.author)));
             mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
             if (matchingNotes.length) mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
           }
@@ -1939,6 +1939,7 @@
       if (!activeSelection) return -1;
       return likes.findIndex(like =>
         like.bookId === activeBookId
+        && normalizeNoteAuthor(like.author) === 'wish'
         && Number(like.rangeStart) === activeSelection.start
         && Number(like.rangeEnd) === activeSelection.end
       );
@@ -1968,6 +1969,7 @@
           quote: activeSelection.quote,
           prefix: activeSelection.prefix,
           suffix: activeSelection.suffix,
+          author: 'wish',
           createdAt: now,
           updatedAt: now
         });

@@ -102,7 +102,7 @@ test('断网时保留脏数据，恢复后只发送变化过的分类', async ()
 test('喜欢会作为独立变化同步到 Core', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
-    'sideleaf.likes.v1': JSON.stringify([{ id:'like-1', bookId:'book-1', rangeStart:1, rangeEnd:4 }])
+    'sideleaf.likes.v1': JSON.stringify([{ id:'like-1', bookId:'book-1', rangeStart:1, rangeEnd:4, author:'wish' }])
   });
   SideleafSync.markDirty(storage, ['sideleaf.likes.v1']);
   let sent;
@@ -111,6 +111,7 @@ test('喜欢会作为独立变化同步到 Core', async () => {
     return new Response(JSON.stringify({ ok:true }), { status:200 });
   } });
   assert.equal(JSON.parse(sent.clientStorage['sideleaf.likes.v1'])[0].id, 'like-1');
+  assert.equal(sent.likes[0].author, 'wish');
   assert.equal(sent.notes, undefined);
 });
 
@@ -121,6 +122,10 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
       'book-1':{ wish:{ current:88 }, zheng:{ current:null, furthest:null }, schemaVersion:2 }
     }),
     'sideleaf.notes.v1': JSON.stringify([{ id:'wish-note', author:'wish', text:'愿先说。' }]),
+    'sideleaf.likes.v1': JSON.stringify([
+      { id:'wish-like', bookId:'book-1', author:'wish', rangeStart:1, rangeEnd:3 },
+      { id:'old-zheng-like', bookId:'book-1', author:'zheng', rangeStart:4, rangeEnd:6 }
+    ]),
     'sideleaf.read-requests.v1': JSON.stringify([{ id:'request-1', status:'pending', bookId:'book-1' }])
   });
   let sent;
@@ -135,6 +140,8 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
           id:'journal-1', bookId:'book-1', chapterKey:'1:0:第一章', chapterTitle:'第一章',
           chapterPath:['第一章'], chapterAnchor:0, chapterEnd:120, text:'第一篇札记。', createdAt:3, updatedAt:3
         }],
+        likes:[{ id:'new-zheng-like', bookId:'book-1', author:'zheng', rangeStart:8, rangeEnd:10 }],
+        likesReplaceZheng:true,
         requests:[{ id:'request-1', status:'completed', completedAt:3, updatedAt:3 }]
       }
     }), { status:200 });
@@ -146,6 +153,8 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
   const notes = JSON.parse(storage.getItem('sideleaf.notes.v1'));
   assert.deepEqual(notes.map(note => note.id), ['wish-note', 'zheng-note']);
   assert.equal(JSON.parse(storage.getItem('sideleaf.chapter-journals.v1'))[0].text, '第一篇札记。');
+  const likes = JSON.parse(storage.getItem('sideleaf.likes.v1'));
+  assert.deepEqual(likes.map(like => like.id), ['wish-like', 'new-zheng-like']);
   assert.equal(JSON.parse(storage.getItem('sideleaf.read-requests.v1'))[0].status, 'completed');
 });
 
