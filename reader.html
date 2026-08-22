@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.60</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.15.0</small>
+      <small class="build-version">Sideleaf 0.15.1</small>
     </div>
 
     <div class="page-wrap">
@@ -944,6 +944,7 @@
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
     const readingRequestsKey = 'sideleaf.read-requests.v1';
+    const paginationCacheKey = '__sideleaf_pagination_cache_v1';
     const bookId = new URLSearchParams(window.location.search).get('book');
     const storedBooks = SideleafLibrary.ensure(localStorage);
     const activeBook = storedBooks.find(book => book.id === (bookId || SideleafLibrary.DEFAULT_BOOK_ID))
@@ -1069,6 +1070,8 @@
     let selectionDragFrame = null;
     let activeJournalUnit = null;
     let activeJournalOriginal = '';
+    let paginationRun = 0;
+    let paginationComplete = false;
 
     function fits(fragment, height) {
       measure.style.height = `${height}px`;
@@ -1096,9 +1099,97 @@
       return Math.max(start + 1, adjusted);
     }
 
-    function paginate(anchor = 0) {
+    function paginationTextSignature() {
+      const sample = `${text.slice(0, 512)}\u0000${text.slice(Math.max(0, Math.floor(text.length / 2) - 256), Math.floor(text.length / 2) + 256)}\u0000${text.slice(-512)}`;
+      let hash = 2166136261;
+      for (let offset = 0; offset < sample.length; offset += 1) {
+        hash ^= sample.charCodeAt(offset);
+        hash = Math.imul(hash, 16777619);
+      }
+      return `${text.length}-${(hash >>> 0).toString(36)}`;
+    }
+
+    function paginationSignature(height) {
+      return [
+        activeBookId,
+        paginationTextSignature(),
+        Math.round(pageText.clientWidth),
+        Math.round(height),
+        fontSlider.value,
+        lineSlider.value
+      ].join('|');
+    }
+
+    function pageFromBounds(start, end) {
+      const rawPageText = text.slice(start, end);
+      const leadingSpace = rawPageText.match(/^\s*/)?.[0].length || 0;
+      const trailingSpace = rawPageText.match(/\s*$/)?.[0].length || 0;
+      const displayStart = start + leadingSpace;
+      const displayEnd = Math.max(displayStart, end - trailingSpace);
+      return { start, end, displayStart, displayEnd, text:text.slice(displayStart, displayEnd) };
+    }
+
+    function readCachedPages(signature) {
+      try {
+        const cache = JSON.parse(localStorage.getItem(paginationCacheKey) || '{}');
+        const bounds = cache?.entries?.[signature]?.bounds;
+        if (!Array.isArray(bounds) || !bounds.length) return null;
+        let previousEnd = -1;
+        const restored = bounds.map(pair => {
+          const start = Number(pair?.[0]);
+          const end = Number(pair?.[1]);
+          if (!Number.isInteger(start) || !Number.isInteger(end) || start < previousEnd || end <= start || end > text.length) {
+            throw new Error('invalid-pagination-cache');
+          }
+          previousEnd = end;
+          return pageFromBounds(start, end);
+        });
+        return restored;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    function saveCachedPages(signature, nextPages) {
+      try {
+        const cache = JSON.parse(localStorage.getItem(paginationCacheKey) || '{}');
+        const entries = cache?.entries && typeof cache.entries === 'object' ? cache.entries : {};
+        entries[signature] = {
+          savedAt:Date.now(),
+          bounds:nextPages.map(page => [page.start, page.end])
+        };
+        const recent = Object.entries(entries)
+          .sort((left, right) => Number(right[1]?.savedAt || 0) - Number(left[1]?.savedAt || 0))
+          .slice(0, 6);
+        localStorage.setItem(paginationCacheKey, JSON.stringify({ entries:Object.fromEntries(recent) }));
+      } catch (_) {}
+    }
+
+    function indexForAnchor(anchor, candidates = pages) {
+      const found = candidates.findIndex((page, pageIndex) =>
+        anchor >= page.start && (anchor < page.end || pageIndex === candidates.length - 1)
+      );
+      if (found >= 0) return found;
+      for (let pageIndex = candidates.length - 1; pageIndex >= 0; pageIndex -= 1) {
+        if (anchor >= candidates[pageIndex].start) return pageIndex;
+      }
+      return 0;
+    }
+
+    async function paginate(anchor = 0) {
       const availableHeight = pageText.clientHeight;
       if (!availableHeight || !pageText.clientWidth) return;
+      const run = paginationRun += 1;
+      const signature = paginationSignature(availableHeight);
+      const cachedPages = readCachedPages(signature);
+      if (cachedPages) {
+        pages = cachedPages;
+        paginationComplete = true;
+        index = indexForAnchor(anchor);
+        render();
+        return;
+      }
+      paginationComplete = false;
       const nextPages = [];
       const pageBreakAnchors = [...new Set(tocEntries
         .map(entry => Number(entry.anchor))
@@ -1106,6 +1197,8 @@
         .sort((a, b) => a - b);
       let pageBreakIndex = 0;
       let start = 0;
+      let renderedAnchor = false;
+      let frameStartedAt = performance.now();
       while (start < text.length) {
         while (pageBreakAnchors[pageBreakIndex] <= start) pageBreakIndex += 1;
         const nextPageBreak = pageBreakAnchors[pageBreakIndex] || text.length;
@@ -1122,25 +1215,26 @@
           }
         }
         const end = adjustPageEnd(start, Math.max(start + 1, best), nextPageBreak);
-        const rawPageText = text.slice(start, end);
-        const leadingSpace = rawPageText.match(/^\s*/)?.[0].length || 0;
-        const trailingSpace = rawPageText.match(/\s*$/)?.[0].length || 0;
-        const displayStart = start + leadingSpace;
-        const displayEnd = Math.max(displayStart, end - trailingSpace);
-        nextPages.push({
-          start,
-          end,
-          displayStart,
-          displayEnd,
-          text: text.slice(displayStart, displayEnd)
-        });
+        const page = pageFromBounds(start, end);
+        nextPages.push(page);
         start = end;
         while (text[start] === '\n') start += 1;
+        if (!renderedAnchor && anchor >= page.start && (anchor < start || start >= text.length)) {
+          pages = nextPages;
+          index = nextPages.length - 1;
+          renderedAnchor = true;
+          render(false);
+        }
+        if (performance.now() - frameStartedAt >= 8) {
+          await new Promise(resolve => window.requestAnimationFrame(resolve));
+          if (run !== paginationRun) return;
+          frameStartedAt = performance.now();
+        }
       }
       pages = nextPages;
-      index = Math.max(0, pages.findIndex((page, pageIndex) =>
-        anchor >= page.start && (anchor < page.end || pageIndex === pages.length - 1)
-      ));
+      if (!renderedAnchor) index = indexForAnchor(anchor);
+      paginationComplete = true;
+      saveCachedPages(signature, pages);
       render();
     }
 
@@ -1148,9 +1242,9 @@
       if (anchor === null || anchor === undefined || !pages.length) return null;
       const lookup = Number(anchor);
       const found = pages.findIndex((page, pageIndex) =>
-        lookup >= page.start && (lookup < page.end || pageIndex === pages.length - 1)
+        lookup >= page.start && (lookup < page.end || (paginationComplete && pageIndex === pages.length - 1))
       );
-      return Math.max(0, found) + 1;
+      return found >= 0 ? found + 1 : null;
     }
 
     function readingPercent(anchor, started = false) {
@@ -1174,7 +1268,8 @@
 
     function renderReadingLines() {
       const wishCurrent = pageOrdinalForAnchor(readingState.wish.current);
-      wishLineStatus.textContent = `书签 ${wishCurrent}/${pages.length}`;
+      const total = paginationComplete ? pages.length : '…';
+      wishLineStatus.textContent = `书签 ${wishCurrent || '…'}/${total}`;
       wishLineFill.style.width = `${readingPercent(readingState.wish.current, true)}%`;
 
       if (readingState.zheng.current === null) {
@@ -1183,7 +1278,7 @@
       } else {
         const zhengCurrent = pageOrdinalForAnchor(readingState.zheng.current);
         const zhengFurthest = pageOrdinalForAnchor(readingState.zheng.furthest);
-        zhengLineStatus.textContent = `书签 ${zhengCurrent}/${pages.length} · 最远 ${zhengFurthest}/${pages.length}`;
+        zhengLineStatus.textContent = `书签 ${zhengCurrent || '…'}/${total} · 最远 ${zhengFurthest || '…'}/${total}`;
         zhengLineFill.style.width = `${readingPercent(readingState.zheng.furthest, true)}%`;
       }
 
@@ -1268,16 +1363,16 @@
       pageText.replaceChildren(fragment);
     }
 
-    function render() {
+    function render(shouldPersist = true) {
       const page = pages[index];
       if (!page) return;
       hideSelectionToolbar();
       renderPageContent(page);
-      pageNumber.textContent = `${index + 1}/${pages.length}`;
+      pageNumber.textContent = `${index + 1}/${paginationComplete ? pages.length : '…'}`;
       const currentChapter = tocEntries[resolveTocIndex(page)] || tocEntries[0];
       chapterName.textContent = currentChapter?.title || activeBook?.title || '雨停以后';
       readingState.wish.current = page.start;
-      persistReadingState();
+      if (shouldPersist) persistReadingState();
       renderReadingLines();
       if (!notesSheet.hidden) renderNotes();
       updateTocCurrent();
@@ -1285,7 +1380,7 @@
 
     function repaginate() {
       const anchor = pages[index]?.start || 0;
-      window.requestAnimationFrame(() => paginate(anchor));
+      window.requestAnimationFrame(() => { void paginate(anchor); });
     }
 
     function applyTypography() {
@@ -2163,7 +2258,7 @@
         }
         button.addEventListener('click', () => {
           const targetIndex = pages.findIndex((page, pageIndex) =>
-            entry.anchor >= page.start && (entry.anchor < page.end || pageIndex === pages.length - 1)
+            entry.anchor >= page.start && (entry.anchor < page.end || (paginationComplete && pageIndex === pages.length - 1))
           );
           if (targetIndex >= 0) {
             index = targetIndex;
@@ -2452,7 +2547,7 @@
     });
     SideleafSync.start(localStorage);
     applyTypography();
-    paginate(initialAnchor);
+    void paginate(initialAnchor);
     renderToc();
   })();
 </script>
