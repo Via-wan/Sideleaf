@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.17</small>
+      <small class="build-version">Sideleaf 0.15.18</small>
     </div>
 
     <div class="page-wrap">
@@ -129,16 +129,10 @@
           <strong id="chapter-journal-heading">峥的章节札记</strong>
           <small id="chapter-journal-title"></small>
         </div>
-        <button id="close-chapter-journal" type="button">完成</button>
       </div>
-      <textarea id="chapter-journal-input" rows="9" placeholder="把这一章的情节、疑问、判断和当时的感受完整留下来。"></textarea>
-      <div class="chapter-journal-meta">
-        <span id="chapter-journal-status">尚未留下札记</span>
-        <span id="chapter-journal-count">0 字</span>
-      </div>
+      <div id="chapter-journal-body" class="chapter-journal-body is-empty">尚未留下札记</div>
       <div class="chapter-journal-actions">
         <button id="copy-chapter-journal" type="button" disabled>递给峥</button>
-        <button id="save-chapter-journal" type="button" disabled>保存札记</button>
       </div>
     </section>
 
@@ -446,19 +440,37 @@
     bottom: calc(18px + env(safe-area-inset-bottom));
     width: min(calc(100% - 36px), 360px);
     transform: translateX(-50%);
+    overflow: hidden;
+    isolation: isolate;
     padding: 16px;
-    border: 1px solid rgba(71, 62, 51, .12);
-    border-radius: 18px;
-    background: rgba(252, 250, 247, .98);
-    box-shadow: 0 12px 34px rgba(62, 52, 42, .16);
-    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, .78);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, .66), rgba(242, 239, 235, .53));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .94),
+      inset 0 -1px 0 rgba(84, 76, 68, .08),
+      0 18px 48px rgba(68, 58, 51, .20);
+    -webkit-backdrop-filter: blur(28px) saturate(1.28);
+    backdrop-filter: blur(28px) saturate(1.28);
   }
   #pagination-tester .reading-lines-head {
     margin-bottom: 13px;
     font-size: 15px;
     font-weight: 650;
   }
-  #pagination-tester .reading-line-row + .reading-line-row { margin-top: 13px; }
+  #pagination-tester .reading-line-row {
+    padding: 10px 12px 11px;
+    border: 1px solid rgba(255, 255, 255, .60);
+    border-radius: 16px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
+  }
+  #pagination-tester .reading-line-row.wish-line {
+    background: linear-gradient(145deg, rgba(241, 226, 220, .38), rgba(217, 184, 170, .20));
+  }
+  #pagination-tester .reading-line-row.zheng-line {
+    background: linear-gradient(145deg, rgba(222, 229, 227, .40), rgba(172, 188, 184, .22));
+  }
+  #pagination-tester .reading-line-row + .reading-line-row { margin-top: 9px; }
   #pagination-tester .reading-line-copy {
     display: flex;
     align-items: baseline;
@@ -492,7 +504,11 @@
     margin-top: 16px;
     padding: 11px 14px;
     border-radius: 999px;
-    background: var(--primary);
+    border: 1px solid rgba(255, 255, 255, .60);
+    background: linear-gradient(145deg, rgba(151, 118, 104, .88), rgba(132, 100, 87, .82));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .28),
+      0 7px 18px rgba(104, 75, 63, .14);
     color: #fffaf4;
   }
   #pagination-tester .reading-lines-note {
@@ -510,17 +526,21 @@
     max-height: min(74svh, 620px);
     overflow: auto;
     transform: translateX(-50%);
+    isolation: isolate;
     padding: 17px;
-    border: 1px solid rgba(71, 62, 51, .12);
-    border-radius: 20px;
-    background: rgba(252, 250, 247, .985);
-    box-shadow: 0 16px 44px rgba(62, 52, 42, .18);
-    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, .78);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, .66), rgba(242, 239, 235, .53));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .94),
+      inset 0 -1px 0 rgba(84, 76, 68, .08),
+      0 18px 48px rgba(68, 58, 51, .20);
+    -webkit-backdrop-filter: blur(28px) saturate(1.28);
+    backdrop-filter: blur(28px) saturate(1.28);
   }
   #pagination-tester .chapter-journal-head {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
     gap: 16px;
     margin-bottom: 14px;
   }
@@ -537,52 +557,43 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  #pagination-tester .chapter-journal-head button {
-    flex: 0 0 auto;
-    border: 0;
-    background: transparent;
-    color: var(--primary);
-    font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-  }
-  #pagination-tester .chapter-journal textarea {
+  #pagination-tester .chapter-journal-body {
     width: 100%;
-    min-height: 220px;
-    resize: vertical;
+    min-height: 126px;
     padding: 13px 14px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    outline: none;
-    background: #fffaf2;
-    color: var(--foreground);
-    caret-color: var(--wish);
-    font: 400 16px/1.68 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    border: 1px solid rgba(255, 255, 255, .64);
+    border-radius: 18px;
+    background: linear-gradient(145deg, rgba(222, 229, 227, .54), rgba(172, 188, 184, .28));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .70),
+      inset 0 -1px 0 rgba(78, 101, 96, .08),
+      0 7px 18px rgba(72, 94, 89, .10);
+    color: var(--zheng);
+    font: 400 15px/1.72 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
-  #pagination-tester .chapter-journal textarea:focus { border-color: rgba(209, 139, 85, .48); }
-  #pagination-tester .chapter-journal-meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 8px 2px 0;
-    color: var(--muted-foreground);
-    font-size: 11px;
+  #pagination-tester .chapter-journal-body.is-empty {
+    display: grid;
+    place-items: center;
+    color: rgba(84, 76, 68, .46);
+    font-size: 13px;
   }
   #pagination-tester .chapter-journal-actions {
-    display: grid;
-    grid-template-columns: 1fr 1.45fr;
-    gap: 9px;
+    display: flex;
+    justify-content: flex-end;
     margin-top: 13px;
   }
   #pagination-tester .chapter-journal-actions button {
-    padding: 12px 14px;
+    min-width: 104px;
+    padding: 10px 15px;
     border: 0;
     border-radius: 999px;
-    background: rgba(143, 111, 96, .10);
+    border: 1px solid rgba(255, 255, 255, .68);
+    background: linear-gradient(145deg, rgba(255, 255, 255, .56), rgba(231, 226, 222, .42));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), 0 5px 14px rgba(79, 65, 56, .09);
     color: var(--primary);
     font: 600 14px/1.2 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
-  }
-  #pagination-tester .chapter-journal-actions #save-chapter-journal {
-    background: var(--primary);
-    color: #fffaf4;
   }
   #pagination-tester .chapter-journal-actions button:disabled {
     opacity: .38;
@@ -840,6 +851,7 @@
     display: flex;
     align-items: baseline;
     margin: 0 3px 3px;
+    transform: translateY(3px);
   }
   #pagination-tester .note-time {
     color: rgba(71, 62, 51, .48);
@@ -1087,13 +1099,9 @@
     const markZhengLine = root.querySelector('#mark-zheng-line');
     const openChapterJournal = root.querySelector('#open-chapter-journal');
     const chapterJournal = root.querySelector('#chapter-journal');
-    const closeChapterJournal = root.querySelector('#close-chapter-journal');
     const chapterJournalTitle = root.querySelector('#chapter-journal-title');
-    const chapterJournalInput = root.querySelector('#chapter-journal-input');
-    const chapterJournalStatus = root.querySelector('#chapter-journal-status');
-    const chapterJournalCount = root.querySelector('#chapter-journal-count');
+    const chapterJournalBody = root.querySelector('#chapter-journal-body');
     const copyChapterJournal = root.querySelector('#copy-chapter-journal');
-    const saveChapterJournal = root.querySelector('#save-chapter-journal');
     const tocDrawer = root.querySelector('.toc-drawer');
     const tocBackdrop = root.querySelector('.toc-backdrop');
     const tocList = root.querySelector('#toc-list');
@@ -1234,7 +1242,6 @@
     let draggingSelectionEdge = null;
     let selectionDragFrame = null;
     let activeJournalUnit = null;
-    let activeJournalOriginal = '';
     let paginationRun = 0;
     let paginationComplete = false;
 
@@ -2295,30 +2302,18 @@
       return legacy.length === 1 ? legacy[0] : null;
     }
 
-    function chapterJournalStateText() {
-      const value = chapterJournalInput.value.trim();
-      if (!value) return '尚未留下札记';
-      if (value !== activeJournalOriginal) return '有尚未保存的修改';
-      const saved = chapterJournalForUnit(activeJournalUnit);
-      return saved ? '札记已保存' : '尚未留下札记';
-    }
-
     function syncChapterJournalControls() {
-      const value = chapterJournalInput.value.trim();
-      chapterJournalCount.textContent = `${[...value].length} 字`;
-      chapterJournalStatus.textContent = chapterJournalStateText();
-      saveChapterJournal.disabled = !value || value === activeJournalOriginal;
+      const value = String(chapterJournalForUnit(activeJournalUnit)?.text || '').trim();
+      chapterJournalBody.textContent = value || '尚未留下札记';
+      chapterJournalBody.classList.toggle('is-empty', !value);
       copyChapterJournal.disabled = !value;
     }
 
     function openCurrentChapterJournal() {
       const unit = currentChapterUnit();
       if (!unit) return;
-      const saved = chapterJournalForUnit(unit);
       activeJournalUnit = unit;
-      activeJournalOriginal = saved?.text || '';
       chapterJournalTitle.textContent = unit.path.join(' · ');
-      chapterJournalInput.value = activeJournalOriginal;
       chapterJournal.hidden = false;
       chapterJournal.setAttribute('aria-hidden', 'false');
       closeLightPopovers();
@@ -2330,51 +2325,11 @@
     function closeCurrentChapterJournal() {
       chapterJournal.hidden = true;
       chapterJournal.setAttribute('aria-hidden', 'true');
-      chapterJournalInput.blur();
       activeJournalUnit = null;
-      activeJournalOriginal = '';
-    }
-
-    function saveCurrentChapterJournal() {
-      const value = chapterJournalInput.value.trim();
-      if (!activeJournalUnit || !value) return;
-      const journals = readChapterJournals();
-      const existing = chapterJournalForUnit(activeJournalUnit, journals);
-      if (existing) {
-        existing.text = value;
-        existing.chapterKey = activeJournalUnit.key;
-        existing.chapterTitle = activeJournalUnit.title;
-        existing.chapterPath = activeJournalUnit.path;
-        existing.chapterLevel = activeJournalUnit.level;
-        existing.chapterAnchor = activeJournalUnit.anchor;
-        existing.chapterEnd = activeJournalUnit.end;
-        existing.updatedAt = Date.now();
-      } else {
-        journals.push({
-          id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-          bookId: activeBookId,
-          bookTitle: activeBook?.title || '雨停以后',
-          chapterKey: activeJournalUnit.key,
-          chapterTitle: activeJournalUnit.title,
-          chapterPath: activeJournalUnit.path,
-          chapterLevel: activeJournalUnit.level,
-          chapterAnchor: activeJournalUnit.anchor,
-          chapterEnd: activeJournalUnit.end,
-          text: value,
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        });
-      }
-      localStorage.setItem(chapterJournalsKey, JSON.stringify(journals));
-      SideleafSync.markDirty(localStorage, [chapterJournalsKey]);
-      activeJournalOriginal = value;
-      chapterJournalInput.value = value;
-      syncChapterJournalControls();
-      renderToc();
     }
 
     async function copyCurrentChapterJournal() {
-      const value = chapterJournalInput.value.trim();
+      const value = String(chapterJournalForUnit(activeJournalUnit)?.text || '').trim();
       if (!activeJournalUnit || !value) return;
       const packet = [
         '【Sideleaf｜峥的章节札记】',
@@ -2387,12 +2342,12 @@
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
-        chapterJournalStatus.textContent = '已复制，去找峥';
+        copyChapterJournal.textContent = '已递给峥';
       } catch (_) {
-        chapterJournalStatus.textContent = '复制失败，再点一次';
+        copyChapterJournal.textContent = '复制失败';
       }
       window.setTimeout(() => {
-        if (!chapterJournal.hidden) syncChapterJournalControls();
+        copyChapterJournal.textContent = '递给峥';
       }, 1800);
     }
 
@@ -2667,9 +2622,6 @@
     sendContext.addEventListener('click', copyContext);
     requestZhengRead.addEventListener('click', requestCurrentPageReading);
     openChapterJournal.addEventListener('click', openCurrentChapterJournal);
-    closeChapterJournal.addEventListener('click', closeCurrentChapterJournal);
-    chapterJournalInput.addEventListener('input', syncChapterJournalControls);
-    saveChapterJournal.addEventListener('click', saveCurrentChapterJournal);
     copyChapterJournal.addEventListener('click', copyCurrentChapterJournal);
     noteInput.addEventListener('input', resizeNoteInput);
     markZhengLine.addEventListener('click', () => {
