@@ -79,9 +79,9 @@
     <div id="tester-controls" class="tester-controls" data-light-popover hidden>
       <label for="font-slider">字号 <output id="font-output">17px</output></label>
       <input id="font-slider" type="range" min="16" max="25" value="17">
-      <label for="line-slider">行距 <output id="line-output">1.60</output></label>
-      <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.60">
-      <small class="build-version">Sideleaf 0.15.2</small>
+      <label for="line-slider">行距 <output id="line-output">1.55</output></label>
+      <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
+      <small class="build-version">Sideleaf 0.15.3</small>
     </div>
 
     <div class="page-wrap">
@@ -171,7 +171,7 @@
     padding: 0;
     color: var(--foreground);
     --reader-size: 17px;
-    --reader-leading: 1.6;
+    --reader-leading: 1.55;
   }
   #pagination-tester .tester-shell {
     width: 100%;
@@ -280,7 +280,7 @@
   #pagination-tester .page-text,
   #pagination-tester .measure-text {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif !important;
-    font-weight: 350 !important;
+    font-weight: 370 !important;
     font-size: var(--reader-size);
     line-height: var(--reader-leading);
     letter-spacing: .025em;
@@ -945,6 +945,7 @@
     const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
     const readingRequestsKey = 'sideleaf.read-requests.v1';
     const paginationCacheKey = '__sideleaf_pagination_cache_v1';
+    const paginationLayoutVersion = '3';
     const bookId = new URLSearchParams(window.location.search).get('book');
     const storedBooks = SideleafLibrary.ensure(localStorage);
     const activeBook = storedBooks.find(book => book.id === (bookId || SideleafLibrary.DEFAULT_BOOK_ID))
@@ -1111,6 +1112,7 @@
 
     function paginationSignature(height) {
       return [
+        paginationLayoutVersion,
         activeBookId,
         paginationTextSignature(),
         Math.round(pageText.clientWidth),
@@ -1392,8 +1394,8 @@
       const readingFont = '-apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif';
       pageText.style.setProperty('font-family', readingFont, 'important');
       measure.style.setProperty('font-family', readingFont, 'important');
-      pageText.style.setProperty('font-weight', '350', 'important');
-      measure.style.setProperty('font-weight', '350', 'important');
+      pageText.style.setProperty('font-weight', '370', 'important');
+      measure.style.setProperty('font-weight', '370', 'important');
     }
 
     function saveSettings() {
@@ -1598,11 +1600,22 @@
       );
       const below = rect.bottom + gap;
       const above = rect.top - panelHeight - gap;
-      const top = below + panelHeight <= viewportTop + viewportHeight - margin
+      const preferredTop = below + panelHeight <= viewportTop + viewportHeight - margin
         ? below
-        : Math.max(viewportTop + margin, above);
+        : above;
+      const minTop = Math.max(0, viewportTop) + margin;
+      const maxTop = Math.max(minTop, Math.max(0, viewportTop) + viewportHeight - panelHeight - margin);
+      const top = Math.max(minTop, Math.min(maxTop, preferredTop));
       notesSheet.style.left = `${left}px`;
       notesSheet.style.top = `${top}px`;
+    }
+
+    function stabilizeNotesForKeyboard() {
+      if (notesSheet.hidden) return;
+      window.requestAnimationFrame(() => {
+        positionNotes();
+        window.requestAnimationFrame(() => positionNotes());
+      });
     }
 
     function showNotes(anchorRect = activeSelection?.anchorRect) {
@@ -2520,8 +2533,13 @@
       selectionTimer = window.setTimeout(updateSelectionToolbar, 80);
     });
 
-    window.visualViewport?.addEventListener('resize', () => positionNotes());
-    window.visualViewport?.addEventListener('scroll', () => positionNotes());
+    noteInput.addEventListener('focus', () => {
+      stabilizeNotesForKeyboard();
+      [80, 180, 320].forEach(delay => window.setTimeout(stabilizeNotesForKeyboard, delay));
+    });
+    window.visualViewport?.addEventListener('resize', stabilizeNotesForKeyboard);
+    window.visualViewport?.addEventListener('scroll', stabilizeNotesForKeyboard);
+    window.addEventListener('scroll', stabilizeNotesForKeyboard, { passive:true });
 
     sheet.addEventListener('keydown', event => {
       if (event.key === 'ArrowLeft') turn(-1);
