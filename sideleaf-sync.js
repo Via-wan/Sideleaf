@@ -115,6 +115,31 @@
       });
       storage.setItem('sideleaf.notes.v1', JSON.stringify(notes));
     }
+    if (Array.isArray(state.journals) && state.journals.length) {
+      const localJournals = parseJson(storage.getItem('sideleaf.chapter-journals.v1'), []);
+      const journals = Array.isArray(localJournals) ? localJournals : [];
+      const byChapter = new Map(journals.map((journal, index) => [`${journal.bookId}:${journal.chapterKey}`, index]));
+      let journalsChanged = false;
+      state.journals.forEach(journal => {
+        if (!journal?.bookId || !journal?.chapterKey) return;
+        const key = `${journal.bookId}:${journal.chapterKey}`;
+        const index = byChapter.get(key);
+        if (index === undefined) {
+          byChapter.set(key, journals.length);
+          journals.push(journal);
+          journalsChanged = true;
+          return;
+        }
+        if (Number(journal.updatedAt || 0) > Number(journals[index]?.updatedAt || 0)) {
+          journals[index] = { ...journals[index], ...journal };
+          journalsChanged = true;
+        }
+      });
+      if (journalsChanged) {
+        storage.setItem('sideleaf.chapter-journals.v1', JSON.stringify(journals));
+        changed = true;
+      }
+    }
     if (Array.isArray(state.requests) && state.requests.length) {
       const localRequests = parseJson(storage.getItem('sideleaf.read-requests.v1'), []);
       const requests = Array.isArray(localRequests) ? localRequests : [];

@@ -131,6 +131,10 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
       state:{
         readingLines:{ 'book-1':{ zheng:{ current:120, furthest:120, updatedAt:2 } } },
         notes:[{ id:'zheng-note', bookId:'book-1', author:'zheng', text:'峥接住了。' }],
+        journals:[{
+          id:'journal-1', bookId:'book-1', chapterKey:'1:0:第一章', chapterTitle:'第一章',
+          chapterPath:['第一章'], chapterAnchor:0, chapterEnd:120, text:'第一篇札记。', createdAt:3, updatedAt:3
+        }],
         requests:[{ id:'request-1', status:'completed', completedAt:3, updatedAt:3 }]
       }
     }), { status:200 });
@@ -141,6 +145,7 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
   assert.equal(lines['book-1'].zheng.current, 120);
   const notes = JSON.parse(storage.getItem('sideleaf.notes.v1'));
   assert.deepEqual(notes.map(note => note.id), ['wish-note', 'zheng-note']);
+  assert.equal(JSON.parse(storage.getItem('sideleaf.chapter-journals.v1'))[0].text, '第一篇札记。');
   assert.equal(JSON.parse(storage.getItem('sideleaf.read-requests.v1'))[0].status, 'completed');
 });
 
