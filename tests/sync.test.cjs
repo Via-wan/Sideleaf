@@ -99,6 +99,21 @@ test('断网时保留脏数据，恢复后只发送变化过的分类', async ()
   assert.equal(SideleafSync.status(storage).pending, 0);
 });
 
+test('喜欢会作为独立变化同步到 Core', async () => {
+  const storage = new MemoryStorage({
+    [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
+    'sideleaf.likes.v1': JSON.stringify([{ id:'like-1', bookId:'book-1', rangeStart:1, rangeEnd:4 }])
+  });
+  SideleafSync.markDirty(storage, ['sideleaf.likes.v1']);
+  let sent;
+  await SideleafSync.syncNow(storage, { fetch:async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({ ok:true }), { status:200 });
+  } });
+  assert.equal(JSON.parse(sent.clientStorage['sideleaf.likes.v1'])[0].id, 'like-1');
+  assert.equal(sent.notes, undefined);
+});
+
 test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),

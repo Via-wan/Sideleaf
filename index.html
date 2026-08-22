@@ -505,7 +505,7 @@
   }
 
   (() => {
-    const appVersion = '0.15.4';
+    const appVersion = '0.15.5';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -558,7 +558,10 @@
     }
 
     function summaryText(summary) {
-      return `${summary.books} 本书 · ${summary.notes} 条批注对话 · ${summary.journals} 篇章节札记 · ${summary.requests} 个阅读请求 · ${formatBytes(summary.bytes)}`;
+      const parts = [`${summary.books} 本书`, `${summary.notes} 条批注对话`];
+      if (Number.isFinite(summary.likes)) parts.push(`${summary.likes} 处喜欢`);
+      parts.push(`${summary.journals} 篇章节札记`, `${summary.requests} 个阅读请求`, formatBytes(summary.bytes));
+      return parts.join(' · ');
     }
 
     function refreshDataSummary() {

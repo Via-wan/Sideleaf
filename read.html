@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.4</small>
+      <small class="build-version">Sideleaf 0.15.5</small>
     </div>
 
     <div class="page-wrap">
@@ -137,18 +137,20 @@
     </section>
 
     <div id="selection-toolbar" class="selection-toolbar" hidden>
-      <button id="annotate-selection" type="button">批注</button>
+      <button id="like-selection" class="like-selection" type="button" aria-label="喜欢这句话" aria-pressed="false">♡</button>
+      <span aria-hidden="true"></span>
+      <button id="annotate-selection" type="button">说一句</button>
     </div>
     <div id="selection-handles" class="selection-handles" aria-hidden="true" hidden>
       <button class="selection-handle is-start" type="button" data-selection-edge="start" tabindex="-1" aria-label="调整选区开头"></button>
       <button class="selection-handle is-end" type="button" data-selection-edge="end" tabindex="-1" aria-label="调整选区结尾"></button>
     </div>
 
-    <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句批注" aria-hidden="true" hidden>
+    <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句对话" aria-hidden="true" hidden>
       <blockquote id="selection-quote" class="selection-quote" hidden></blockquote>
       <div id="notes-list" class="notes-list"></div>
       <div id="note-compose" class="note-compose" hidden>
-        <textarea id="note-input" rows="4" aria-label="批注内容" placeholder="接着说。"></textarea>
+        <textarea id="note-input" rows="4" aria-label="说一句" placeholder="接着说。"></textarea>
         <button id="save-note" class="save-note" type="button" hidden>发送</button>
       </div>
     </section>
@@ -548,20 +550,53 @@
   #pagination-tester .selection-toolbar {
     position: fixed;
     z-index: 45;
+    display: flex;
+    align-items: center;
     transform: translate(-50%, -100%);
-    padding: 3px 5px;
-    border: 1px solid rgba(201, 130, 100, .30);
+    overflow: hidden;
+    padding: 4px 6px;
+    border: 1px solid rgba(255, 255, 255, .72);
     border-radius: 999px;
-    background: rgba(252, 250, 247, .97);
-    box-shadow: 0 8px 24px rgba(105, 76, 61, .16);
-    backdrop-filter: blur(16px);
+    background: linear-gradient(145deg, rgba(255, 255, 255, .68), rgba(246, 240, 235, .48));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .84),
+      inset 0 -1px 0 rgba(143, 111, 96, .08),
+      0 10px 30px rgba(88, 69, 58, .16);
+    -webkit-backdrop-filter: blur(18px) saturate(1.35);
+    backdrop-filter: blur(18px) saturate(1.35);
+  }
+  #pagination-tester .selection-toolbar[hidden] {
+    display: none;
+  }
+  #pagination-tester .selection-toolbar > span {
+    width: 1px;
+    height: 18px;
+    background: rgba(84, 76, 68, .16);
   }
   #pagination-tester .selection-toolbar button {
-    padding: 8px 14px;
+    min-height: 32px;
+    padding: 8px 13px;
     border: 0;
     background: transparent;
+    color: var(--foreground);
+    font: 620 13px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  }
+  #pagination-tester .selection-toolbar .like-selection {
+    min-width: 36px;
+    padding-inline: 10px;
     color: var(--wish);
-    font: 650 13px/1 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+    font-size: 20px;
+    font-weight: 450;
+    transform-origin: center;
+  }
+  #pagination-tester .selection-toolbar .like-selection.is-liked {
+    text-shadow: 0 3px 10px rgba(201, 130, 100, .24);
+  }
+  #pagination-tester .selection-toolbar .like-selection.did-toggle {
+    animation: sideleaf-heart-pulse .28s cubic-bezier(.2, .8, .3, 1);
+  }
+  @keyframes sideleaf-heart-pulse {
+    45% { transform: scale(1.18); }
   }
   #pagination-tester .selection-handles {
     position: fixed;
@@ -912,6 +947,7 @@
     const noteInput = root.querySelector('#note-input');
     const saveNote = root.querySelector('#save-note');
     const selectionToolbar = root.querySelector('#selection-toolbar');
+    const likeSelection = root.querySelector('#like-selection');
     const annotateSelection = root.querySelector('#annotate-selection');
     const selectionHandles = root.querySelector('#selection-handles');
     const selectionHandleStart = root.querySelector('[data-selection-edge="start"]');
@@ -941,6 +977,7 @@
     const booksKey = 'sideleaf.books.v1';
     const settingsKey = 'sideleaf.settings.v1';
     const notesKey = 'sideleaf.notes.v1';
+    const likesKey = 'sideleaf.likes.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
     const readingRequestsKey = 'sideleaf.read-requests.v1';
@@ -1704,9 +1741,65 @@
 
     function positionSelectionToolbar(rect) {
       if (!rect) return;
-      selectionToolbar.style.left = `${Math.max(46, Math.min(window.innerWidth - 46, rect.left + rect.width / 2))}px`;
-      selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
+      syncLikeSelectionButton();
       selectionToolbar.hidden = false;
+      const halfWidth = Math.max(46, selectionToolbar.offsetWidth / 2);
+      selectionToolbar.style.left = `${Math.max(halfWidth + 8, Math.min(window.innerWidth - halfWidth - 8, rect.left + rect.width / 2))}px`;
+      selectionToolbar.style.top = `${Math.max(66, rect.top - 8)}px`;
+    }
+
+    function readLikes() {
+      try {
+        const likes = JSON.parse(localStorage.getItem(likesKey) || '[]');
+        return Array.isArray(likes) ? likes : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    function activeLikeIndex(likes = readLikes()) {
+      if (!activeSelection) return -1;
+      return likes.findIndex(like =>
+        like.bookId === activeBookId
+        && Number(like.rangeStart) === activeSelection.start
+        && Number(like.rangeEnd) === activeSelection.end
+      );
+    }
+
+    function syncLikeSelectionButton() {
+      const liked = activeLikeIndex() >= 0;
+      likeSelection.textContent = liked ? '♥' : '♡';
+      likeSelection.classList.toggle('is-liked', liked);
+      likeSelection.setAttribute('aria-pressed', String(liked));
+      likeSelection.setAttribute('aria-label', liked ? '取消喜欢这句话' : '喜欢这句话');
+    }
+
+    function toggleSelectionLike() {
+      if (!activeSelection) return;
+      const likes = readLikes();
+      const index = activeLikeIndex(likes);
+      if (index >= 0) {
+        likes.splice(index, 1);
+      } else {
+        const now = Date.now();
+        likes.push({
+          id: window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+          bookId: activeBookId,
+          rangeStart: activeSelection.start,
+          rangeEnd: activeSelection.end,
+          quote: activeSelection.quote,
+          prefix: activeSelection.prefix,
+          suffix: activeSelection.suffix,
+          createdAt: now,
+          updatedAt: now
+        });
+      }
+      localStorage.setItem(likesKey, JSON.stringify(likes));
+      SideleafSync.markDirty(localStorage, [likesKey]);
+      syncLikeSelectionButton();
+      likeSelection.classList.remove('did-toggle');
+      void likeSelection.offsetWidth;
+      likeSelection.classList.add('did-toggle');
     }
 
     function selectionRects() {
@@ -2346,6 +2439,14 @@
     });
     annotateSelection.addEventListener('click', event => {
       if (event.detail === 0) composeForSelection();
+    });
+    likeSelection.addEventListener('pointerdown', event => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleSelectionLike();
+    });
+    likeSelection.addEventListener('click', event => {
+      if (event.detail === 0) toggleSelectionLike();
     });
     [selectionHandleStart, selectionHandleEnd].forEach(handle => {
       handle.addEventListener('pointerdown', startSelectionDrag);

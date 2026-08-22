@@ -12,6 +12,7 @@
     'sideleaf.books.v1',
     'sideleaf.settings.v1',
     'sideleaf.notes.v1',
+    'sideleaf.likes.v1',
     'sideleaf.reading-lines.v1',
     'sideleaf.chapter-journals.v1',
     'sideleaf.read-requests.v1'
