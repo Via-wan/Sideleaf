@@ -144,6 +144,40 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
   assert.equal(JSON.parse(storage.getItem('sideleaf.read-requests.v1'))[0].status, 'completed');
 });
 
+test('切页发生在同步途中时，结束后会再拉一次最新的峥活动', async () => {
+  const storage = new MemoryStorage({
+    [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
+    'sideleaf.reading-lines.v1': JSON.stringify({
+      'book-1':{ wish:{ current:88 }, zheng:{ current:null, furthest:null }, schemaVersion:2 }
+    }),
+    'sideleaf.notes.v1': '[]'
+  });
+  let finishFirst;
+  let calls = 0;
+  const fetch = async () => {
+    calls += 1;
+    if (calls === 1) {
+      return new Promise(resolve => { finishFirst = resolve; });
+    }
+    return new Response(JSON.stringify({
+      ok:true,
+      state:{
+        readingLines:{ 'book-1':{ zheng:{ current:2304, furthest:2304, updatedAt:3 } } },
+        notes:[{ id:'latest-note', bookId:'book-1', author:'zheng', text:'刚写回来的批注。' }]
+      }
+    }), { status:200 });
+  };
+
+  const first = SideleafSync.syncNow(storage, { fetch });
+  const pageTurn = SideleafSync.syncNow(storage, { fetch, queueIfBusy:true });
+  finishFirst(new Response(JSON.stringify({ ok:true, state:{} }), { status:200 }));
+  await Promise.all([first, pageTurn]);
+
+  assert.equal(calls, 2);
+  assert.equal(JSON.parse(storage.getItem('sideleaf.reading-lines.v1'))['book-1'].zheng.current, 2304);
+  assert.equal(JSON.parse(storage.getItem('sideleaf.notes.v1'))[0].id, 'latest-note');
+});
+
 test('恢复接口使用设备凭证，并支持读取、固定与恢复快照', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' })

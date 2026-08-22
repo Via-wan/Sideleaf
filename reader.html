@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.13</small>
+      <small class="build-version">Sideleaf 0.15.14</small>
     </div>
 
     <div class="page-wrap">
@@ -2494,15 +2494,13 @@
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
-        requestZhengRead.textContent = existing ? '已再叫峥' : '已叫峥';
-      } catch (_) {
-        requestZhengRead.textContent = '已登记';
-      }
+      } catch (_) {}
+      requestZhengRead.textContent = existing ? '已再叫峥' : '已叫峥';
       window.setTimeout(() => { requestZhengRead.textContent = '峥来读'; }, 1800);
     }
 
     function syncZhengActivity() {
-      return SideleafSync.syncNow(localStorage);
+      return SideleafSync.syncNow(localStorage, { queueIfBusy:true });
     }
 
     function turn(delta) {

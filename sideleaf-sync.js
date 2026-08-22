@@ -19,6 +19,7 @@
   ]);
   let timer = 0;
   let inFlight = null;
+  let queuedSync = null;
   let statusListener = null;
   let dirtyRevision = 0;
 
@@ -133,7 +134,18 @@
   }
 
   async function syncNow(storage, options = {}) {
-    if (inFlight) return inFlight;
+    if (inFlight) {
+      if (!options.queueIfBusy) return inFlight;
+      queuedSync = {
+        storage,
+        options:{ ...options, queueIfBusy:false }
+      };
+      await inFlight;
+      if (inFlight) return inFlight;
+      const queued = queuedSync;
+      queuedSync = null;
+      return queued ? syncNow(queued.storage, queued.options) : { ok:true, queued:true };
+    }
     clearTimeout(timer);
     const auth = readAuth(storage);
     const dirty = readDirty(storage);
