@@ -31,6 +31,8 @@
     --zheng: #657572;
     --control-accent: #d6a18e;
     --zheng-marker: #879792;
+    --wish-text: #b57d6b;
+    --wish-selection: #d9b8aa;
     --wish-mark: rgba(217, 184, 170, .38);
     --zheng-mark: rgba(172, 188, 184, .38);
     --space-3: 12px;
@@ -57,7 +59,7 @@
     appearance: none;
   }
   ::selection {
-    background-color: #e8c49f !important;
+    background-color: var(--wish-mark) !important;
     color: #544c44 !important;
   }
   html, body {
@@ -85,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.12</small>
+      <small class="build-version">Sideleaf 0.15.13</small>
     </div>
 
     <div class="page-wrap">
@@ -367,13 +369,13 @@
   #pagination-tester .active-selection-highlight {
     padding: 0;
     border-radius: 0;
-    background: rgba(209, 139, 85, .18) !important;
+    background: var(--wish-mark) !important;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
   #pagination-tester .page-text,
   #pagination-tester .page-text * {
-    caret-color: #d18b55;
+    caret-color: var(--wish-selection);
   }
   #pagination-tester .page-number {
     flex: 0 0 1em;
@@ -678,7 +680,7 @@
     width: 2px;
     height: var(--selection-line-height, 1.6em);
     border-radius: 999px;
-    background: var(--wish);
+    background: var(--wish-selection);
     transform: translateX(-50%);
   }
   #pagination-tester .selection-handle::after {
@@ -688,7 +690,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    background: var(--wish);
+    background: var(--wish-selection);
     box-shadow: 0 1px 4px rgba(105, 76, 61, .18);
     transform: translateX(-50%);
   }
@@ -782,7 +784,7 @@
     margin: 0;
     white-space: pre-wrap;
   }
-  #pagination-tester .note-item.is-wish .note-text { color: var(--wish); }
+  #pagination-tester .note-item.is-wish .note-text { color: var(--wish-text); }
   #pagination-tester .note-item.is-zheng .note-text { color: var(--zheng); }
   #pagination-tester .note-content {
     position: relative;
