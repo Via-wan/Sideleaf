@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.16</small>
+      <small class="build-version">Sideleaf 0.15.17</small>
     </div>
 
     <div class="page-wrap">
@@ -786,6 +786,13 @@
   }
   #pagination-tester .note-item.is-wish .note-text { color: var(--wish-text); }
   #pagination-tester .note-item.is-zheng .note-text { color: var(--zheng); }
+  #pagination-tester .note-bubble {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+  #pagination-tester .note-item.is-wish .note-bubble { align-items: flex-end; }
+  #pagination-tester .note-item.is-zheng .note-bubble { align-items: flex-start; }
   #pagination-tester .note-content {
     position: relative;
     min-width: 0;
@@ -832,7 +839,7 @@
   #pagination-tester .note-meta {
     display: flex;
     align-items: baseline;
-    margin-bottom: 4px;
+    margin: 0 3px 3px;
   }
   #pagination-tester .note-time {
     color: rgba(71, 62, 51, .48);
@@ -1690,7 +1697,10 @@
         const noteText = document.createElement('p');
         noteText.className = 'note-text';
         noteText.textContent = note.text;
-        noteContent.append(noteMeta, noteText);
+        noteContent.append(noteText);
+        const noteBubble = document.createElement('div');
+        noteBubble.className = 'note-bubble';
+        noteBubble.append(noteMeta, noteContent);
 
         const more = document.createElement('button');
         more.className = 'note-more';
@@ -1765,7 +1775,7 @@
         });
 
         actions.append(edit, remove);
-        item.append(noteContent);
+        item.append(noteBubble);
         if (normalizeNoteAuthor(note.author) === 'wish') item.append(more, actions);
         notesList.appendChild(item);
       });
