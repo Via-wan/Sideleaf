@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.22</small>
+      <small class="build-version">Sideleaf 0.15.23</small>
     </div>
 
     <div class="page-wrap">
@@ -547,6 +547,8 @@
     margin-bottom: 14px;
   }
   #pagination-tester .chapter-journal-head strong {
+    display: flex;
+    align-items: baseline;
     min-width: 0;
     overflow: hidden;
     color: var(--muted-foreground);
@@ -556,13 +558,17 @@
     white-space: nowrap;
   }
   #pagination-tester .chapter-journal-label {
-    margin-right: 0;
-    color: rgba(84, 76, 68, .78);
-    font-size: 1.333em;
+    color: rgba(84, 76, 68, .82);
+    font-size: 20px;
     font-weight: 650;
+    letter-spacing: .03em;
   }
   #pagination-tester #chapter-journal-title {
-    font-size: .667em;
+    margin-left: 7px;
+    color: rgba(84, 76, 68, .52);
+    font-size: 12.5px;
+    font-weight: 400;
+    letter-spacing: .04em;
   }
   #pagination-tester .chapter-journal-head button {
     flex: 0 0 auto;
