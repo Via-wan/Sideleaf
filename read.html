@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.19</small>
+      <small class="build-version">Sideleaf 0.15.20</small>
     </div>
 
     <div class="page-wrap">
@@ -124,7 +124,7 @@
 
     <section id="chapter-journal" class="chapter-journal" role="dialog" aria-modal="false" aria-labelledby="chapter-journal-heading" aria-hidden="true" hidden>
       <div class="chapter-journal-head">
-        <strong id="chapter-journal-heading">札记</strong>
+        <strong id="chapter-journal-heading"><span class="chapter-journal-label">札记</span><span id="chapter-journal-title"></span></strong>
         <button id="copy-chapter-journal" type="button" aria-label="递给峥" disabled>↑</button>
       </div>
       <div id="chapter-journal-body" class="chapter-journal-body is-empty">尚未留下札记</div>
@@ -448,11 +448,7 @@
     backdrop-filter: blur(28px) saturate(1.28);
   }
   #pagination-tester .reading-line-row {
-    padding: 10px 12px 11px;
-    border: 1px solid rgba(255, 255, 255, .60);
-    border-radius: 16px;
-    background: rgba(252, 250, 247, .30);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
+    padding: 0;
   }
   #pagination-tester .reading-bookmark + .reading-line-row { margin-top: 28px; }
   #pagination-tester .reading-line-row + .reading-line-row { margin-top: 9px; }
@@ -486,9 +482,9 @@
   #pagination-tester .zheng-line .reading-line-track i { background: #707b78; }
   #pagination-tester .reading-lines-panel .reading-bookmark {
     position: absolute;
-    top: 13px;
+    top: 0;
     right: 16px;
-    width: 22px;
+    width: 17px;
     height: 29px;
     padding: 0;
     border: 0;
@@ -502,7 +498,7 @@
     content: "★";
     position: absolute;
     left: 50%;
-    top: 13px;
+    top: 9px;
     color: rgba(252, 250, 247, .94);
     font-size: 8px;
     line-height: 1;
@@ -555,6 +551,11 @@
     font-weight: 400;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  #pagination-tester .chapter-journal-label {
+    margin-right: .5em;
+    color: rgba(84, 76, 68, .68);
+    font-size: 17px;
   }
   #pagination-tester .chapter-journal-head button {
     flex: 0 0 auto;
@@ -1089,7 +1090,7 @@
     const markZhengLine = root.querySelector('#mark-zheng-line');
     const openChapterJournal = root.querySelector('#open-chapter-journal');
     const chapterJournal = root.querySelector('#chapter-journal');
-    const chapterJournalHeading = root.querySelector('#chapter-journal-heading');
+    const chapterJournalTitle = root.querySelector('#chapter-journal-title');
     const chapterJournalBody = root.querySelector('#chapter-journal-body');
     const copyChapterJournal = root.querySelector('#copy-chapter-journal');
     const tocDrawer = root.querySelector('.toc-drawer');
@@ -2310,7 +2311,7 @@
       const unit = currentChapterUnit();
       if (!unit) return;
       activeJournalUnit = unit;
-      chapterJournalHeading.textContent = `札记-${unit.title}`;
+      chapterJournalTitle.textContent = unit.title;
       chapterJournal.hidden = false;
       chapterJournal.setAttribute('aria-hidden', 'false');
       closeLightPopovers();
