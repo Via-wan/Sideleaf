@@ -27,8 +27,10 @@
     --card: #fcfaf7;
     --card-foreground: #544c44;
     --primary: #8f6f60;
-    --wish: #c98264;
+    --wish: #d18b55;
     --zheng: #657572;
+    --wish-mark: rgba(225, 184, 140, .42);
+    --zheng-mark: rgba(172, 188, 184, .38);
     --space-3: 12px;
     --space-4: 16px;
     --space-5: 20px;
@@ -53,7 +55,7 @@
     appearance: none;
   }
   ::selection {
-    background-color: #e7b7a2 !important;
+    background-color: #e8c49f !important;
     color: #544c44 !important;
   }
   html, body {
@@ -81,7 +83,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.7</small>
+      <small class="build-version">Sideleaf 0.15.8</small>
     </div>
 
     <div class="page-wrap">
@@ -205,6 +207,16 @@
     backdrop-filter: blur(24px) saturate(1.34);
   }
   #pagination-tester .tester-controls.is-open { display: grid; }
+  #pagination-tester .tester-controls label {
+    color: rgba(112, 105, 98, .62);
+  }
+  #pagination-tester .tester-controls output {
+    color: rgba(92, 85, 79, .64);
+  }
+  #pagination-tester .tester-controls input[type="range"] {
+    accent-color: #bfa69a;
+    opacity: .74;
+  }
   #pagination-tester .type-toggle {
     position: fixed;
     z-index: 21;
@@ -317,24 +329,22 @@
     margin-right: calc(var(--reader-size) * 1.5) !important;
     margin-left: calc(var(--reader-size) * 1.5) !important;
   }
-  #pagination-tester .annotation-highlight {
-    padding-bottom: .04em;
-    border-bottom: 1.5px solid transparent;
-    cursor: pointer;
+  #pagination-tester .reading-highlight {
+    padding: 0;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
   }
-  #pagination-tester .annotation-highlight.is-wish {
-    border-bottom-color: rgba(201, 130, 100, .88);
-    background: linear-gradient(to top, rgba(201, 130, 100, .14) 0 .42em, transparent .42em);
+  #pagination-tester .annotation-highlight { cursor: pointer; }
+  #pagination-tester .reading-highlight.is-wish {
+    background: linear-gradient(to top, var(--wish-mark) 0 .68em, transparent .68em);
   }
-  #pagination-tester .annotation-highlight.is-zheng {
-    border-bottom-color: rgba(101, 117, 114, .88);
-    background: linear-gradient(to top, rgba(101, 117, 114, .14) 0 .42em, transparent .42em);
+  #pagination-tester .reading-highlight.is-zheng {
+    background: linear-gradient(to top, var(--zheng-mark) 0 .68em, transparent .68em);
   }
-  #pagination-tester .annotation-highlight.is-both {
-    border-bottom-color: rgba(143, 123, 109, .88);
+  #pagination-tester .reading-highlight.is-both {
     background:
-      linear-gradient(to top, rgba(201, 130, 100, .13) 0 .34em, transparent .34em),
-      linear-gradient(to top, rgba(101, 117, 114, .10) 0 .58em, transparent .58em);
+      linear-gradient(to top, var(--wish-mark) 0 .34em, transparent .34em),
+      linear-gradient(to top, var(--zheng-mark) 0 .68em, transparent .68em);
   }
   #pagination-tester .zheng-read-marker {
     display: inline-block;
@@ -349,13 +359,13 @@
   #pagination-tester .active-selection-highlight {
     padding: 0;
     border-radius: 0;
-    background: rgba(201, 130, 100, .18) !important;
+    background: rgba(209, 139, 85, .18) !important;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
   #pagination-tester .page-text,
   #pagination-tester .page-text * {
-    caret-color: #c98264;
+    caret-color: #d18b55;
   }
   #pagination-tester .page-number {
     flex: 0 0 1em;
@@ -529,7 +539,7 @@
     caret-color: var(--wish);
     font: 400 16px/1.68 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
-  #pagination-tester .chapter-journal textarea:focus { border-color: rgba(201, 130, 100, .48); }
+  #pagination-tester .chapter-journal textarea:focus { border-color: rgba(209, 139, 85, .48); }
   #pagination-tester .chapter-journal-meta {
     display: flex;
     justify-content: space-between;
@@ -617,7 +627,7 @@
     transform-origin: center;
   }
   #pagination-tester .selection-toolbar .like-selection.is-liked {
-    text-shadow: 0 3px 10px rgba(201, 130, 100, .24);
+    text-shadow: 0 3px 10px rgba(209, 139, 85, .24);
   }
   #pagination-tester .selection-toolbar .like-selection.did-toggle {
     animation: sideleaf-heart-pulse .28s cubic-bezier(.2, .8, .3, 1);
@@ -778,11 +788,11 @@
     justify-self: end;
     border-color: rgba(255, 255, 255, .66);
     border-bottom-right-radius: 7px;
-    background: linear-gradient(145deg, rgba(245, 225, 217, .66), rgba(218, 181, 165, .42));
+    background: linear-gradient(145deg, rgba(248, 231, 211, .68), rgba(225, 184, 140, .44));
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, .72),
-      inset 0 -1px 0 rgba(173, 112, 87, .10),
-      0 7px 18px rgba(139, 91, 72, .13);
+      inset 0 -1px 0 rgba(175, 116, 67, .10),
+      0 7px 18px rgba(148, 99, 57, .12);
   }
   #pagination-tester .note-item.is-zheng .note-content {
     justify-self: start;
@@ -866,15 +876,15 @@
     -webkit-backdrop-filter: blur(18px) saturate(1.20);
     backdrop-filter: blur(18px) saturate(1.20);
     color: var(--foreground);
-    caret-color: #c98264;
-    accent-color: #c98264;
+    caret-color: #d18b55;
+    accent-color: #d18b55;
     font: 400 16px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
   #pagination-tester .note-compose textarea:focus {
-    border-color: rgba(201, 130, 100, .42);
+    border-color: rgba(209, 139, 85, .42);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, .88),
-      0 0 0 3px rgba(201, 130, 100, .08);
+      0 0 0 3px rgba(209, 139, 85, .08);
   }
   #pagination-tester .notes-sheet .save-note {
     position: absolute;
@@ -963,13 +973,11 @@
     font-size: 13px;
   }
   #pagination-tester .toc-entry.is-current {
-    border: 1px solid rgba(255, 255, 255, .64);
-    background: linear-gradient(145deg, rgba(239, 223, 215, .62), rgba(214, 194, 184, .40));
+    border: 0;
+    background: rgba(143, 111, 96, .10);
     color: var(--primary);
     font-weight: 600;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, .64),
-      0 5px 14px rgba(113, 84, 70, .09);
+    box-shadow: none;
   }
   #pagination-tester .toc-entry-title {
     min-width: 0;
@@ -1432,8 +1440,18 @@
       );
     }
 
+    function rangeLikesForPage(page) {
+      if (!page) return [];
+      return readLikes().filter(like =>
+        like.bookId === activeBookId && isRangeNote(like)
+        && Number(like.rangeStart) < page.displayEnd
+        && Number(like.rangeEnd) > page.displayStart
+      );
+    }
+
     function renderPageContent(page) {
       const annotations = rangeNotesForPage(page);
+      const likes = rangeLikesForPage(page);
       const zhengMarkerOffset = readingState.zheng.current > page.displayStart
         && readingState.zheng.current <= page.displayEnd
         ? Number(readingState.zheng.current)
@@ -1443,7 +1461,7 @@
         && activeSelection.end > page.displayStart
         ? activeSelection
         : null;
-      if (!annotations.length && !selection && zhengMarkerOffset === null) {
+      if (!annotations.length && !likes.length && !selection && zhengMarkerOffset === null) {
         pageText.textContent = page.text;
         return;
       }
@@ -1452,6 +1470,10 @@
       annotations.forEach(note => {
         boundaries.add(Math.max(page.displayStart, Number(note.rangeStart)));
         boundaries.add(Math.min(page.displayEnd, Number(note.rangeEnd)));
+      });
+      likes.forEach(like => {
+        boundaries.add(Math.max(page.displayStart, Number(like.rangeStart)));
+        boundaries.add(Math.min(page.displayEnd, Number(like.rangeEnd)));
       });
       if (selection) {
         boundaries.add(Math.max(page.displayStart, selection.start));
@@ -1466,17 +1488,23 @@
         const matchingNotes = annotations.filter(note =>
           Number(note.rangeStart) < to && Number(note.rangeEnd) > from
         );
+        const matchingLikes = likes.filter(like =>
+          Number(like.rangeStart) < to && Number(like.rangeEnd) > from
+        );
         const selected = selection && selection.start < to && selection.end > from;
         const content = text.slice(from, to);
-        if (!matchingNotes.length && !selected) {
+        if (!matchingNotes.length && !matchingLikes.length && !selected) {
           fragment.appendChild(document.createTextNode(content));
         } else {
           const mark = document.createElement('span');
-          if (matchingNotes.length) {
-            mark.classList.add('annotation-highlight');
+          if (matchingNotes.length || matchingLikes.length) {
+            mark.classList.add('reading-highlight');
+            if (matchingNotes.length) mark.classList.add('annotation-highlight');
+            else mark.classList.add('liked-highlight');
             const authors = new Set(matchingNotes.map(note => normalizeNoteAuthor(note.author)));
+            if (matchingLikes.length) authors.add('wish');
             mark.classList.add(authors.size > 1 ? 'is-both' : authors.has('zheng') ? 'is-zheng' : 'is-wish');
-            mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
+            if (matchingNotes.length) mark.dataset.noteIds = matchingNotes.map(note => note.id).join(',');
           }
           if (selected) mark.classList.add('active-selection-highlight');
           mark.textContent = content;
@@ -1913,6 +1941,7 @@
       }
       localStorage.setItem(likesKey, JSON.stringify(likes));
       SideleafSync.markDirty(localStorage, [likesKey]);
+      renderPageContent(pages[index]);
       syncLikeSelectionButton();
       likeSelection.classList.remove('did-toggle');
       void likeSelection.offsetWidth;
