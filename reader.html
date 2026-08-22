@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.3</small>
+      <small class="build-version">Sideleaf 0.15.4</small>
     </div>
 
     <div class="page-wrap">
@@ -335,7 +335,7 @@
   #pagination-tester .active-selection-highlight {
     padding: 0;
     border-radius: 0;
-    background: transparent !important;
+    background: rgba(201, 130, 100, .18) !important;
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
   }
@@ -1059,6 +1059,7 @@
     let editingNoteId = null;
     let composingNoteAuthor = 'wish';
     let activeSelection = null;
+    let activeSelectionHighlightVisible = false;
     let focusedNoteIds = null;
     let notesAnchorRect = null;
     let drawerStartX = 0;
@@ -1309,7 +1310,7 @@
         && readingState.zheng.current <= page.displayEnd
         ? Number(readingState.zheng.current)
         : null;
-      const selection = activeSelection
+      const selection = activeSelectionHighlightVisible && activeSelection
         && activeSelection.start < page.displayEnd
         && activeSelection.end > page.displayStart
         ? activeSelection
@@ -1642,6 +1643,7 @@
       saveNote.hidden = true;
       selectionQuote.hidden = true;
       activeSelection = null;
+      activeSelectionHighlightVisible = false;
       hideSelectionHandles();
       focusedNoteIds = null;
       notesAnchorRect = null;
@@ -1731,6 +1733,7 @@
 
     function updateActiveSelection(start, end) {
       if (!activeSelection || end <= start) return false;
+      activeSelectionHighlightVisible = true;
       activeSelection.start = start;
       activeSelection.end = end;
       activeSelection.quote = text.slice(start, end);
@@ -1757,6 +1760,7 @@
         prefix: text.slice(Math.max(0, sentence.start - 60), sentence.start),
         suffix: text.slice(sentence.end, Math.min(text.length, sentence.end + 60))
       };
+      activeSelectionHighlightVisible = true;
       focusedNoteIds = null;
       renderPageContent(pages[index]);
       window.requestAnimationFrame(() => {
@@ -1889,6 +1893,7 @@
         prefix: text.slice(Math.max(0, start - 60), start),
         suffix: text.slice(end, Math.min(text.length, end + 60))
       };
+      activeSelectionHighlightVisible = true;
       const rangeRects = Array.from(range.getClientRects());
       const rect = rangeRects[rangeRects.length - 1] || range.getBoundingClientRect();
       activeSelection.anchorRect = rememberRect(rect);
@@ -1897,6 +1902,7 @@
 
     function composeForSelection() {
       if (!activeSelection) return;
+      activeSelectionHighlightVisible = true;
       focusedNoteIds = [];
       editingNoteId = null;
       noteInput.value = '';
@@ -1907,6 +1913,7 @@
       hideSelectionToolbar();
       hideSelectionHandles();
       window.getSelection()?.removeAllRanges();
+      renderPageContent(pages[index]);
       showNotes(activeSelection.anchorRect);
       window.requestAnimationFrame(resizeNoteInput);
       window.setTimeout(() => noteInput.focus(), 80);
@@ -1923,6 +1930,7 @@
         prefix: first.prefix || text.slice(Math.max(0, Number(first.rangeStart) - 60), Number(first.rangeStart)),
         suffix: first.suffix || text.slice(Number(first.rangeEnd), Math.min(text.length, Number(first.rangeEnd) + 60))
       } : null;
+      activeSelectionHighlightVisible = false;
       focusedNoteIds = noteIds;
       editingNoteId = null;
       noteInput.value = '';
@@ -1930,6 +1938,7 @@
       saveNote.textContent = '发送';
       noteCompose.hidden = false;
       saveNote.hidden = false;
+      renderPageContent(pages[index]);
       showNotes(anchorRect);
       window.requestAnimationFrame(resizeNoteInput);
     }
@@ -2386,6 +2395,7 @@
         // Keep the current sentence selected while interacting with its own controls.
       } else {
         activeSelection = null;
+        activeSelectionHighlightVisible = false;
         hideSelectionToolbar();
         hideSelectionHandles();
         renderPageContent(pages[index]);
@@ -2436,6 +2446,7 @@
           && Number(note.rangeEnd) === activeSelection.end
         ).map(note => note.id);
       }
+      activeSelectionHighlightVisible = false;
       editingNoteId = null;
       noteInput.value = '';
       noteInput.style.height = '';
