@@ -81,7 +81,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.5</small>
+      <small class="build-version">Sideleaf 0.15.6</small>
     </div>
 
     <div class="page-wrap">
@@ -555,15 +555,30 @@
     transform: translate(-50%, -100%);
     overflow: hidden;
     padding: 4px 6px;
-    border: 1px solid rgba(255, 255, 255, .72);
+    isolation: isolate;
+    border: 1px solid rgba(255, 255, 255, .82);
     border-radius: 999px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .68), rgba(246, 240, 235, .48));
+    background: linear-gradient(145deg, rgba(255, 255, 255, .58), rgba(232, 237, 238, .46));
     box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, .84),
-      inset 0 -1px 0 rgba(143, 111, 96, .08),
-      0 10px 30px rgba(88, 69, 58, .16);
-    -webkit-backdrop-filter: blur(18px) saturate(1.35);
-    backdrop-filter: blur(18px) saturate(1.35);
+      inset 0 1px 0 rgba(255, 255, 255, .92),
+      inset 0 -1px 0 rgba(91, 102, 105, .10),
+      0 10px 30px rgba(67, 75, 76, .17);
+    -webkit-backdrop-filter: blur(24px) saturate(1.42);
+    backdrop-filter: blur(24px) saturate(1.42);
+  }
+  #pagination-tester .selection-toolbar::before {
+    content: "";
+    position: absolute;
+    z-index: 0;
+    inset: 1px 7px auto;
+    height: 42%;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .64), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
+  #pagination-tester .selection-toolbar > * {
+    position: relative;
+    z-index: 1;
   }
   #pagination-tester .selection-toolbar[hidden] {
     display: none;
@@ -659,12 +674,17 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    isolation: isolate;
     padding: 16px;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    background: var(--card);
-    box-shadow: 0 14px 42px rgba(56, 45, 36, .20);
-    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, .78);
+    border-radius: 24px;
+    background: linear-gradient(145deg, rgba(255, 255, 255, .66), rgba(242, 239, 235, .53));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .94),
+      inset 0 -1px 0 rgba(84, 76, 68, .08),
+      0 18px 48px rgba(68, 58, 51, .20);
+    -webkit-backdrop-filter: blur(28px) saturate(1.28);
+    backdrop-filter: blur(28px) saturate(1.28);
     overscroll-behavior: contain;
   }
   #pagination-tester .notes-sheet[hidden] { display: none; }
@@ -672,9 +692,11 @@
     flex: 0 0 auto;
     margin: 0 0 14px;
     padding: 10px 12px;
-    border-left: 2px solid rgba(143, 111, 96, .58);
-    border-radius: 0 10px 10px 0;
-    background: rgba(143, 111, 96, .06);
+    border: 1px solid rgba(255, 255, 255, .62);
+    border-left: 2px solid rgba(143, 111, 96, .42);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .30);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .58);
     color: var(--muted-foreground);
     font-size: 13px;
     line-height: 1.55;
@@ -716,41 +738,61 @@
     white-space: pre-wrap;
   }
   #pagination-tester .note-content {
+    position: relative;
     min-width: 0;
-    padding: 9px 12px 10px;
+    overflow: hidden;
+    padding: 10px 13px 11px;
     border: 1px solid transparent;
-    border-radius: 14px;
+    border-radius: 18px;
     overflow-wrap: anywhere;
+    -webkit-backdrop-filter: blur(16px) saturate(1.24);
+    backdrop-filter: blur(16px) saturate(1.24);
+  }
+  #pagination-tester .note-content::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 48%;
+    border-radius: inherit;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .38), rgba(255, 255, 255, 0));
+    pointer-events: none;
+  }
+  #pagination-tester .note-content > * {
+    position: relative;
   }
   #pagination-tester .note-item.is-wish .note-content {
     justify-self: end;
-    border-color: rgba(201, 130, 100, .18);
-    border-bottom-right-radius: 4px;
-    background: rgba(201, 130, 100, .16);
+    border-color: rgba(255, 255, 255, .66);
+    border-bottom-right-radius: 7px;
+    background: linear-gradient(145deg, rgba(245, 225, 217, .66), rgba(218, 181, 165, .42));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .72),
+      inset 0 -1px 0 rgba(173, 112, 87, .10),
+      0 7px 18px rgba(139, 91, 72, .13);
   }
   #pagination-tester .note-item.is-zheng .note-content {
     justify-self: start;
-    border-color: rgba(101, 117, 114, .18);
-    border-bottom-left-radius: 4px;
-    background: rgba(101, 117, 114, .14);
+    border-color: rgba(255, 255, 255, .64);
+    border-bottom-left-radius: 7px;
+    background: linear-gradient(145deg, rgba(222, 229, 227, .66), rgba(172, 188, 184, .40));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .70),
+      inset 0 -1px 0 rgba(78, 101, 96, .10),
+      0 7px 18px rgba(72, 94, 89, .13);
   }
   #pagination-tester .note-meta {
     display: flex;
     align-items: baseline;
-    gap: 6px;
-    margin-bottom: 3px;
-  }
-  #pagination-tester .note-author {
-    font-size: 11px;
-    font-weight: 650;
+    margin-bottom: 4px;
   }
   #pagination-tester .note-time {
-    color: rgba(71, 62, 51, .45);
-    font-size: 9px;
+    color: rgba(71, 62, 51, .48);
+    font-size: 9.5px;
     font-variant-numeric: tabular-nums;
+    letter-spacing: .01em;
+    white-space: nowrap;
   }
-  #pagination-tester .note-item.is-wish .note-author { color: var(--wish); }
-  #pagination-tester .note-item.is-zheng .note-author { color: var(--zheng); }
+  #pagination-tester .note-item.is-wish .note-meta { justify-content: flex-end; }
   #pagination-tester .note-more {
     min-width: 22px;
     padding: 2px 0;
@@ -789,16 +831,26 @@
     resize: none;
     overflow-y: hidden;
     padding: 11px 70px 40px 12px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, .76);
+    border-radius: 18px;
     outline: none;
-    background: var(--card);
+    background: linear-gradient(145deg, rgba(255, 255, 255, .54), rgba(240, 235, 231, .38));
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .82),
+      inset 0 -1px 0 rgba(84, 76, 68, .08);
+    -webkit-backdrop-filter: blur(18px) saturate(1.20);
+    backdrop-filter: blur(18px) saturate(1.20);
     color: var(--foreground);
     caret-color: #c98264;
     accent-color: #c98264;
     font: 400 16px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
-  #pagination-tester .note-compose textarea:focus { border-color: rgba(143, 111, 96, .48); }
+  #pagination-tester .note-compose textarea:focus {
+    border-color: rgba(201, 130, 100, .42);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .88),
+      0 0 0 3px rgba(201, 130, 100, .08);
+  }
   #pagination-tester .notes-sheet .save-note {
     position: absolute;
     right: 9px;
@@ -1498,11 +1550,9 @@
     function formatNoteTime(timestamp) {
       const value = Number(timestamp);
       if (!Number.isFinite(value) || value <= 0) return '';
-      return new Intl.DateTimeFormat('zh-CN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      }).format(new Date(value));
+      const date = new Date(value);
+      const pad = part => String(part).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
 
     function renderNotes() {
@@ -1526,15 +1576,17 @@
         item.classList.add(note.author === 'zheng' ? 'is-zheng' : 'is-wish');
         const noteContent = document.createElement('div');
         noteContent.className = 'note-content';
-        const noteAuthor = document.createElement('small');
-        noteAuthor.className = 'note-author';
-        noteAuthor.textContent = noteAuthorLabel(note.author);
         const noteTime = document.createElement('time');
         noteTime.className = 'note-time';
-        noteTime.textContent = formatNoteTime(note.createdAt || note.updatedAt);
+        const noteTimestamp = Number(note.createdAt || note.updatedAt || 0);
+        if (Number.isFinite(noteTimestamp) && noteTimestamp > 0) {
+          noteTime.dateTime = new Date(noteTimestamp).toISOString();
+          noteTime.textContent = formatNoteTime(noteTimestamp);
+        }
         const noteMeta = document.createElement('div');
         noteMeta.className = 'note-meta';
-        noteMeta.append(noteAuthor, noteTime);
+        noteMeta.hidden = !noteTime.textContent;
+        noteMeta.append(noteTime);
         const noteText = document.createElement('p');
         noteText.className = 'note-text';
         noteText.textContent = note.text;
