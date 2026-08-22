@@ -83,7 +83,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.15.8</small>
+      <small class="build-version">Sideleaf 0.15.9</small>
     </div>
 
     <div class="page-wrap">
@@ -198,7 +198,7 @@
     padding: var(--space-3) var(--space-4);
     border: 1px solid rgba(255, 255, 255, .80);
     border-radius: 18px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(232, 237, 238, .46));
+    background: rgba(252, 250, 247, .94);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, .90),
       inset 0 -1px 0 rgba(91, 102, 105, .08),
@@ -208,10 +208,10 @@
   }
   #pagination-tester .tester-controls.is-open { display: grid; }
   #pagination-tester .tester-controls label {
-    color: rgba(112, 105, 98, .62);
+    color: rgba(84, 76, 68, .78);
   }
   #pagination-tester .tester-controls output {
-    color: rgba(92, 85, 79, .64);
+    color: rgba(112, 105, 98, .62);
   }
   #pagination-tester .tester-controls input[type="range"] {
     accent-color: #bfa69a;
@@ -227,7 +227,7 @@
     padding: 0;
     border: 1px solid rgba(255, 255, 255, .82);
     border-radius: 999px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(230, 236, 237, .46));
+    background: rgba(252, 250, 247, .94);
     color: var(--muted-foreground);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, .92),
@@ -248,7 +248,7 @@
     place-items: center;
     border: 1px solid rgba(255, 255, 255, .82);
     border-radius: 999px;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .62), rgba(230, 236, 237, .46));
+    background: rgba(252, 250, 247, .94);
     color: var(--muted-foreground);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, .92),
@@ -315,6 +315,12 @@
     word-break: normal;
     overflow-wrap: normal;
     text-align: justify;
+  }
+  #pagination-tester .paragraph-indent {
+    display: inline-block;
+    width: 2em;
+    height: 1px;
+    pointer-events: none;
   }
   #pagination-tester .page-text,
   #pagination-tester .page-text * {
@@ -923,7 +929,7 @@
     overflow: auto;
     padding: max(28px, env(safe-area-inset-top)) 18px calc(22px + env(safe-area-inset-bottom));
     border-right: 1px solid rgba(255, 255, 255, .76);
-    background: linear-gradient(155deg, rgba(255, 255, 255, .74), rgba(235, 238, 236, .60));
+    background: rgba(252, 250, 247, .96);
     box-shadow:
       inset -1px 0 0 rgba(255, 255, 255, .50),
       14px 0 40px rgba(58, 66, 64, .16);
@@ -1081,7 +1087,7 @@
     const chapterJournalsKey = 'sideleaf.chapter-journals.v1';
     const readingRequestsKey = 'sideleaf.read-requests.v1';
     const paginationCacheKey = '__sideleaf_pagination_cache_v1';
-    const paginationLayoutVersion = '3';
+    const paginationLayoutVersion = '4';
     const bookId = new URLSearchParams(window.location.search).get('book');
     const storedBooks = SideleafLibrary.ensure(localStorage);
     const activeBook = storedBooks.find(book => book.id === (bookId || SideleafLibrary.DEFAULT_BOOK_ID))
@@ -1211,9 +1217,21 @@
     let paginationRun = 0;
     let paginationComplete = false;
 
-    function fits(fragment, height) {
+    function isParagraphStart(offset) {
+      if (offset <= 0) return true;
+      let cursor = offset - 1;
+      while (cursor >= 0 && (text[cursor] === ' ' || text[cursor] === '\t')) cursor -= 1;
+      return text[cursor] === '\n';
+    }
+
+    function indentedMeasureText(fragment, globalStart) {
+      const prefix = isParagraphStart(globalStart) && fragment[0] !== '\n' ? '　　' : '';
+      return prefix + fragment.replace(/\n(?=[^\n])/g, '\n　　');
+    }
+
+    function fits(fragment, height, globalStart) {
       measure.style.height = `${height}px`;
-      measure.textContent = fragment;
+      measure.textContent = indentedMeasureText(fragment, globalStart);
       return measure.scrollHeight <= height + 1;
     }
 
@@ -1346,7 +1364,7 @@
         let best = low;
         while (low <= high) {
           const middle = Math.floor((low + high) / 2);
-          if (fits(text.slice(start, middle), availableHeight)) {
+          if (fits(text.slice(start, middle), availableHeight, start)) {
             best = middle;
             low = middle + 1;
           } else {
@@ -1461,11 +1479,10 @@
         && activeSelection.end > page.displayStart
         ? activeSelection
         : null;
-      if (!annotations.length && !likes.length && !selection && zhengMarkerOffset === null) {
-        pageText.textContent = page.text;
-        return;
-      }
       const boundaries = new Set([page.displayStart, page.displayEnd]);
+      for (let offset = page.displayStart; offset < page.displayEnd; offset += 1) {
+        if (text[offset] === '\n' && offset + 1 < page.displayEnd) boundaries.add(offset + 1);
+      }
       if (zhengMarkerOffset !== null) boundaries.add(zhengMarkerOffset);
       annotations.forEach(note => {
         boundaries.add(Math.max(page.displayStart, Number(note.rangeStart)));
@@ -1493,6 +1510,12 @@
         );
         const selected = selection && selection.start < to && selection.end > from;
         const content = text.slice(from, to);
+        if (isParagraphStart(from) && content[0] !== '\n') {
+          const indent = document.createElement('span');
+          indent.className = 'paragraph-indent';
+          indent.setAttribute('aria-hidden', 'true');
+          fragment.appendChild(indent);
+        }
         if (!matchingNotes.length && !matchingLikes.length && !selected) {
           fragment.appendChild(document.createTextNode(content));
         } else {
