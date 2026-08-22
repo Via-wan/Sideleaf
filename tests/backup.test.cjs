@@ -96,3 +96,38 @@ test('恢复中途写入失败时自动回滚原数据', () => {
   assert.throws(() => SideleafBackup.replace(storage, original), /quota/);
   assert.deepEqual(SideleafBackup.collect(storage), before);
 });
+
+test('Core 当前书架合并会保留两边独有内容，并以 Core 同 ID 内容为准', () => {
+  const current = {
+    'sideleaf.books.v1': JSON.stringify([
+      { id:'local-only', title:'本机独有' },
+      { id:'shared', title:'本机旧标题', progress:12 }
+    ]),
+    'sideleaf.notes.v1': JSON.stringify([{ id:'local-note', author:'wish' }]),
+    'sideleaf.reading-lines.v1': JSON.stringify({
+      shared:{ wish:{ current:12 }, zheng:{ current:null }, schemaVersion:2 }
+    }),
+    'sideleaf.future.v2': JSON.stringify({ local:true })
+  };
+  const incoming = {
+    'sideleaf.books.v1': JSON.stringify([
+      { id:'core-only', title:'Core 独有' },
+      { id:'shared', title:'Core 新标题', content:'完整正文' }
+    ]),
+    'sideleaf.notes.v1': JSON.stringify([{ id:'core-note', author:'zheng' }]),
+    'sideleaf.reading-lines.v1': JSON.stringify({
+      shared:{ zheng:{ current:88, furthest:88 }, schemaVersion:2 }
+    })
+  };
+  const merged = SideleafBackup.merge(current, incoming);
+  const books = JSON.parse(merged['sideleaf.books.v1']);
+  assert.deepEqual(books.map(book => book.id), ['local-only', 'shared', 'core-only']);
+  assert.deepEqual(books.find(book => book.id === 'shared'), {
+    id:'shared', title:'Core 新标题', progress:12, content:'完整正文'
+  });
+  assert.deepEqual(JSON.parse(merged['sideleaf.notes.v1']).map(note => note.id), ['local-note', 'core-note']);
+  const lines = JSON.parse(merged['sideleaf.reading-lines.v1']);
+  assert.equal(lines.shared.wish.current, 12);
+  assert.equal(lines.shared.zheng.current, 88);
+  assert.equal(merged['sideleaf.future.v2'], JSON.stringify({ local:true }));
+});

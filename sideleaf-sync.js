@@ -174,6 +174,62 @@
     return inFlight;
   }
 
+  async function coreRequest(storage, path, options = {}) {
+    const auth = readAuth(storage);
+    if (!auth) throw new Error('请先连接 Sideleaf Core。');
+    const fetchImpl = options.fetch || globalThis.fetch;
+    if (typeof fetchImpl !== 'function') throw new Error('这台设备暂时不能连接 Sideleaf Core。');
+    const response = await fetchImpl(`${normalizeCoreUrl(auth.baseUrl)}${path}`, {
+      method:options.method || 'GET',
+      headers:{
+        authorization:`Bearer ${auth.token}`,
+        ...(options.body === undefined ? {} : { 'content-type':'application/json' })
+      },
+      ...(options.body === undefined ? {} : { body:JSON.stringify(options.body) })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (response.status === 401) emit('authorization-error');
+      throw new Error(result.error || `Core 请求失败（HTTP ${response.status}）。`);
+    }
+    return result;
+  }
+
+  async function recoveryOverview(storage, options = {}) {
+    return coreRequest(storage, '/api/device/recovery', options);
+  }
+
+  async function fetchRecoveryBackup(storage, snapshotId = null, options = {}) {
+    const path = snapshotId
+      ? `/api/device/recovery/snapshots/${encodeURIComponent(snapshotId)}`
+      : '/api/device/recovery/current';
+    const result = await coreRequest(storage, path, options);
+    return result.backup;
+  }
+
+  async function createRecoverySnapshot(storage, reason = '愿手动保存', options = {}) {
+    return coreRequest(storage, '/api/device/recovery/snapshots', {
+      ...options,
+      method:'POST',
+      body:{ reason }
+    });
+  }
+
+  async function pinRecoverySnapshot(storage, snapshotId, pinned, options = {}) {
+    return coreRequest(storage, `/api/device/recovery/snapshots/${encodeURIComponent(snapshotId)}/pin`, {
+      ...options,
+      method:'POST',
+      body:{ pinned:Boolean(pinned) }
+    });
+  }
+
+  async function restoreRecoverySnapshot(storage, snapshotId, options = {}) {
+    return coreRequest(storage, `/api/device/recovery/snapshots/${encodeURIComponent(snapshotId)}/restore`, {
+      ...options,
+      method:'POST'
+    });
+  }
+
   function schedule(storage, delay = 1200) {
     if (!readAuth(storage)) return;
     clearTimeout(timer);
@@ -260,5 +316,10 @@
     };
   }
 
-  return { AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS, markDirty, queueDeletion, syncNow, pairWithCode, acceptPairing, start, status, snapshotFor, applyServerState };
+  return {
+    AUTH_KEY, DIRTY_KEY, DELETIONS_KEY, SYNCABLE_KEYS,
+    markDirty, queueDeletion, syncNow, pairWithCode, acceptPairing, start, status,
+    recoveryOverview, fetchRecoveryBackup, createRecoverySnapshot, pinRecoverySnapshot, restoreRecoverySnapshot,
+    snapshotFor, applyServerState
+  };
 });

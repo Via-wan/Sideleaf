@@ -303,7 +303,43 @@
   .data-action.danger-confirm { background: #765548; }
   .data-action:disabled { opacity: .58; }
   .restore-panel[hidden],
-  .connect-panel[hidden] { display: none; }
+  .connect-panel[hidden],
+  .core-restore-panel[hidden] { display: none; }
+  .snapshot-list {
+    display: grid;
+    gap: 9px;
+    margin: 14px 0;
+  }
+  .snapshot-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 12px 13px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fffdfa;
+  }
+  .snapshot-copy strong,
+  .snapshot-copy small { display: block; }
+  .snapshot-copy strong { font-size: 13px; }
+  .snapshot-copy small {
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .snapshot-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .snapshot-actions button {
+    padding: 6px 8px;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: 560 12px/1.2 inherit;
+  }
   .connect-field { margin-bottom: 14px; }
   .connect-field label {
     display: block;
@@ -400,6 +436,10 @@
           从备份恢复
           <small>先检查文件与内容，确认后才会替换现有数据</small>
         </button>
+        <button id="restore-core" class="data-action" type="button">
+          从 Core 恢复
+          <small>找回完整书架，或退回 Core 保存的旧版本</small>
+        </button>
         <button id="connect-core" class="data-action" type="button">
           连接 Sideleaf Core
           <small>把 Core 生成的一次性配对码交给这份桌面书架</small>
@@ -407,11 +447,23 @@
       </div>
       <div id="restore-panel" class="restore-panel" hidden>
         <div id="restore-preview" class="restore-preview"></div>
-        <p class="restore-warning">恢复会以这份备份替换当前 Sideleaf 数据；若写入失败，会自动回滚。恢复成功后仍可立即撤销一次。</p>
+        <p id="restore-warning" class="restore-warning">恢复会以这份备份替换当前 Sideleaf 数据；若写入失败，会自动回滚。恢复成功后仍可立即撤销一次。</p>
         <div class="data-actions">
           <button id="cancel-restore" class="data-action" type="button">换一份备份</button>
           <button id="confirm-restore" class="data-action primary" type="button">恢复这份备份</button>
         </div>
+      </div>
+      <div id="core-restore-panel" class="core-restore-panel" hidden>
+        <div id="core-restore-summary" class="restore-preview"></div>
+        <div class="data-actions">
+          <button id="restore-core-current" class="data-action primary" type="button">合并 Core 当前书架</button>
+          <button id="save-core-snapshot" class="data-action" type="button">
+            保存当前版本
+            <small>长期保留，直到愿取消保留</small>
+          </button>
+        </div>
+        <div id="core-snapshot-list" class="snapshot-list"></div>
+        <button id="close-core-restore" class="data-action" type="button">返回</button>
       </div>
       <div id="connect-panel" class="connect-panel" hidden>
         <p class="restore-warning">请在真正装着书的桌面 Sideleaf 里完成这一步。配对后，会把这台设备现有的完整书架合并进 Core。</p>
@@ -453,7 +505,7 @@
   }
 
   (() => {
-    const appVersion = '0.14.3';
+    const appVersion = '0.15.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const grid = document.getElementById('book-grid');
@@ -468,10 +520,12 @@
     const dataActions = document.getElementById('data-actions');
     const exportBackup = document.getElementById('export-backup');
     const chooseBackup = document.getElementById('choose-backup');
+    const restoreCore = document.getElementById('restore-core');
     const connectCore = document.getElementById('connect-core');
     const backupFile = document.getElementById('backup-file');
     const restorePanel = document.getElementById('restore-panel');
     const restorePreview = document.getElementById('restore-preview');
+    const restoreWarning = document.getElementById('restore-warning');
     const cancelRestore = document.getElementById('cancel-restore');
     const confirmRestore = document.getElementById('confirm-restore');
     const connectPanel = document.getElementById('connect-panel');
@@ -479,10 +533,19 @@
     const pairingCode = document.getElementById('pairing-code');
     const cancelConnect = document.getElementById('cancel-connect');
     const confirmConnect = document.getElementById('confirm-connect');
+    const coreRestorePanel = document.getElementById('core-restore-panel');
+    const coreRestoreSummary = document.getElementById('core-restore-summary');
+    const restoreCoreCurrent = document.getElementById('restore-core-current');
+    const saveCoreSnapshot = document.getElementById('save-core-snapshot');
+    const coreSnapshotList = document.getElementById('core-snapshot-list');
+    const closeCoreRestore = document.getElementById('close-core-restore');
     const backupToast = document.getElementById('backup-toast');
     const toastMessage = document.getElementById('toast-message');
     const undoRestore = document.getElementById('undo-restore');
     let pendingBackup = null;
+    let pendingBackupSource = 'file';
+    let pendingCoreSnapshotId = null;
+    let coreRecovery = null;
     let undoRestoreAction = null;
     let toastTimer = 0;
 
@@ -523,16 +586,21 @@
       dataBackdrop.setAttribute('aria-hidden', 'true');
       resetRestorePanel();
       resetConnectPanel();
+      resetCoreRestorePanel();
     }
 
     function resetRestorePanel() {
       pendingBackup = null;
+      pendingBackupSource = 'file';
+      pendingCoreSnapshotId = null;
       backupFile.value = '';
       restorePanel.hidden = true;
       dataActions.hidden = false;
       confirmRestore.classList.remove('danger-confirm');
       confirmRestore.textContent = '恢复这份备份';
       confirmRestore.dataset.armed = '';
+      cancelRestore.textContent = '换一份备份';
+      restoreWarning.textContent = '恢复会以这份备份替换当前 Sideleaf 数据；若写入失败，会自动回滚。恢复成功后仍可立即撤销一次。';
     }
 
     function resetConnectPanel() {
@@ -543,8 +611,16 @@
       confirmConnect.textContent = '连接并同步这份书架';
     }
 
+    function resetCoreRestorePanel() {
+      coreRestorePanel.hidden = true;
+      coreRecovery = null;
+      coreSnapshotList.replaceChildren();
+      dataActions.hidden = false;
+    }
+
     function openConnectPanel() {
       resetRestorePanel();
+      resetCoreRestorePanel();
       dataActions.hidden = true;
       connectPanel.hidden = false;
       window.setTimeout(() => pairingCode.focus(), 50);
@@ -565,6 +641,127 @@
         confirmConnect.disabled = false;
         confirmConnect.textContent = '连接并同步这份书架';
         window.alert(error?.message || '这次没有连接成功，请重新生成配对码。');
+      }
+    }
+
+    function recoveryDate(value) {
+      if (!value) return '时间未知';
+      return new Intl.DateTimeFormat('zh-CN', {
+        month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit'
+      }).format(new Date(value));
+    }
+
+    function snapshotKindLabel(snapshot) {
+      if (snapshot.pinned) return '长期保留';
+      if (snapshot.kind === 'protected') return '保护快照';
+      return '自动快照';
+    }
+
+    function renderCoreRecovery() {
+      if (!coreRecovery) return;
+      const current = coreRecovery.current || { summary:{} };
+      coreRestoreSummary.innerHTML = `<strong>Core 当前保存：${summaryText(current.summary || {})}</strong>${escapeText(recoveryDate(current.updatedAt))} 最近更新`;
+      restoreCoreCurrent.disabled = !Number(current.summary?.keys || 0);
+      coreSnapshotList.replaceChildren();
+      const snapshots = Array.isArray(coreRecovery.snapshots) ? coreRecovery.snapshots : [];
+      if (!snapshots.length) {
+        const empty = document.createElement('p');
+        empty.className = 'data-summary';
+        empty.textContent = '还没有旧版本。发生实际变化后，Core 会按保留规则自动留下。';
+        coreSnapshotList.appendChild(empty);
+        return;
+      }
+      snapshots.forEach(snapshot => {
+        const item = document.createElement('div');
+        item.className = 'snapshot-item';
+        const copy = document.createElement('div');
+        copy.className = 'snapshot-copy';
+        const title = document.createElement('strong');
+        title.textContent = `${snapshotKindLabel(snapshot)} · ${recoveryDate(snapshot.createdAt)}`;
+        const detail = document.createElement('small');
+        detail.textContent = `${summaryText(snapshot.summary || {})} · ${snapshot.reason || '版本快照'}`;
+        copy.append(title, detail);
+        const actions = document.createElement('div');
+        actions.className = 'snapshot-actions';
+        const pin = document.createElement('button');
+        pin.type = 'button';
+        pin.textContent = snapshot.pinned ? '取消保留' : '长期保留';
+        pin.addEventListener('click', async () => {
+          pin.disabled = true;
+          try {
+            await SideleafSync.pinRecoverySnapshot(localStorage, snapshot.id, !snapshot.pinned);
+            await loadCoreRecovery();
+          } catch (error) {
+            window.alert(error?.message || '快照保留状态没有改成功。');
+          }
+        });
+        const restore = document.createElement('button');
+        restore.type = 'button';
+        restore.textContent = '恢复';
+        restore.addEventListener('click', () => prepareCoreRestore('core-snapshot', snapshot.id));
+        actions.append(pin, restore);
+        item.append(copy, actions);
+        coreSnapshotList.appendChild(item);
+      });
+    }
+
+    async function loadCoreRecovery() {
+      if (!SideleafSync.status(localStorage).connected) {
+        window.alert('请先连接 Sideleaf Core，再从 Core 恢复。');
+        return;
+      }
+      resetRestorePanel();
+      resetConnectPanel();
+      dataActions.hidden = true;
+      coreRestorePanel.hidden = false;
+      coreRestoreSummary.innerHTML = '<strong>正在读取 Core…</strong>';
+      coreSnapshotList.replaceChildren();
+      try {
+        coreRecovery = await SideleafSync.recoveryOverview(localStorage);
+        renderCoreRecovery();
+      } catch (error) {
+        resetCoreRestorePanel();
+        window.alert(error?.message || '暂时没有从 Core 读到恢复信息。');
+      }
+    }
+
+    async function prepareCoreRestore(source, snapshotId = null) {
+      restoreCoreCurrent.disabled = true;
+      try {
+        const backup = await SideleafSync.fetchRecoveryBackup(localStorage, snapshotId);
+        pendingBackup = await SideleafBackup.parse(JSON.stringify(backup));
+        pendingBackup.storage = SideleafLibrary.ensureSnapshot(pendingBackup.storage);
+        pendingBackupSource = source;
+        pendingCoreSnapshotId = snapshotId;
+        const incoming = SideleafBackup.summarize(pendingBackup.storage);
+        const current = SideleafBackup.summarize(SideleafBackup.collect(localStorage));
+        const exact = source === 'core-snapshot';
+        restorePreview.innerHTML = `<strong>${exact ? '退回旧版本' : '合并 Core 当前书架'}：${summaryText(incoming)}</strong>本机当前：${summaryText(current)} · Core 版本：${escapeText(recoveryDate(pendingBackup.exportedAt))}`;
+        restoreWarning.textContent = exact
+          ? '旧版本恢复会让 Core 与本机一起退回这一刻；操作前会自动保存当前版本，恢复后仍可立即撤销。'
+          : '会保留本机与 Core 两边独有的内容；同一条数据以 Core 当前版本为准。写入失败会自动回滚。';
+        cancelRestore.textContent = '返回版本列表';
+        confirmRestore.textContent = exact ? '恢复这个旧版本' : '合并并恢复';
+        confirmRestore.dataset.armed = '';
+        coreRestorePanel.hidden = true;
+        restorePanel.hidden = false;
+      } catch (error) {
+        window.alert(error?.message || '这份 Core 数据没有通过检查。');
+      } finally {
+        restoreCoreCurrent.disabled = false;
+      }
+    }
+
+    async function savePinnedCoreSnapshot() {
+      saveCoreSnapshot.disabled = true;
+      try {
+        await SideleafSync.createRecoverySnapshot(localStorage, '愿手动保存');
+        await loadCoreRecovery();
+        showToast('Core 已长期保留当前版本。');
+      } catch (error) {
+        window.alert(error?.message || '当前版本没有保存成功。');
+      } finally {
+        saveCoreSnapshot.disabled = false;
       }
     }
 
@@ -634,6 +831,8 @@
       try {
         pendingBackup = await SideleafBackup.parse(await file.text());
         pendingBackup.storage = SideleafLibrary.ensureSnapshot(pendingBackup.storage);
+        pendingBackupSource = 'file';
+        pendingCoreSnapshotId = null;
         const summary = SideleafBackup.summarize(pendingBackup.storage);
         const exportedAt = new Intl.DateTimeFormat('zh-CN', {
           year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -649,26 +848,55 @@
       }
     }
 
-    function restorePendingBackup() {
+    async function restorePendingBackup() {
       if (!pendingBackup) return;
       if (confirmRestore.dataset.armed !== 'true') {
         confirmRestore.dataset.armed = 'true';
         confirmRestore.classList.add('danger-confirm');
-        confirmRestore.textContent = '再点一次，确认覆盖并恢复';
+        confirmRestore.textContent = pendingBackupSource === 'core-current'
+          ? '再点一次，确认合并并恢复'
+          : '再点一次，确认退回并恢复';
         return;
       }
+      confirmRestore.disabled = true;
+      const source = pendingBackupSource;
+      let rollbackSnapshotId = null;
       try {
-        const undo = SideleafBackup.replace(localStorage, pendingBackup.storage);
-        SideleafSync.markDirty(localStorage);
+        let nextStorage = pendingBackup.storage;
+        if (source === 'core-current') {
+          nextStorage = SideleafBackup.merge(SideleafBackup.collect(localStorage), nextStorage);
+        } else if (source === 'core-snapshot') {
+          const result = await SideleafSync.restoreRecoverySnapshot(localStorage, pendingCoreSnapshotId);
+          rollbackSnapshotId = result.rollbackSnapshotId;
+          const restored = await SideleafBackup.parse(JSON.stringify(result.backup));
+          nextStorage = SideleafLibrary.ensureSnapshot(restored.storage);
+        }
+        const undoLocal = SideleafBackup.replace(localStorage, nextStorage);
+        if (source !== 'core-snapshot') SideleafSync.markDirty(localStorage);
+        const undo = source === 'core-snapshot'
+          ? async () => {
+              const result = await SideleafSync.restoreRecoverySnapshot(localStorage, rollbackSnapshotId);
+              const restored = await SideleafBackup.parse(JSON.stringify(result.backup));
+              SideleafBackup.replace(localStorage, SideleafLibrary.ensureSnapshot(restored.storage));
+            }
+          : () => {
+              undoLocal();
+              SideleafSync.markDirty(localStorage);
+            };
         resetRestorePanel();
         closeDataSheet();
         renderBooks();
-        showToast('Sideleaf 已从备份恢复。', undo);
+        showToast(source === 'core-current' ? 'Core 当前书架已合并回来。' : 'Sideleaf 已恢复到选定版本。', undo);
       } catch (error) {
+        if (rollbackSnapshotId) {
+          try { await SideleafSync.restoreRecoverySnapshot(localStorage, rollbackSnapshotId); } catch (_) {}
+        }
         confirmRestore.dataset.armed = '';
         confirmRestore.classList.remove('danger-confirm');
-        confirmRestore.textContent = '恢复这份备份';
+        confirmRestore.textContent = source === 'core-current' ? '合并并恢复' : source === 'core-snapshot' ? '恢复这个旧版本' : '恢复这份备份';
         window.alert(`恢复没有完成，原数据已经保留。\n${error?.message || ''}`.trim());
+      } finally {
+        confirmRestore.disabled = false;
       }
     }
 
@@ -1001,25 +1229,34 @@
     });
     exportBackup.addEventListener('click', exportCompleteBackup);
     chooseBackup.addEventListener('click', () => backupFile.click());
+    restoreCore.addEventListener('click', loadCoreRecovery);
     connectCore.addEventListener('click', openConnectPanel);
     backupFile.addEventListener('change', inspectBackupFile);
-    cancelRestore.addEventListener('click', () => {
+    restoreCoreCurrent.addEventListener('click', () => prepareCoreRestore('core-current'));
+    saveCoreSnapshot.addEventListener('click', savePinnedCoreSnapshot);
+    closeCoreRestore.addEventListener('click', resetCoreRestorePanel);
+    cancelRestore.addEventListener('click', async () => {
+      const returnToCore = pendingBackupSource.startsWith('core-');
       resetRestorePanel();
-      backupFile.click();
+      if (returnToCore) await loadCoreRecovery();
+      else backupFile.click();
     });
     confirmRestore.addEventListener('click', restorePendingBackup);
     cancelConnect.addEventListener('click', resetConnectPanel);
     confirmConnect.addEventListener('click', connectThisShelf);
-    undoRestore.addEventListener('click', () => {
+    undoRestore.addEventListener('click', async () => {
       if (!undoRestoreAction) return;
+      const action = undoRestoreAction;
+      undoRestoreAction = null;
+      undoRestore.disabled = true;
       try {
-        undoRestoreAction();
-        SideleafSync.markDirty(localStorage);
-        undoRestoreAction = null;
+        await action();
         renderBooks();
         showToast('刚才的恢复已经撤销。');
       } catch (_) {
         window.alert('撤销没有成功，请用先前保存的备份恢复。');
+      } finally {
+        undoRestore.disabled = false;
       }
     });
 

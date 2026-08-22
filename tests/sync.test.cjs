@@ -128,3 +128,34 @@ test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态',
   assert.deepEqual(notes.map(note => note.id), ['wish-note', 'zheng-note']);
   assert.equal(JSON.parse(storage.getItem('sideleaf.read-requests.v1'))[0].status, 'completed');
 });
+
+test('恢复接口使用设备凭证，并支持读取、固定与恢复快照', async () => {
+  const storage = new MemoryStorage({
+    [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' })
+  });
+  const calls = [];
+  const fetch = async (url, init) => {
+    calls.push({ url, init });
+    if (url.endsWith('/api/device/recovery')) {
+      return new Response(JSON.stringify({ current:{ summary:{ books:1 } }, snapshots:[] }), { status:200 });
+    }
+    if (url.endsWith('/api/device/recovery/current')) {
+      return new Response(JSON.stringify({ backup:{ format:'sideleaf-backup' } }), { status:200 });
+    }
+    if (url.endsWith('/api/device/recovery/snapshots') && init.method === 'POST') {
+      return new Response(JSON.stringify({ snapshot:{ id:'snapshot-1', pinned:true } }), { status:200 });
+    }
+    if (url.endsWith('/api/device/recovery/snapshots/snapshot-1/pin')) {
+      return new Response(JSON.stringify({ snapshot:{ id:'snapshot-1', pinned:false } }), { status:200 });
+    }
+    return new Response(JSON.stringify({ rollbackSnapshotId:'rollback-1', backup:{ format:'sideleaf-backup' } }), { status:200 });
+  };
+  assert.equal((await SideleafSync.recoveryOverview(storage, { fetch })).current.summary.books, 1);
+  assert.equal((await SideleafSync.fetchRecoveryBackup(storage, null, { fetch })).format, 'sideleaf-backup');
+  assert.equal((await SideleafSync.createRecoverySnapshot(storage, '愿手动保存', { fetch })).snapshot.pinned, true);
+  assert.equal((await SideleafSync.pinRecoverySnapshot(storage, 'snapshot-1', false, { fetch })).snapshot.pinned, false);
+  assert.equal((await SideleafSync.restoreRecoverySnapshot(storage, 'snapshot-1', { fetch })).rollbackSnapshotId, 'rollback-1');
+  calls.forEach(call => assert.equal(call.init.headers.authorization, 'Bearer device-token'));
+  assert.equal(JSON.parse(calls[2].init.body).reason, '愿手动保存');
+  assert.equal(JSON.parse(calls[3].init.body).pinned, false);
+});

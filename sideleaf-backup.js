@@ -154,6 +154,44 @@
     return function undo() { apply(previous); };
   }
 
+  function merge(currentStorage, incomingStorage) {
+    validateStorage(currentStorage);
+    validateStorage(incomingStorage);
+    const merged = { ...currentStorage, ...incomingStorage };
+    const arrayKeys = [
+      'sideleaf.books.v1',
+      'sideleaf.notes.v1',
+      'sideleaf.chapter-journals.v1',
+      'sideleaf.read-requests.v1'
+    ];
+    arrayKeys.forEach(key => {
+      const current = parseKnown(currentStorage, key, []);
+      const incoming = parseKnown(incomingStorage, key, []);
+      const byId = new Map();
+      (Array.isArray(current) ? current : []).forEach(item => {
+        if (item?.id) byId.set(item.id, item);
+      });
+      (Array.isArray(incoming) ? incoming : []).forEach(item => {
+        if (item?.id) byId.set(item.id, { ...(byId.get(item.id) || {}), ...item });
+      });
+      merged[key] = JSON.stringify([...byId.values()]);
+    });
+    const currentLines = parseKnown(currentStorage, 'sideleaf.reading-lines.v1', {});
+    const incomingLines = parseKnown(incomingStorage, 'sideleaf.reading-lines.v1', {});
+    const lines = { ...(isPlainObject(currentLines) ? currentLines : {}) };
+    Object.entries(isPlainObject(incomingLines) ? incomingLines : {}).forEach(([bookId, state]) => {
+      lines[bookId] = {
+        ...(lines[bookId] || {}),
+        ...(state || {}),
+        wish:{ ...(lines[bookId]?.wish || {}), ...(state?.wish || {}) },
+        zheng:{ ...(lines[bookId]?.zheng || {}), ...(state?.zheng || {}) }
+      };
+    });
+    merged['sideleaf.reading-lines.v1'] = JSON.stringify(lines);
+    validateStorage(merged);
+    return merged;
+  }
+
   return {
     FORMAT,
     SCHEMA_VERSION,
@@ -162,6 +200,7 @@
     summarize,
     create,
     parse,
+    merge,
     replace
   };
 });
