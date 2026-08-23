@@ -722,8 +722,10 @@
     transform: translateX(var(--tab-offset)) scale(1.035);
   }
   .footprint-content {
+    display: flex;
     flex: 1;
     min-height: 0;
+    flex-direction: column;
     overflow-y: auto;
     margin: 70px 0;
     padding: 21px 0 24px;
@@ -735,7 +737,10 @@
     animation: content-settle .24s ease both;
   }
   .footprint-content::-webkit-scrollbar { display: none; }
-  .footprint-content .empty-state { min-height: 100%; }
+  .footprint-content .empty-state {
+    flex: 1;
+    min-height: 0;
+  }
   .review-compose-shell {
     position: relative;
     margin: 0 0 18px;
@@ -890,8 +895,8 @@
     color: #a66f65;
   }
   @keyframes content-settle {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   .footprint-quote {
     margin: 0 0 10px;
@@ -1581,7 +1586,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.11';
+    const appVersion = '0.20.12';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2808,6 +2813,7 @@
       reviewSelectedBookId = null;
       editingReviewId = null;
       openReviewMenuId = null;
+      footprintContent.scrollTop = 0;
       renderFootprints();
     }));
     footprintContent.addEventListener('click', event => {
