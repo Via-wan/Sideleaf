@@ -509,7 +509,7 @@
     caret-color: #d9b8aa;
     color: var(--ink);
     font-family: inherit;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 400;
     line-height: 1.55;
   }
@@ -613,7 +613,7 @@
     caret-color: #d9b8aa;
     color: var(--ink);
     font-family: inherit;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 400;
     line-height: 1.75;
   }
@@ -848,7 +848,7 @@
     caret-color: #d9b8aa;
     color: var(--ink);
     font-family: inherit;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 400;
     line-height: 1.7;
   }
@@ -1200,7 +1200,7 @@
         <div class="leaf-book-control">
           <input id="leaf-book-select" type="hidden" value="">
           <button id="leaf-book-toggle" class="leaf-book-toggle" type="button" aria-label="关联书籍">＋</button>
-          <span id="leaf-selected-book" class="leaf-selected-book">添加书籍</span>
+          <span id="leaf-selected-book" class="leaf-selected-book">不关联书籍</span>
           <div id="leaf-book-picker" class="leaf-book-picker" hidden></div>
         </div>
         <button id="leaf-publish" class="leaf-publish" type="button">留下</button>
@@ -1314,7 +1314,7 @@
   }
 
   (() => {
-    const appVersion = '0.17.5';
+    const appVersion = '0.17.6';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1837,11 +1837,12 @@
       leafBookSelect.value = selected;
       leafSelectedBook.textContent = selected
         ? `《${books.find(book => book.id === selected)?.title || ''}》`
-        : '添加书籍';
+        : '不关联书籍';
       leafSelectedBook.classList.toggle('is-selected', Boolean(selected));
-      leafBookPicker.innerHTML = books
-        .map(book => `<button type="button" class="${selected === book.id ? 'is-selected' : ''}" data-leaf-book-id="${escapeText(book.id)}">${escapeText(book.title)}</button>`)
-        .join('');
+      leafBookPicker.innerHTML = [
+        `<button type="button" class="${selected ? '' : 'is-selected'}" data-leaf-book-id="">不关联书籍</button>`,
+        ...books.map(book => `<button type="button" class="${selected === book.id ? 'is-selected' : ''}" data-leaf-book-id="${escapeText(book.id)}">${escapeText(book.title)}</button>`)
+      ].join('');
       leafBookPicker.hidden = !leafBookPickerOpen;
     }
 
