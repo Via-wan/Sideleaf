@@ -2418,6 +2418,17 @@
             return `${i + 1}. ${noteAuthorLabel(note.author)}｜${quote}：${note.text}`;
           }).join('\n')
         : '无';
+      const relatedLikes = readLikes().filter(like =>
+        like.bookId === activeBookId && isRangeNote(like)
+        && Number(like.rangeStart) < to
+        && Number(like.rangeEnd) > contextStart
+      );
+      const likeBlock = relatedLikes.length
+        ? relatedLikes.map((like, i) => {
+            const quote = like.quote || text.slice(like.rangeStart, like.rangeEnd);
+            return `${i + 1}. ${noteAuthorLabel(like.author)}｜「${quote}」`;
+          }).join('\n')
+        : '无';
       const packet = [
         '【Sideleaf｜回望】',
         `书名：${activeBook?.title || '雨停以后'}`,
@@ -2431,7 +2442,10 @@
         text.slice(contextStart, to),
         '',
         '【相关批注】',
-        noteBlock
+        noteBlock,
+        '',
+        '【相关喜欢】',
+        likeBlock
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
