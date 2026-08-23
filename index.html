@@ -540,7 +540,7 @@
     position: absolute;
     z-index: 0;
     top: 0;
-    right: 34px;
+    right: calc(50% - 50vw);
     bottom: 0;
     left: calc(50% - 50vw);
     background: #f8f4ee;
@@ -1418,7 +1418,7 @@
           </section>
           <div class="footprint-tabs" role="tablist" aria-label="足迹类型">
             <button type="button" role="tab" aria-label="说一句" aria-selected="true" class="is-active" data-footprint-kind="notes">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.3 6.5c0-2 1.8-3.5 4.1-3.5h3.2c2.3 0 4.1 1.5 4.1 3.5v2.2c0 2-1.8 3.5-4.1 3.5H9l-3.1 2.2.7-2.7c-1.4-.6-2.3-1.7-2.3-3V6.5Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M10.2 14.2c.5 1.2 1.8 2 3.4 2H16l2.7 2-.6-2.5c1.1-.6 1.8-1.6 1.8-2.7v-1.8c0-1.6-1.3-2.9-3-3.2" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6.8C4 4.7 5.9 3 8.3 3h7.4C18.1 3 20 4.7 20 6.8v5c0 2.1-1.9 3.8-4.3 3.8h-4.2l-4.6 3.2 1-3.5C5.7 15.1 4 13.5 4 11.6V6.8Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><circle cx="8.4" cy="9.4" r="1" fill="currentColor"/><circle cx="12" cy="9.4" r="1" fill="currentColor"/><circle cx="15.6" cy="9.4" r="1" fill="currentColor"/></svg>
             </button>
             <button type="button" role="tab" aria-label="喜欢" aria-selected="false" data-footprint-kind="likes">
               <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19.7 4.6 12.8C.8 9.3 3.1 3.5 7.8 4.4c1.8.3 3.1 1.5 4.2 3 1.1-1.5 2.4-2.7 4.2-3 4.7-.9 7 4.9 3.2 8.4L12 19.7Z" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"/></svg>
@@ -1581,7 +1581,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.9';
+    const appVersion = '0.20.10';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
