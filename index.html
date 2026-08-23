@@ -51,6 +51,13 @@
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif;
     touch-action: manipulation;
   }
+  body.is-footprints {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   .shelf {
     --shelf-gutter: 22px;
     width: min(100%, 760px);
@@ -538,8 +545,8 @@
     left: calc(50% - 50vw);
     background: #f8f4ee;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 34px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 34px), transparent 100%);
   }
   #view-footprints {
     height: calc(100svh - max(34px, env(safe-area-inset-top)) - 58px);
@@ -1526,7 +1533,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.4';
+    const appVersion = '0.20.5';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2340,6 +2347,7 @@
 
     function setMainView(view) {
       activeMainView = ['shelf', 'leaves', 'footprints'].includes(view) ? view : 'shelf';
+      document.body.classList.toggle('is-footprints', activeMainView === 'footprints');
       mainViews.forEach(element => { element.hidden = element.id !== `view-${activeMainView}`; });
       mainViewButtons.forEach(button => button.classList.toggle('is-active', button.dataset.mainView === activeMainView));
       importButton.hidden = activeMainView !== 'shelf';
