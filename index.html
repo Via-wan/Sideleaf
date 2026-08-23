@@ -664,6 +664,8 @@
     width: 72px;
   }
   .footprint-tabs button {
+    --tab-offset: 0px;
+    position: relative;
     width: 72px;
     height: 42px;
     padding: 0 12px 0 22px;
@@ -676,20 +678,42 @@
     letter-spacing: .08em;
     filter: saturate(.72);
     opacity: .72;
-    transition: opacity .2s ease, filter .2s ease, transform .2s ease;
+    transform: translateX(var(--tab-offset));
+    transform-origin: left center;
+    transition: opacity .22s ease, filter .22s ease, transform .3s cubic-bezier(.22,.78,.18,1), font-size .22s ease;
   }
-  .footprint-tabs button:nth-child(1) { background: #c58d7d; }
-  .footprint-tabs button:nth-child(2) { background: #788c91; transform: translateX(6px); }
-  .footprint-tabs button:nth-child(3) { background: #9ba187; transform: translateX(12px); }
+  .footprint-tabs button::before {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 13px;
+    background: linear-gradient(to right, rgba(69,54,45,.2), transparent);
+    opacity: 0;
+    transition: opacity .22s ease;
+    pointer-events: none;
+  }
+  .footprint-tabs button:nth-child(1) { --tab-offset: 0px; background: #c58d7d; }
+  .footprint-tabs button:nth-child(2) { --tab-offset: 6px; background: #788c91; }
+  .footprint-tabs button:nth-child(3) { --tab-offset: 12px; background: #9ba187; }
+  .footprint-tabs button.is-past {
+    filter: saturate(.48);
+    opacity: .43;
+    transform: translateX(calc(var(--tab-offset) - 9px));
+  }
+  .footprint-tabs button.is-past::before { opacity: 1; }
+  .footprint-tabs button.is-future {
+    filter: saturate(.62);
+    opacity: .62;
+    transform: translateX(calc(var(--tab-offset) + 5px));
+  }
   .footprint-tabs button.is-active {
     z-index: 2;
     color: #fffdf8;
+    font-size: 15px;
     filter: none;
     opacity: 1;
+    transform: translateX(calc(var(--tab-offset) - 4px)) scale(1.035);
   }
-  .footprint-tabs button:nth-child(1).is-active { transform: translateX(3px); }
-  .footprint-tabs button:nth-child(2).is-active { transform: translateX(9px); }
-  .footprint-tabs button:nth-child(3).is-active { transform: translateX(15px); }
   .footprint-content {
     flex: 1;
     min-height: 0;
@@ -1544,7 +1568,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.7';
+    const appVersion = '0.20.8';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2113,9 +2137,13 @@
 
     function renderFootprints() {
       footprintAuthorButtons.forEach(button => button.classList.toggle('is-active', button.dataset.footprintAuthor === activeFootprintAuthor));
-      footprintKindButtons.forEach(button => {
+      const footprintKinds = ['notes', 'likes', 'reviews'];
+      const activeKindIndex = footprintKinds.indexOf(activeFootprintKind);
+      footprintKindButtons.forEach((button, index) => {
         const active = button.dataset.footprintKind === activeFootprintKind;
         button.classList.toggle('is-active', active);
+        button.classList.toggle('is-past', index < activeKindIndex);
+        button.classList.toggle('is-future', index > activeKindIndex);
         button.setAttribute('aria-selected', String(active));
       });
       footprintVolume.className = `footprint-volume is-${activeFootprintKind}`;
