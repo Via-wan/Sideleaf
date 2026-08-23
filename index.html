@@ -545,8 +545,8 @@
     left: calc(50% - 50vw);
     background: #f8f4ee;
     pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 34px), transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 34px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 64px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 calc(100% - 64px), transparent 100%);
   }
   #view-footprints {
     height: calc(100svh - max(34px, env(safe-area-inset-top)) - 58px);
@@ -607,8 +607,8 @@
     inset: 0;
     pointer-events: none;
     transition: opacity .24s ease;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 34px), transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 34px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 64px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 64px), transparent 100%);
   }
   .footprint-layer-one {
     z-index: -1;
@@ -683,7 +683,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    margin: 90px 0 42px;
+    margin: 70px 0;
     padding: 21px 0 24px;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -1533,7 +1533,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.5';
+    const appVersion = '0.20.6';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
