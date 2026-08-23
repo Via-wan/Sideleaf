@@ -532,14 +532,17 @@
     content: '';
     position: absolute;
     z-index: 0;
-    inset: 0 34px 0 calc(-1 * var(--shelf-gutter));
-    background: rgba(247,242,235,.62);
+    top: 0;
+    right: 34px;
+    bottom: 0;
+    left: calc(50% - 50vw);
+    background: #f8f4ee;
     pointer-events: none;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
     mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
   }
   #view-footprints {
-    height: calc(100svh - max(34px, env(safe-area-inset-top)) - 72px - env(safe-area-inset-bottom));
+    height: calc(100svh - max(34px, env(safe-area-inset-top)) - 58px);
     overflow: visible;
   }
   .footprint-person {
@@ -602,18 +605,18 @@
   }
   .footprint-layer-one {
     z-index: -1;
-    background: rgba(250,246,240,.34);
+    background: linear-gradient(to left, rgba(250,246,240,.58), transparent 18px);
     transform: translateX(6px);
   }
   .footprint-layer-two {
     z-index: -2;
-    background: rgba(245,239,231,.28);
+    background: linear-gradient(to left, rgba(231,224,215,.32), transparent 20px);
     transform: translateX(12px);
   }
   .footprint-layer-cover {
     z-index: -3;
     border-right-color: rgba(115,101,87,.24);
-    background: rgba(217,208,196,.20);
+    background: linear-gradient(to left, rgba(217,208,196,.28), transparent 23px);
     box-shadow: 8px 0 20px rgba(66,52,42,.07);
     transform: translateX(18px);
   }
@@ -670,10 +673,10 @@
   .footprint-tabs button:nth-child(2).is-active { transform: translateX(9px); }
   .footprint-tabs button:nth-child(3).is-active { transform: translateX(15px); }
   .footprint-content {
-    flex: 0 0 clamp(150px, 20svh, 180px);
-    min-height: 150px;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
-    margin-top: 90px;
+    margin: 90px 0 42px;
     padding: 21px 0 24px;
     overscroll-behavior: contain;
     scrollbar-width: none;
@@ -1523,7 +1526,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.3';
+    const appVersion = '0.20.4';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
