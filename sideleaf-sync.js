@@ -16,6 +16,8 @@
     'sideleaf.reading-lines.v1',
     'sideleaf.chapter-journals.v1',
     'sideleaf.read-requests.v1',
+    'sideleaf.leaf-posts.v1',
+    'sideleaf.reviews.v1',
     'sideleaf.hidden-built-ins.v1'
   ]);
   let timer = 0;
@@ -79,6 +81,8 @@
       if (key === 'sideleaf.chapter-journals.v1') snapshot.journals = parseJson(raw, []);
       if (key === 'sideleaf.likes.v1') snapshot.likes = parseJson(raw, []);
       if (key === 'sideleaf.read-requests.v1') snapshot.requests = parseJson(raw, []);
+      if (key === 'sideleaf.leaf-posts.v1') snapshot.leafPosts = parseJson(raw, []);
+      if (key === 'sideleaf.reviews.v1') snapshot.reviews = parseJson(raw, []);
     });
     return snapshot;
   }
@@ -171,6 +175,18 @@
         changed = true;
       });
       storage.setItem('sideleaf.read-requests.v1', JSON.stringify(requests));
+    }
+    if (Array.isArray(state.leafPosts)) {
+      storage.setItem('sideleaf.leaf-posts.v1', JSON.stringify(state.leafPosts));
+      changed = true;
+    }
+    if (Array.isArray(state.reviews)) {
+      storage.setItem('sideleaf.reviews.v1', JSON.stringify(state.reviews));
+      changed = true;
+    }
+    if (Array.isArray(state.activityNotifications)) {
+      storage.setItem('sideleaf.activity-notifications.v1', JSON.stringify(state.activityNotifications));
+      changed = true;
     }
     if (changed && typeof globalThis.dispatchEvent === 'function' && typeof globalThis.CustomEvent === 'function') {
       globalThis.dispatchEvent(new CustomEvent('sideleaf:core-state', { detail:state }));

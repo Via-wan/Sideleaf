@@ -115,6 +115,35 @@ test('喜欢会作为独立变化同步到 Core', async () => {
   assert.equal(sent.notes, undefined);
 });
 
+test('叶间与书评会同步到 Core，并整批拉回双方的新内容与通知', async () => {
+  const storage = new MemoryStorage({
+    [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
+    'sideleaf.leaf-posts.v1': JSON.stringify([{ id:'wish-leaf', author:'wish', body:'愿的叶子。', comments:[] }]),
+    'sideleaf.reviews.v1': JSON.stringify([{ id:'wish-review', author:'wish', bookId:'book-1', body:'愿的书评。' }])
+  });
+  SideleafSync.markDirty(storage, ['sideleaf.leaf-posts.v1', 'sideleaf.reviews.v1']);
+  let sent;
+  await SideleafSync.syncNow(storage, { fetch:async (_url, init) => {
+    sent = JSON.parse(init.body);
+    return new Response(JSON.stringify({ ok:true, state:{
+      leafPosts:[
+        { id:'wish-leaf', author:'wish', body:'愿的叶子。', comments:[] },
+        { id:'zheng-leaf', author:'zheng', body:'峥的叶子。', comments:[] }
+      ],
+      reviews:[
+        { id:'wish-review', author:'wish', bookId:'book-1', body:'愿的书评。' },
+        { id:'zheng-review', author:'zheng', bookId:'book-1', body:'峥的书评。' }
+      ],
+      activityNotifications:[{ kind:'leaf-comment', entityId:'comment-1', readAt:null }]
+    } }), { status:200 });
+  } });
+  assert.equal(sent.leafPosts[0].id, 'wish-leaf');
+  assert.equal(sent.reviews[0].id, 'wish-review');
+  assert.deepEqual(JSON.parse(storage.getItem('sideleaf.leaf-posts.v1')).map(item => item.id), ['wish-leaf', 'zheng-leaf']);
+  assert.deepEqual(JSON.parse(storage.getItem('sideleaf.reviews.v1')).map(item => item.id), ['wish-review', 'zheng-review']);
+  assert.equal(JSON.parse(storage.getItem('sideleaf.activity-notifications.v1'))[0].entityId, 'comment-1');
+});
+
 test('没有本机脏数据时仍拉回峥的阅读线、批注与请求状态', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),

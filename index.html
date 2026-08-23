@@ -1314,7 +1314,7 @@
   }
 
   (() => {
-    const appVersion = '0.17.7';
+    const appVersion = '0.18.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2802,7 +2802,11 @@
         else refreshCoreSyncStatus();
       }
     });
-    window.addEventListener('sideleaf:core-state', renderBooks);
+    window.addEventListener('sideleaf:core-state', () => {
+      renderBooks();
+      renderLeafPosts();
+      renderFootprints();
+    });
     renderBooks();
     setMainView('shelf');
   })();
