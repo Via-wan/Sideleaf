@@ -257,8 +257,8 @@
     z-index: 18;
     left: 50%;
     bottom: calc(124px + env(safe-area-inset-bottom));
-    width: 226px;
-    height: 92px;
+    width: 164px;
+    height: 112px;
     transform: translateX(-50%);
     pointer-events: none;
   }
@@ -267,9 +267,9 @@
   .library-menu button {
     position: absolute;
     bottom: 0;
-    width: 104px;
-    height: 62px;
-    padding: 18px 12px 10px;
+    width: 72px;
+    height: 92px;
+    padding: 24px 9px 12px;
     border: 1px solid rgba(132,111,96,.12);
     background: linear-gradient(90deg, rgba(156,125,108,.08), transparent 8px), rgba(255,253,250,.95);
     color: var(--ink);
@@ -285,38 +285,23 @@
     transition: transform .42s cubic-bezier(.2,.82,.2,1);
   }
   .library-menu button:first-child {
-    right: calc(50% - 2px);
-    transform: translate(82px, 28px) rotate(0deg) scale(.18);
+    right: calc(50% - 1px);
+    transform: translate(57px, 38px) rotate(0deg) scale(.16);
     transform-origin: 100% 100%;
-    border-radius: 5px 13px 9px 5px;
+    border-radius: 5px 11px 8px 5px;
   }
   .library-menu button:last-child {
-    left: calc(50% - 2px);
-    transform: translate(-82px, 28px) rotate(0deg) scale(.18);
+    left: calc(50% - 1px);
+    transform: translate(-57px, 38px) rotate(0deg) scale(.16);
     transform-origin: 0 100%;
-    border-radius: 13px 5px 5px 9px;
+    border-radius: 11px 5px 5px 8px;
   }
   .library-menu.is-open { pointer-events: auto; }
   .library-menu.is-open button { opacity: 1; }
-  .library-menu.is-open button:first-child { transform: translate(-5px, 0) rotate(-6deg) scale(1); }
-  .library-menu.is-open button:last-child { transform: translate(5px, 0) rotate(6deg) scale(1); }
-  .library-menu.is-open button:first-child span { transform: rotate(6deg); }
-  .library-menu.is-open button:last-child span { transform: rotate(-6deg); }
-  .library-menu::after {
-    content: '';
-    position: absolute;
-    bottom: 1px;
-    left: 50%;
-    width: 2px;
-    height: 47px;
-    border-radius: 999px;
-    background: rgba(143,111,96,.2);
-    opacity: 0;
-    transform: translateX(-50%) scaleY(.1);
-    transform-origin: bottom;
-    transition: opacity .2s ease .12s, transform .35s ease .08s;
-  }
-  .library-menu.is-open::after { opacity: 1; transform: translateX(-50%) scaleY(1); }
+  .library-menu.is-open button:first-child { transform: translate(-7px, 0) rotate(-5deg) scale(1); }
+  .library-menu.is-open button:last-child { transform: translate(7px, 0) rotate(5deg) scale(1); }
+  .library-menu.is-open button:first-child span { transform: rotate(5deg); }
+  .library-menu.is-open button:last-child span { transform: rotate(-5deg); }
   .library-menu button.is-danger { color: #a86f63; }
   .library-menu button:active { filter: brightness(.98); }
   .manage-mode-note {
@@ -357,6 +342,21 @@
     font: 540 13px/1.2 inherit;
   }
   .confirm-actions button.danger { background: #bd8372; color: #fffaf5; }
+  .leaf-delete-dialog {
+    width: min(calc(100vw - 60px), 270px);
+    padding: 18px 18px 15px;
+    border-radius: 20px;
+  }
+  .leaf-delete-dialog p {
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .leaf-delete-dialog .confirm-actions {
+    gap: 8px;
+    margin-top: 13px;
+  }
+  .leaf-delete-dialog .confirm-actions button { padding: 8px 10px; }
   .format-note {
     grid-column: 1 / -1;
     margin: 2px 0 0;
@@ -445,7 +445,7 @@
     border: 0;
     background: transparent;
     color: rgba(139,131,120,.72);
-    font: 500 17px/1 inherit;
+    font: 500 21px/1 inherit;
     letter-spacing: .12em;
   }
   .leaf-action-menu {
@@ -507,7 +507,7 @@
     background: transparent;
     caret-color: #d9b8aa;
     color: var(--ink);
-    font: 400 13px/1.55 inherit;
+    font: 400 16px/1.55 inherit;
   }
   .leaf-comment-compose button {
     padding: 7px 2px;
@@ -690,7 +690,7 @@
     background: transparent;
     caret-color: #d9b8aa;
     color: var(--ink);
-    font: 400 15px/1.7 inherit;
+    font: 400 16px/1.7 inherit;
   }
   .leaf-compose-body textarea::placeholder { color: rgba(139, 131, 120, .62); }
   .leaf-compose-actions {
@@ -708,7 +708,7 @@
     outline: 0;
     background: rgba(143,111,96,.07);
     color: var(--muted);
-    font: 500 12px/1.2 inherit;
+    font: 500 16px/1.2 inherit;
   }
   .leaf-publish {
     padding: 8px 14px;
@@ -1000,6 +1000,16 @@
     </section>
   </div>
 
+  <div id="delete-leaf-backdrop" class="confirm-backdrop" hidden>
+    <section class="confirm-dialog leaf-delete-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-leaf-message">
+      <p id="delete-leaf-message">确认删除这条叶间记录吗？</p>
+      <div class="confirm-actions">
+        <button id="cancel-delete-leaf" type="button">取消</button>
+        <button id="confirm-delete-leaf" class="danger" type="button">删除</button>
+      </div>
+    </section>
+  </div>
+
   <div id="data-backdrop" class="sheet-backdrop" aria-hidden="true">
     <section class="data-sheet" role="dialog" aria-modal="true" aria-labelledby="data-title">
       <div class="sheet-heading">
@@ -1086,7 +1096,7 @@
   }
 
   (() => {
-    const appVersion = '0.17.0';
+    const appVersion = '0.17.1';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1148,6 +1158,9 @@
     const deleteBookMessage = document.getElementById('delete-book-message');
     const cancelDeleteBook = document.getElementById('cancel-delete-book');
     const confirmDeleteBook = document.getElementById('confirm-delete-book');
+    const deleteLeafBackdrop = document.getElementById('delete-leaf-backdrop');
+    const cancelDeleteLeaf = document.getElementById('cancel-delete-leaf');
+    const confirmDeleteLeaf = document.getElementById('confirm-delete-leaf');
     let pendingBackup = null;
     let pendingBackupSource = 'file';
     let pendingCoreSnapshotId = null;
@@ -1162,6 +1175,7 @@
     let openLeafMenuId = null;
     let openLeafCommentId = null;
     let editingLeafPostId = null;
+    let pendingDeleteLeafPostId = null;
 
     SideleafLibrary.ensure(localStorage);
 
@@ -1683,12 +1697,29 @@
       openLeafComposer();
     }
 
-    function deleteLeafPost(postId) {
+    function askToDeleteLeafPost(postId) {
+      const post = readArray(leafPostsKey).find(item => item.id === postId && item.author !== 'zheng');
+      if (!post) return;
+      pendingDeleteLeafPostId = postId;
+      openLeafMenuId = null;
+      deleteLeafBackdrop.hidden = false;
+      renderLeafPosts();
+    }
+
+    function closeDeleteLeafDialog() {
+      pendingDeleteLeafPostId = null;
+      deleteLeafBackdrop.hidden = true;
+    }
+
+    function deletePendingLeafPost() {
+      const postId = pendingDeleteLeafPostId;
+      if (!postId) return;
       const posts = readArray(leafPostsKey);
       const post = posts.find(item => item.id === postId && item.author !== 'zheng');
-      if (!post || !window.confirm('确认删除这条叶间记录吗？')) return;
+      if (!post) return closeDeleteLeafDialog();
       openLeafMenuId = null;
       openLeafCommentId = null;
+      closeDeleteLeafDialog();
       saveLeafPosts(posts.filter(item => item.id !== postId));
     }
 
@@ -2133,9 +2164,8 @@
         openLeafMenuId = null;
         openLeafCommentId = postId;
         renderLeafPosts();
-        window.setTimeout(() => leafFeed.querySelector(`[data-leaf-comment-input="${CSS.escape(postId)}"]`)?.focus(), 0);
       } else if (action.dataset.leafAction === 'delete') {
-        deleteLeafPost(postId);
+        askToDeleteLeafPost(postId);
       } else if (action.dataset.leafAction === 'send-comment') {
         addLeafComment(postId);
       }
@@ -2169,6 +2199,11 @@
       leafPublish.textContent = '留下';
       closeLeafComposer();
       renderLeafPosts();
+    });
+    cancelDeleteLeaf.addEventListener('click', closeDeleteLeafDialog);
+    confirmDeleteLeaf.addEventListener('click', deletePendingLeafPost);
+    deleteLeafBackdrop.addEventListener('click', event => {
+      if (event.target === deleteLeafBackdrop) closeDeleteLeafDialog();
     });
 
     window.addEventListener('pageshow', () => {
