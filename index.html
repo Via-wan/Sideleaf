@@ -127,15 +127,31 @@
     -webkit-backdrop-filter: blur(12px);
   }
   .book-manage-control svg { width: 15px; height: 15px; }
-  .book-manage-control.is-bookmark {
-    background: rgba(54,47,41,.13);
-    color: rgba(255,255,255,.95);
+  .book-star-ribbon {
+    position: absolute;
+    z-index: 3;
+    top: -1px;
+    right: 15px;
+    display: grid;
+    width: 27px;
+    height: 42px;
+    padding: 0 0 7px;
+    place-items: end center;
+    border: 1px solid rgba(255,255,255,.82);
+    border-top: 0;
+    background: rgba(255,253,249,.9);
+    color: #e8b84f;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 79%, 0 100%);
+    filter: drop-shadow(0 5px 7px rgba(52,43,35,.12));
+    font-size: 15px;
+    line-height: 1;
+    pointer-events: none;
   }
-  .book-manage-control.is-starred {
-    background: rgba(255,250,242,.84);
-    color: #e9b94f;
-    font-size: 20px;
+  .book-star-ribbon.is-manage {
+    cursor: pointer;
+    pointer-events: auto;
   }
+  .book-star-ribbon:not(.is-starred) { color: transparent; }
   .book:nth-child(3n + 2) .cover {
     background: linear-gradient(90deg, rgba(91, 72, 57, .10), transparent 9px), linear-gradient(145deg, #c5cdc5, #91a097);
   }
@@ -229,11 +245,11 @@
   }
   .import-button[hidden] { display: none; }
   .import-button svg {
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
     transition: transform .32s cubic-bezier(.22,.78,.18,1);
   }
-  .import-button.is-open svg { transform: translateY(1px) scale(.88); }
+  .import-button.is-open svg { transform: translateY(1px) rotate(-3deg) scale(.9); }
   .import-button:active { transform: translateX(-50%) scale(.98); }
   .import-button:disabled { opacity: .72; }
   .library-menu {
@@ -241,8 +257,8 @@
     z-index: 18;
     left: 50%;
     bottom: calc(124px + env(safe-area-inset-bottom));
-    width: 236px;
-    height: 112px;
+    width: 226px;
+    height: 92px;
     transform: translateX(-50%);
     pointer-events: none;
   }
@@ -251,14 +267,14 @@
   .library-menu button {
     position: absolute;
     bottom: 0;
-    width: 122px;
-    height: 88px;
-    padding: 24px 14px 12px;
-    border: 1px solid rgba(255,255,255,.72);
-    background: rgba(250,245,240,.93);
+    width: 104px;
+    height: 62px;
+    padding: 18px 12px 10px;
+    border: 1px solid rgba(132,111,96,.12);
+    background: linear-gradient(90deg, rgba(156,125,108,.08), transparent 8px), rgba(255,253,250,.95);
     color: var(--ink);
     font: 520 13px/1.2 inherit;
-    box-shadow: 0 13px 30px rgba(69,54,44,.12), inset 0 0 0 1px rgba(121,89,72,.045);
+    box-shadow: 0 9px 22px rgba(69,54,44,.1), inset 0 0 0 1px rgba(255,255,255,.6);
     opacity: 0;
     transition: transform .42s cubic-bezier(.2,.82,.2,1), opacity .18s ease;
     backdrop-filter: blur(20px) saturate(112%);
@@ -269,30 +285,30 @@
     transition: transform .42s cubic-bezier(.2,.82,.2,1);
   }
   .library-menu button:first-child {
-    right: calc(50% - 4px);
-    transform: translate(93px, 35px) rotate(0deg) scale(.16);
+    right: calc(50% - 2px);
+    transform: translate(82px, 28px) rotate(0deg) scale(.18);
     transform-origin: 100% 100%;
-    border-radius: 76px 18px 13px 70px;
+    border-radius: 5px 13px 9px 5px;
   }
   .library-menu button:last-child {
-    left: calc(50% - 4px);
-    transform: translate(-93px, 35px) rotate(0deg) scale(.16);
+    left: calc(50% - 2px);
+    transform: translate(-82px, 28px) rotate(0deg) scale(.18);
     transform-origin: 0 100%;
-    border-radius: 18px 76px 70px 13px;
+    border-radius: 13px 5px 5px 9px;
   }
   .library-menu.is-open { pointer-events: auto; }
   .library-menu.is-open button { opacity: 1; }
-  .library-menu.is-open button:first-child { transform: translate(0, 0) rotate(-13deg) scale(1); }
-  .library-menu.is-open button:last-child { transform: translate(0, 0) rotate(13deg) scale(1); }
-  .library-menu.is-open button:first-child span { transform: rotate(13deg); }
-  .library-menu.is-open button:last-child span { transform: rotate(-13deg); }
+  .library-menu.is-open button:first-child { transform: translate(-5px, 0) rotate(-6deg) scale(1); }
+  .library-menu.is-open button:last-child { transform: translate(5px, 0) rotate(6deg) scale(1); }
+  .library-menu.is-open button:first-child span { transform: rotate(6deg); }
+  .library-menu.is-open button:last-child span { transform: rotate(-6deg); }
   .library-menu::after {
     content: '';
     position: absolute;
-    bottom: 5px;
+    bottom: 1px;
     left: 50%;
     width: 2px;
-    height: 64px;
+    height: 47px;
     border-radius: 999px;
     background: rgba(143,111,96,.2);
     opacity: 0;
@@ -373,9 +389,8 @@
   .leaf-feed,
   .footprint-content {
     display: grid;
-    gap: 16px;
+    gap: 0;
   }
-  .leaf-card,
   .footprint-card {
     padding: 17px 18px;
     border: 1px solid rgba(255,255,255,.72);
@@ -385,8 +400,12 @@
     backdrop-filter: blur(16px) saturate(112%);
     -webkit-backdrop-filter: blur(16px) saturate(112%);
   }
-  .leaf-card.is-zheng { background: rgba(225, 232, 229, .52); }
-  .leaf-card.is-wish { background: rgba(242, 224, 216, .48); }
+  .leaf-card {
+    position: relative;
+    padding: 20px 2px 22px;
+    border-bottom: 1px solid rgba(84,76,68,.12);
+  }
+  .leaf-card:last-child { border-bottom-color: transparent; }
   .leaf-card-meta,
   .footprint-meta {
     display: flex;
@@ -414,6 +433,88 @@
     background: rgba(143, 111, 96, .08);
     color: #9b7667;
     font-size: 11px;
+  }
+  .leaf-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 7px;
+  }
+  .leaf-more {
+    min-width: 34px;
+    padding: 2px 4px 5px;
+    border: 0;
+    background: transparent;
+    color: rgba(139,131,120,.72);
+    font: 500 17px/1 inherit;
+    letter-spacing: .12em;
+  }
+  .leaf-action-menu {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 3px;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .leaf-action-menu[hidden] { display: none; }
+  .leaf-action-menu button {
+    padding: 4px 10px;
+    border: 0;
+    border-right: 1px solid rgba(84,76,68,.12);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .leaf-action-menu button:last-child { border-right: 0; }
+  .leaf-action-menu button.is-danger { color: #a66f65; }
+  .leaf-comments {
+    margin: 15px 0 0;
+    padding-left: 15px;
+    border-left: 1px solid rgba(197,139,116,.26);
+  }
+  .leaf-comment { padding: 2px 0 12px; }
+  .leaf-comment + .leaf-comment { padding-top: 10px; border-top: 1px solid rgba(84,76,68,.08); }
+  .leaf-comment-meta {
+    display: flex;
+    justify-content: space-between;
+    color: rgba(139,131,120,.78);
+    font-size: 10px;
+  }
+  .leaf-comment p {
+    margin: 7px 0 0;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+  .leaf-comment-compose {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .leaf-comment-compose[hidden] { display: none; }
+  .leaf-comment-compose textarea {
+    flex: 1;
+    min-height: 34px;
+    max-height: 92px;
+    padding: 7px 0;
+    resize: none;
+    border: 0;
+    border-bottom: 1px solid rgba(84,76,68,.14);
+    border-radius: 0;
+    outline: 0;
+    background: transparent;
+    caret-color: #d9b8aa;
+    color: var(--ink);
+    font: 400 13px/1.55 inherit;
+  }
+  .leaf-comment-compose button {
+    padding: 7px 2px;
+    border: 0;
+    background: transparent;
+    color: #bd806d;
+    font: 540 12px/1 inherit;
   }
   .footprint-shell {
     min-height: calc(100svh - 180px);
@@ -587,6 +688,7 @@
     border: 0;
     outline: 0;
     background: transparent;
+    caret-color: #d9b8aa;
     color: var(--ink);
     font: 400 15px/1.7 inherit;
   }
@@ -852,8 +954,8 @@
   <input id="backup-file" type="file" accept=".json,.sideleaf.json,application/json" hidden>
   <button id="import-button" class="import-button" type="button" aria-label="书房操作" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M6.2 3.8h10.9c.94 0 1.7.76 1.7 1.7v13.7H7.6c-.77 0-1.4-.63-1.4-1.4v-14Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/>
-      <path d="M6.2 5.2H5.1c-.88 0-1.6.72-1.6 1.6v11.1c0 .72.58 1.3 1.3 1.3h2.8M8.8 6.9h6.9M8.8 9.8h5.4" stroke="currentColor" stroke-width="1.55" stroke-linecap="round"/>
+      <path d="M5.2 5.3h11.9c.94 0 1.7.76 1.7 1.7v11.7H6.7c-.83 0-1.5-.67-1.5-1.5V5.3Z" fill="rgba(255,255,255,.16)" stroke="currentColor" stroke-width="1.45" stroke-linejoin="round"/>
+      <path d="M3.5 7.3v9.5c0 1.05.85 1.9 1.9 1.9h11.7M7.8 8.3h7.9M7.8 11.1h6.2" stroke="currentColor" stroke-width="1.45" stroke-linecap="round"/>
     </svg>
   </button>
   <div id="library-menu" class="library-menu" aria-hidden="true">
@@ -984,7 +1086,7 @@
   }
 
   (() => {
-    const appVersion = '0.16.2';
+    const appVersion = '0.17.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1057,6 +1159,9 @@
     let activeFootprintKind = 'notes';
     let bookManageMode = null;
     let pendingDeleteBookId = null;
+    let openLeafMenuId = null;
+    let openLeafCommentId = null;
+    let editingLeafPostId = null;
 
     SideleafLibrary.ensure(localStorage);
 
@@ -1488,10 +1593,26 @@
       leafFeed.innerHTML = posts.map(post => {
         const author = post.author === 'zheng' ? 'zheng' : 'wish';
         const title = post.bookId ? books.get(post.bookId) : '';
+        const comments = Array.isArray(post.comments) ? post.comments : [];
+        const ownPost = author === 'wish';
         return `<article class="leaf-card is-${author}">
           <div class="leaf-card-meta"><span>${author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(post.createdAt))}</time></div>
           <p class="leaf-card-body">${escapeText(post.body)}</p>
           ${title ? `<span class="leaf-book">《${escapeText(title)}》</span>` : ''}
+          ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment">
+            <div class="leaf-comment-meta"><span>${comment.author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(comment.createdAt))}</time></div>
+            <p>${escapeText(comment.body)}</p>
+          </div>`).join('')}</div>` : ''}
+          <div class="leaf-card-actions"><button class="leaf-more" type="button" data-leaf-action="menu" data-post-id="${escapeText(post.id)}" aria-label="动态操作">…</button></div>
+          <div class="leaf-action-menu" ${openLeafMenuId === post.id ? '' : 'hidden'}>
+            ${ownPost ? `<button type="button" data-leaf-action="edit" data-post-id="${escapeText(post.id)}">编辑</button>` : ''}
+            <button type="button" data-leaf-action="comment" data-post-id="${escapeText(post.id)}">评论</button>
+            ${ownPost ? `<button class="is-danger" type="button" data-leaf-action="delete" data-post-id="${escapeText(post.id)}">删除</button>` : ''}
+          </div>
+          <div class="leaf-comment-compose" ${openLeafCommentId === post.id ? '' : 'hidden'}>
+            <textarea rows="1" maxlength="1000" data-leaf-comment-input="${escapeText(post.id)}" placeholder="接着说一句。"></textarea>
+            <button type="button" data-leaf-action="send-comment" data-post-id="${escapeText(post.id)}">发送</button>
+          </div>
         </article>`;
       }).join('');
     }
@@ -1530,6 +1651,10 @@
     function closeLeafComposer() {
       leafComposer.classList.remove('is-open');
       leafComposerBackdrop.classList.remove('is-open');
+      editingLeafPostId = null;
+      leafInput.value = '';
+      leafBookSelect.value = '';
+      leafPublish.textContent = '留下';
       window.setTimeout(() => { leafComposerBackdrop.hidden = true; }, 240);
     }
 
@@ -1538,8 +1663,55 @@
       window.requestAnimationFrame(() => {
         leafComposerBackdrop.classList.add('is-open');
         leafComposer.classList.add('is-open');
-        window.setTimeout(() => leafInput.focus(), 260);
       });
+    }
+
+    function saveLeafPosts(posts) {
+      localStorage.setItem(leafPostsKey, JSON.stringify(posts));
+      SideleafSync.markDirty(localStorage, [leafPostsKey]);
+      renderLeafPosts();
+    }
+
+    function beginLeafEdit(postId) {
+      const post = readArray(leafPostsKey).find(item => item.id === postId && item.author !== 'zheng');
+      if (!post) return;
+      editingLeafPostId = postId;
+      openLeafMenuId = null;
+      leafInput.value = post.body || '';
+      leafBookSelect.value = post.bookId || '';
+      leafPublish.textContent = '保存';
+      openLeafComposer();
+    }
+
+    function deleteLeafPost(postId) {
+      const posts = readArray(leafPostsKey);
+      const post = posts.find(item => item.id === postId && item.author !== 'zheng');
+      if (!post || !window.confirm('确认删除这条叶间记录吗？')) return;
+      openLeafMenuId = null;
+      openLeafCommentId = null;
+      saveLeafPosts(posts.filter(item => item.id !== postId));
+    }
+
+    function addLeafComment(postId) {
+      const input = leafFeed.querySelector(`[data-leaf-comment-input="${CSS.escape(postId)}"]`);
+      const body = input?.value.trim();
+      if (!body) return;
+      const posts = readArray(leafPostsKey);
+      const post = posts.find(item => item.id === postId);
+      if (!post) return;
+      const now = Date.now();
+      post.comments = Array.isArray(post.comments) ? post.comments : [];
+      post.comments.push({
+        id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+        author:'wish',
+        body,
+        createdAt:now,
+        updatedAt:now
+      });
+      post.updatedAt = now;
+      openLeafMenuId = null;
+      openLeafCommentId = null;
+      saveLeafPosts(posts);
     }
 
     function setMainView(view) {
@@ -1823,13 +1995,9 @@
           <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6.4 6.4 7.2 7.2m0-7.2-7.2 7.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
         </span>`;
       }
-      if (bookManageMode === 'star') {
-        if (book.starred) {
-          return `<span class="book-manage-control is-starred" role="button" tabindex="0" data-book-action="star" data-book-id="${escapeText(book.id)}" aria-label="取消星标《${escapeText(book.title)}》">★</span>`;
-        }
-        return `<span class="book-manage-control is-bookmark" role="button" tabindex="0" data-book-action="star" data-book-id="${escapeText(book.id)}" aria-label="星标《${escapeText(book.title)}》">
-          <svg viewBox="0 0 18 22" fill="currentColor" aria-hidden="true"><path d="M3 2.4c0-.77.63-1.4 1.4-1.4h9.2c.77 0 1.4.63 1.4 1.4v17.2l-6-3.8-6 3.8V2.4Z"/></svg>
-        </span>`;
+      if (book.starred || bookManageMode === 'star') {
+        const manage = bookManageMode === 'star';
+        return `<span class="book-star-ribbon${book.starred ? ' is-starred' : ''}${manage ? ' is-manage' : ''}" ${manage ? `role="button" tabindex="0" data-book-action="star" data-book-id="${escapeText(book.id)}" aria-label="${book.starred ? '取消星标' : '星标'}《${escapeText(book.title)}》"` : 'aria-hidden="true"'}>${book.starred ? '★' : '☆'}</span>`;
       }
       return '';
     }
@@ -1951,23 +2119,54 @@
     }));
     leafPlus.addEventListener('click', openLeafComposer);
     leafComposerBackdrop.addEventListener('click', closeLeafComposer);
+    leafFeed.addEventListener('click', event => {
+      const action = event.target.closest('[data-leaf-action]');
+      if (!action) return;
+      const postId = action.dataset.postId;
+      if (action.dataset.leafAction === 'menu') {
+        openLeafMenuId = openLeafMenuId === postId ? null : postId;
+        openLeafCommentId = null;
+        renderLeafPosts();
+      } else if (action.dataset.leafAction === 'edit') {
+        beginLeafEdit(postId);
+      } else if (action.dataset.leafAction === 'comment') {
+        openLeafMenuId = null;
+        openLeafCommentId = postId;
+        renderLeafPosts();
+        window.setTimeout(() => leafFeed.querySelector(`[data-leaf-comment-input="${CSS.escape(postId)}"]`)?.focus(), 0);
+      } else if (action.dataset.leafAction === 'delete') {
+        deleteLeafPost(postId);
+      } else if (action.dataset.leafAction === 'send-comment') {
+        addLeafComment(postId);
+      }
+    });
     leafPublish.addEventListener('click', () => {
       const body = leafInput.value.trim();
       if (!body) return;
       const posts = readArray(leafPostsKey);
       const now = Date.now();
-      posts.push({
-        id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
-        author:'wish',
-        body,
-        bookId:leafBookSelect.value || null,
-        createdAt:now,
-        updatedAt:now
-      });
+      const editing = editingLeafPostId ? posts.find(post => post.id === editingLeafPostId && post.author !== 'zheng') : null;
+      if (editing) {
+        editing.body = body;
+        editing.bookId = leafBookSelect.value || null;
+        editing.updatedAt = now;
+      } else {
+        posts.push({
+          id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+          author:'wish',
+          body,
+          bookId:leafBookSelect.value || null,
+          createdAt:now,
+          updatedAt:now,
+          comments:[]
+        });
+      }
       localStorage.setItem(leafPostsKey, JSON.stringify(posts));
       SideleafSync.markDirty(localStorage, [leafPostsKey]);
+      editingLeafPostId = null;
       leafInput.value = '';
       leafBookSelect.value = '';
+      leafPublish.textContent = '留下';
       closeLeafComposer();
       renderLeafPosts();
     });
@@ -2032,10 +2231,18 @@
       setBookManageMode(mode);
     });
     document.addEventListener('pointerdown', event => {
-      if (activeMainView !== 'shelf' || !deleteBookBackdrop.hidden) return;
-      if (event.target.closest('.book, #import-button, #library-menu, .main-nav, .data-button')) return;
-      if (libraryMenu.classList.contains('is-open')) setLibraryMenu(false);
-      if (bookManageMode) setBookManageMode(null);
+      if (activeMainView === 'shelf' && deleteBookBackdrop.hidden) {
+        if (event.target.closest('.book, #import-button, #library-menu, .main-nav, .data-button')) return;
+        if (libraryMenu.classList.contains('is-open')) setLibraryMenu(false);
+        if (bookManageMode) setBookManageMode(null);
+      }
+      if (activeMainView === 'leaves' && !event.target.closest('.leaf-card, #leaf-composer, .main-nav')) {
+        if (openLeafMenuId || openLeafCommentId) {
+          openLeafMenuId = null;
+          openLeafCommentId = null;
+          renderLeafPosts();
+        }
+      }
     });
     cancelDeleteBook.addEventListener('click', closeDeleteBookDialog);
     confirmDeleteBook.addEventListener('click', deletePendingBook);
