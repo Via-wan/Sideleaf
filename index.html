@@ -570,6 +570,80 @@
   .footprint-content {
     animation: content-settle .24s ease both;
   }
+  .review-compose-shell {
+    margin: 0 0 18px;
+    padding: 3px 2px 16px;
+    border-bottom: 1px solid rgba(84,76,68,.1);
+  }
+  .review-pen {
+    padding: 4px 1px;
+    border: 0;
+    background: transparent;
+    color: rgba(139,131,120,.75);
+    font: 400 16px/1.2 inherit;
+    letter-spacing: .08em;
+  }
+  .review-editor[hidden] { display: none; }
+  .review-editor {
+    padding-top: 5px;
+  }
+  .review-editor textarea {
+    display: block;
+    width: 100%;
+    min-height: 118px;
+    max-height: 260px;
+    padding: 8px 1px;
+    resize: vertical;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    caret-color: #d9b8aa;
+    color: var(--ink);
+    font: 400 16px/1.75 inherit;
+  }
+  .review-editor textarea::placeholder { color: rgba(139,131,120,.58); }
+  .review-editor-footer {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 34px;
+  }
+  .review-book-toggle,
+  .review-send {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid rgba(84,76,68,.1);
+    border-radius: 50%;
+    background: rgba(255,255,255,.46);
+    color: #b98270;
+    font: 400 18px/1 inherit;
+  }
+  .review-send {
+    margin-left: auto;
+    background: rgba(197,139,116,.14);
+    font-size: 17px;
+  }
+  .review-book-select {
+    min-width: 0;
+    max-width: calc(100% - 78px);
+    padding: 6px 9px;
+    border: 0;
+    border-radius: 999px;
+    outline: 0;
+    background: rgba(143,111,96,.07);
+    color: var(--muted);
+    font: 500 16px/1.2 inherit;
+  }
+  .review-book-select[hidden] { display: none; }
+  .review-card {
+    padding: 18px 2px 20px;
+    border-bottom: 1px solid rgba(84,76,68,.1);
+  }
+  .review-card .footprint-body { margin-top: 0; }
+  .review-card .footprint-meta { margin-top: 12px; }
   @keyframes content-settle {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -727,11 +801,15 @@
     background: rgba(38, 34, 29, .22);
     opacity: 0;
     pointer-events: none;
-    transition: opacity .2s ease;
+    visibility: hidden;
+    transition: opacity .2s ease, visibility 0s linear .2s;
   }
+  .sheet-backdrop[hidden] { display: none; }
   .sheet-backdrop.is-open {
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
+    transition-delay: 0s;
   }
   .data-sheet {
     width: min(100%, 760px);
@@ -1010,7 +1088,7 @@
     </section>
   </div>
 
-  <div id="data-backdrop" class="sheet-backdrop" aria-hidden="true">
+  <div id="data-backdrop" class="sheet-backdrop" aria-hidden="true" hidden>
     <section class="data-sheet" role="dialog" aria-modal="true" aria-labelledby="data-title">
       <div class="sheet-heading">
         <h2 id="data-title">Sideleaf 备份</h2>
@@ -1096,12 +1174,13 @@
   }
 
   (() => {
-    const appVersion = '0.17.1';
+    const appVersion = '0.17.2';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
     const likesKey = 'sideleaf.likes.v1';
     const leafPostsKey = 'sideleaf.leaf-posts.v1';
+    const reviewsKey = 'sideleaf.reviews.v1';
     const grid = document.getElementById('book-grid');
     const fileInput = document.getElementById('book-file');
     const importButton = document.getElementById('import-button');
@@ -1176,6 +1255,9 @@
     let openLeafCommentId = null;
     let editingLeafPostId = null;
     let pendingDeleteLeafPostId = null;
+    let reviewComposerOpen = false;
+    let reviewBookSelectOpen = false;
+    let dataSheetCloseTimer = 0;
 
     SideleafLibrary.ensure(localStorage);
 
@@ -1188,6 +1270,7 @@
     function summaryText(summary) {
       const parts = [`${summary.books} 本书`, `${summary.notes} 条批注对话`];
       if (Number.isFinite(summary.likes)) parts.push(`${summary.likes} 处喜欢`);
+      if (Number.isFinite(summary.reviews) && summary.reviews) parts.push(`${summary.reviews} 篇书评`);
       parts.push(`${summary.journals} 篇章节札记`, `${summary.requests} 个阅读请求`, formatBytes(summary.bytes));
       return parts.join(' · ');
     }
@@ -1207,14 +1290,25 @@
     }
 
     function openDataSheet() {
+      window.clearTimeout(dataSheetCloseTimer);
+      dataBackdrop.hidden = false;
       refreshDataSummary();
-      dataBackdrop.classList.add('is-open');
-      dataBackdrop.setAttribute('aria-hidden', 'false');
+      window.requestAnimationFrame(() => {
+        dataBackdrop.classList.add('is-open');
+        dataBackdrop.setAttribute('aria-hidden', 'false');
+      });
     }
 
     function closeDataSheet() {
       dataBackdrop.classList.remove('is-open');
       dataBackdrop.setAttribute('aria-hidden', 'true');
+      dataSheetCloseTimer = window.setTimeout(() => {
+        dataBackdrop.hidden = true;
+        const theme = document.querySelector('meta[name="theme-color"]');
+        if (theme) theme.content = '#fcfaf7';
+        document.documentElement.style.backgroundColor = '#fcfaf7';
+        document.body.style.backgroundColor = '#fcfaf7';
+      }, 220);
       resetRestorePanel();
       resetConnectPanel();
       resetCoreRestorePanel();
@@ -1653,10 +1747,36 @@
             <blockquote class="footprint-quote">${escapeText(like.quote)}</blockquote>
             <div class="footprint-meta"><span>${escapeText(books.get(like.bookId) || '')}</span><time>${escapeText(formatMoment(like.createdAt || like.updatedAt))}</time></div>
           </article>`);
+      } else if (activeFootprintKind === 'reviews') {
+        items = readArray(reviewsKey)
+          .filter(review => (review.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
+          .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
+          .map(review => `<article class="review-card">
+            <p class="footprint-body">${escapeText(review.body)}</p>
+            <div class="footprint-meta"><span>${review.bookId ? `《${escapeText(books.get(review.bookId) || '已移除的书')}》` : '未关联书籍'}</span><time>${escapeText(formatMoment(review.createdAt || review.updatedAt))}</time></div>
+          </article>`);
       }
       footprintContent.style.animation = 'none';
       void footprintContent.offsetWidth;
       footprintContent.style.animation = '';
+      if (activeFootprintKind === 'reviews' && activeFootprintAuthor === 'wish') {
+        const bookOptions = readBooks().map(book => `<option value="${escapeText(book.id)}">${escapeText(book.title)}</option>`).join('');
+        footprintContent.innerHTML = `<section class="review-compose-shell">
+          <button class="review-pen" type="button" data-review-action="open" ${reviewComposerOpen ? 'hidden' : ''}>🪶……</button>
+          <div class="review-editor" ${reviewComposerOpen ? '' : 'hidden'}>
+            <textarea id="review-input" maxlength="12000" placeholder="写下关于这本书的想法。"></textarea>
+            <div class="review-editor-footer">
+              <button class="review-book-toggle" type="button" data-review-action="book" aria-label="关联书籍">＋</button>
+              <select id="review-book-select" class="review-book-select" aria-label="关联书籍" ${reviewBookSelectOpen ? '' : 'hidden'}>
+                <option value="">不关联书籍</option>
+                ${bookOptions}
+              </select>
+              <button class="review-send" type="button" data-review-action="send" aria-label="发表书评">↑</button>
+            </div>
+          </div>
+        </section>${items.length ? items.join('') : '<div class="empty-state">书评会落在这里。</div>'}`;
+        return;
+      }
       footprintContent.innerHTML = items.length
         ? items.join('')
         : `<div class="empty-state">${activeFootprintKind === 'reviews' ? '书评会落在这里。' : '这里还没有留下足迹。'}</div>`;
@@ -1669,7 +1789,26 @@
       leafInput.value = '';
       leafBookSelect.value = '';
       leafPublish.textContent = '留下';
+      leafComposer.style.removeProperty('top');
+      leafComposer.style.removeProperty('bottom');
       window.setTimeout(() => { leafComposerBackdrop.hidden = true; }, 240);
+    }
+
+    function positionLeafComposerForViewport() {
+      if (leafComposer.hidden || !leafComposer.classList.contains('is-open')) return;
+      const focused = leafComposer.contains(document.activeElement);
+      if (!focused) {
+        leafComposer.style.removeProperty('top');
+        leafComposer.style.removeProperty('bottom');
+        return;
+      }
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      const margin = 12;
+      const height = leafComposer.offsetHeight;
+      const top = Math.max(viewport.offsetTop + margin, viewport.offsetTop + viewport.height - height - margin);
+      leafComposer.style.bottom = 'auto';
+      leafComposer.style.top = `${top}px`;
     }
 
     function openLeafComposer() {
@@ -1677,6 +1816,7 @@
       window.requestAnimationFrame(() => {
         leafComposerBackdrop.classList.add('is-open');
         leafComposer.classList.add('is-open');
+        positionLeafComposerForViewport();
       });
     }
 
@@ -2074,6 +2214,8 @@
       localStorage.setItem(readingLinesKey, JSON.stringify(readingLines));
       const posts = readArray(leafPostsKey).map(post => post.bookId === bookId ? { ...post, bookId:null } : post);
       localStorage.setItem(leafPostsKey, JSON.stringify(posts));
+      const reviews = readArray(reviewsKey).map(review => review.bookId === bookId ? { ...review, bookId:null } : review);
+      localStorage.setItem(reviewsKey, JSON.stringify(reviews));
       SideleafSync.markDirty(localStorage, [
         booksKey, notesKey, likesKey, readingLinesKey,
         'sideleaf.chapter-journals.v1', 'sideleaf.read-requests.v1', SideleafLibrary.HIDDEN_BUILT_INS_KEY
@@ -2146,10 +2288,51 @@
     }));
     footprintKindButtons.forEach(button => button.addEventListener('click', () => {
       activeFootprintKind = button.dataset.footprintKind;
+      reviewComposerOpen = false;
+      reviewBookSelectOpen = false;
       renderFootprints();
     }));
+    footprintContent.addEventListener('click', event => {
+      const action = event.target.closest('[data-review-action]')?.dataset.reviewAction;
+      if (!action) return;
+      if (action === 'open') {
+        reviewComposerOpen = true;
+        renderFootprints();
+      } else if (action === 'book') {
+        reviewBookSelectOpen = !reviewBookSelectOpen;
+        const select = document.getElementById('review-book-select');
+        if (select) select.hidden = !reviewBookSelectOpen;
+      } else if (action === 'send') {
+        const body = document.getElementById('review-input')?.value.trim();
+        if (!body) return;
+        const now = Date.now();
+        const reviews = readArray(reviewsKey);
+        reviews.push({
+          id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+          author:'wish',
+          body,
+          bookId:document.getElementById('review-book-select')?.value || null,
+          createdAt:now,
+          updatedAt:now
+        });
+        localStorage.setItem(reviewsKey, JSON.stringify(reviews));
+        SideleafSync.markDirty(localStorage, [reviewsKey]);
+        reviewComposerOpen = false;
+        reviewBookSelectOpen = false;
+        renderFootprints();
+      }
+    });
     leafPlus.addEventListener('click', openLeafComposer);
     leafComposerBackdrop.addEventListener('click', closeLeafComposer);
+    leafComposer.addEventListener('focusin', () => {
+      positionLeafComposerForViewport();
+      [80, 180, 320].forEach(delay => window.setTimeout(positionLeafComposerForViewport, delay));
+    });
+    leafComposer.addEventListener('focusout', () => {
+      window.setTimeout(positionLeafComposerForViewport, 0);
+    });
+    window.visualViewport?.addEventListener('resize', positionLeafComposerForViewport);
+    window.visualViewport?.addEventListener('scroll', positionLeafComposerForViewport);
     leafFeed.addEventListener('click', event => {
       const action = event.target.closest('[data-leaf-action]');
       if (!action) return;

@@ -14,6 +14,7 @@
     'sideleaf.notes.v1': 'array',
     'sideleaf.likes.v1': 'array',
     'sideleaf.leaf-posts.v1': 'array',
+    'sideleaf.reviews.v1': 'array',
     'sideleaf.hidden-built-ins.v1': 'array',
     'sideleaf.reading-lines.v1': 'object',
     'sideleaf.chapter-journals.v1': 'array',
@@ -47,6 +48,7 @@
     const books = parseKnown(storage, 'sideleaf.books.v1', []);
     const notes = parseKnown(storage, 'sideleaf.notes.v1', []);
     const likes = parseKnown(storage, 'sideleaf.likes.v1', []);
+    const reviews = parseKnown(storage, 'sideleaf.reviews.v1', []);
     const lines = parseKnown(storage, 'sideleaf.reading-lines.v1', {});
     const journals = parseKnown(storage, 'sideleaf.chapter-journals.v1', []);
     const requests = parseKnown(storage, 'sideleaf.read-requests.v1', []);
@@ -55,6 +57,7 @@
       books: Array.isArray(books) ? books.length : 0,
       notes: Array.isArray(notes) ? notes.length : 0,
       likes: Array.isArray(likes) ? likes.length : 0,
+      reviews: Array.isArray(reviews) ? reviews.length : 0,
       readingLines: isPlainObject(lines) ? Object.keys(lines).length : 0,
       journals: Array.isArray(journals) ? journals.length : 0,
       requests: Array.isArray(requests) ? requests.length : 0,
@@ -167,6 +170,8 @@
       'sideleaf.books.v1',
       'sideleaf.notes.v1',
       'sideleaf.likes.v1',
+      'sideleaf.leaf-posts.v1',
+      'sideleaf.reviews.v1',
       'sideleaf.chapter-journals.v1',
       'sideleaf.read-requests.v1'
     ];
