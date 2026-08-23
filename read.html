@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.18.0</small>
+      <small class="build-version">Sideleaf 0.19.0</small>
     </div>
 
     <div class="page-wrap">
@@ -2365,20 +2365,68 @@
     async function copyContext() {
       const page = pages[index];
       if (!page) return;
-      const from = Math.max(0, page.start - 2000);
+      const contextStart = Math.max(0, page.start - 2000);
+      const from = page.start;
       const to = page.end;
+      const now = Date.now();
+      const requests = readReadingRequests();
+      const existing = requests.find(request =>
+        request.kind === 'lookback'
+        && request.bookId === activeBookId
+        && request.rangeStart === from
+        && request.rangeEnd === to
+        && request.status === 'pending'
+      );
+      const unit = currentChapterUnit();
+      const request = existing || {
+        id: window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+        bookId: activeBookId,
+        createdAt: now
+      };
+      Object.assign(request, {
+        kind:'lookback',
+        contextStart,
+        bookTitle:activeBook?.title || '雨停以后',
+        chapterTitle:unit?.title || chapterName.textContent,
+        chapterPath:unit?.path || [chapterName.textContent],
+        chapterKey:unit?.key || null,
+        chapterAnchor:unit?.anchor ?? null,
+        chapterEnd:unit?.end ?? null,
+        chapterLevel:unit?.level ?? null,
+        rangeStart:from,
+        rangeEnd:to,
+        pageNumber:index + 1,
+        totalPages:pages.length,
+        status:'pending',
+        requestedAt:now
+      });
+      if (!existing) requests.push(request);
+      localStorage.setItem(readingRequestsKey, JSON.stringify(requests.slice(-100)));
+      SideleafSync.markDirty(localStorage, [readingRequestsKey]);
+      const syncResult = await SideleafSync.syncNow(localStorage);
       const zhengPage = pageOrdinalForAnchor(readingState.zheng.current);
       const relatedNotes = readNotes().filter(note =>
         note.bookId === activeBookId && (
           isRangeNote(note)
-            ? Number(note.rangeStart) < to && Number(note.rangeEnd) > from
-            : note.anchor >= from && note.anchor < to
+            ? Number(note.rangeStart) < to && Number(note.rangeEnd) > contextStart
+            : note.anchor >= contextStart && note.anchor < to
         )
       );
       const noteBlock = relatedNotes.length
         ? relatedNotes.map((note, i) => {
             const quote = isRangeNote(note) ? `「${note.quote || text.slice(note.rangeStart, note.rangeEnd)}」` : '（旧页边批注）';
             return `${i + 1}. ${noteAuthorLabel(note.author)}｜${quote}：${note.text}`;
+          }).join('\n')
+        : '无';
+      const relatedLikes = readLikes().filter(like =>
+        like.bookId === activeBookId && isRangeNote(like)
+        && Number(like.rangeStart) < to
+        && Number(like.rangeEnd) > contextStart
+      );
+      const likeBlock = relatedLikes.length
+        ? relatedLikes.map((like, i) => {
+            const quote = like.quote || text.slice(like.rangeStart, like.rangeEnd);
+            return `${i + 1}. ${noteAuthorLabel(like.author)}｜「${quote}」`;
           }).join('\n')
         : '无';
       const packet = [
@@ -2391,16 +2439,19 @@
         '以下内容由当前页全文及当前页之前约 2000 字组成，只用于帮峥找回走到这里以前的阅读现场。',
         '这不是正式阅读请求；不要据此把后文视为已读，也不要移动峥的阅读线。',
         '',
-        text.slice(from, to),
+        text.slice(contextStart, to),
         '',
         '【相关批注】',
-        noteBlock
+        noteBlock,
+        '',
+        '【相关喜欢】',
+        likeBlock
       ].join('\n');
       try {
         await navigator.clipboard.writeText(packet);
-        sendContext.textContent = '前文已整理';
+        sendContext.textContent = syncResult?.ok ? '已递给峥' : '已复制，待同步';
       } catch (_) {
-        sendContext.textContent = '复制失败，再点一次';
+        sendContext.textContent = syncResult?.ok ? '已递给峥' : '同步失败，再点一次';
       }
       window.setTimeout(() => { sendContext.textContent = '回望'; }, 1800);
     }
@@ -2426,6 +2477,7 @@
         createdAt: now
       };
       Object.assign(request, {
+        kind:'reading',
         bookTitle: activeBook?.title || '雨停以后',
         chapterTitle: unit?.title || chapterName.textContent,
         chapterPath: unit?.path || [chapterName.textContent],
