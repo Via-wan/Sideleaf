@@ -508,7 +508,7 @@
     background: transparent;
     caret-color: #d9b8aa;
     color: var(--ink);
-    font: 400 16px/1.55 inherit;
+    font: 400 18px/1.55 inherit;
   }
   .leaf-comment-compose button {
     padding: 7px 2px;
@@ -609,7 +609,7 @@
     background: transparent;
     caret-color: #d9b8aa;
     color: var(--ink);
-    font: 400 16px/1.75 inherit;
+    font: 400 18px/1.75 inherit;
   }
   .review-editor textarea::placeholder { color: rgba(139,131,120,.58); }
   .review-editor-footer {
@@ -633,8 +633,13 @@
   }
   .review-send {
     margin-left: auto;
-    background: rgba(197,139,116,.14);
-    font-size: 17px;
+    width: auto;
+    height: auto;
+    padding: 5px 2px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    font-size: 20px;
   }
   .review-selected-book {
     overflow: hidden;
@@ -643,6 +648,13 @@
     font-size: 11px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .review-selected-book.is-selected,
+  .leaf-selected-book.is-selected {
+    padding: 4px 7px;
+    border-radius: 999px;
+    background: rgba(197,139,116,.11);
+    color: #a96f5d;
   }
   .review-book-picker {
     position: absolute;
@@ -829,25 +841,76 @@
     background: transparent;
     caret-color: #d9b8aa;
     color: var(--ink);
-    font: 400 16px/1.7 inherit;
+    font: 400 18px/1.7 inherit;
   }
   .leaf-compose-body textarea::placeholder { color: rgba(139, 131, 120, .62); }
   .leaf-compose-actions {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
   }
-  .leaf-book-select {
+  .leaf-book-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     min-width: 0;
     max-width: 68%;
-    padding: 7px 10px;
+  }
+  .leaf-book-toggle {
+    display: grid;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    place-items: center;
     border: 0;
-    border-radius: 999px;
-    outline: 0;
-    background: rgba(143,111,96,.07);
+    border-radius: 50%;
+    background: rgba(197,139,116,.12);
+    color: #b98270;
+    font: 400 18px/1 inherit;
+  }
+  .leaf-selected-book {
+    overflow: hidden;
     color: var(--muted);
-    font: 500 16px/1.2 inherit;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .leaf-book-picker {
+    position: absolute;
+    z-index: 3;
+    bottom: 40px;
+    left: 0;
+    display: grid;
+    width: min(230px, calc(100vw - 68px));
+    max-height: 210px;
+    overflow-y: auto;
+    padding: 7px;
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 18px;
+    background: rgba(252,250,247,.95);
+    box-shadow: 0 14px 38px rgba(61,49,40,.14);
+    backdrop-filter: blur(22px) saturate(116%);
+    -webkit-backdrop-filter: blur(22px) saturate(116%);
+  }
+  .leaf-book-picker[hidden] { display: none; }
+  .leaf-book-picker button {
+    overflow: hidden;
+    padding: 10px 11px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 500 13px/1.3 inherit;
+  }
+  .leaf-book-picker button.is-selected {
+    background: rgba(197,139,116,.12);
+    color: #a96f5d;
   }
   .leaf-publish {
     padding: 8px 14px;
@@ -1125,9 +1188,12 @@
       <textarea id="leaf-input" maxlength="3000" placeholder="写下一点此刻的想法。"></textarea>
       <div></div>
       <div class="leaf-compose-actions">
-        <select id="leaf-book-select" class="leaf-book-select" aria-label="关联书籍">
-          <option value="">不关联书籍</option>
-        </select>
+        <div class="leaf-book-control">
+          <input id="leaf-book-select" type="hidden" value="">
+          <button id="leaf-book-toggle" class="leaf-book-toggle" type="button" aria-label="关联书籍">＋</button>
+          <span id="leaf-selected-book" class="leaf-selected-book">不关联书籍</span>
+          <div id="leaf-book-picker" class="leaf-book-picker" hidden></div>
+        </div>
         <button id="leaf-publish" class="leaf-publish" type="button">留下</button>
       </div>
     </div>
@@ -1239,7 +1305,7 @@
   }
 
   (() => {
-    const appVersion = '0.17.3';
+    const appVersion = '0.17.4';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1288,6 +1354,9 @@
     const leafPlus = document.getElementById('leaf-plus');
     const leafInput = document.getElementById('leaf-input');
     const leafBookSelect = document.getElementById('leaf-book-select');
+    const leafBookToggle = document.getElementById('leaf-book-toggle');
+    const leafSelectedBook = document.getElementById('leaf-selected-book');
+    const leafBookPicker = document.getElementById('leaf-book-picker');
     const leafPublish = document.getElementById('leaf-publish');
     const footprintContent = document.getElementById('footprint-content');
     const footprintAuthorButtons = [...document.querySelectorAll('[data-footprint-author]')];
@@ -1318,6 +1387,7 @@
     let pendingDeleteBookId = null;
     let openLeafMenuId = null;
     let openLeafCommentId = null;
+    let leafBookPickerOpen = false;
     let editingLeafPostId = null;
     let pendingDeleteLeafPostId = null;
     let reviewComposerOpen = false;
@@ -1753,11 +1823,18 @@
     }
 
     function refreshLeafBooks() {
-      const selected = leafBookSelect.value;
-      const options = ['<option value="">不关联书籍</option>'];
-      readBooks().forEach(book => options.push(`<option value="${escapeText(book.id)}">${escapeText(book.title)}</option>`));
-      leafBookSelect.innerHTML = options.join('');
-      if ([...leafBookSelect.options].some(option => option.value === selected)) leafBookSelect.value = selected;
+      const books = readBooks();
+      const selected = books.some(book => book.id === leafBookSelect.value) ? leafBookSelect.value : '';
+      leafBookSelect.value = selected;
+      leafSelectedBook.textContent = selected
+        ? `《${books.find(book => book.id === selected)?.title || ''}》`
+        : '不关联书籍';
+      leafSelectedBook.classList.toggle('is-selected', Boolean(selected));
+      leafBookPicker.innerHTML = [
+        `<button type="button" class="${selected ? '' : 'is-selected'}" data-leaf-book-id="">不关联书籍</button>`,
+        ...books.map(book => `<button type="button" class="${selected === book.id ? 'is-selected' : ''}" data-leaf-book-id="${escapeText(book.id)}">${escapeText(book.title)}</button>`)
+      ].join('');
+      leafBookPicker.hidden = !leafBookPickerOpen;
     }
 
     function renderLeafPosts() {
@@ -1845,7 +1922,7 @@
             <textarea id="review-input" maxlength="12000" placeholder="写下关于这本书的想法。"></textarea>
             <div class="review-editor-footer">
               <button class="review-book-toggle" type="button" data-review-action="book" aria-label="关联书籍">＋</button>
-              <span class="review-selected-book">${selectedTitle ? `《${escapeText(selectedTitle)}》` : '选择书籍'}</span>
+              <span class="review-selected-book${selectedTitle ? ' is-selected' : ''}">${selectedTitle ? `《${escapeText(selectedTitle)}》` : '选择书籍'}</span>
               <button class="review-send" type="button" data-review-action="send" aria-label="发表书评">↑</button>
             </div>
             <div class="review-book-picker" ${reviewBookSelectOpen ? '' : 'hidden'}>${bookOptions || '<span class="empty-state">书房里还没有书。</span>'}</div>
@@ -1869,6 +1946,9 @@
       editingLeafPostId = null;
       leafInput.value = '';
       leafBookSelect.value = '';
+      leafBookPickerOpen = false;
+      leafBookPicker.hidden = true;
+      refreshLeafBooks();
       leafPublish.textContent = '留下';
       leafComposer.style.removeProperty('top');
       leafComposer.style.removeProperty('bottom');
@@ -1893,6 +1973,7 @@
     }
 
     function openLeafComposer() {
+      refreshLeafBooks();
       leafComposerBackdrop.hidden = false;
       window.requestAnimationFrame(() => {
         leafComposerBackdrop.classList.add('is-open');
@@ -2446,9 +2527,15 @@
         reviewBookSelectOpen = false;
         const picker = footprintContent.querySelector('.review-book-picker');
         if (picker) picker.hidden = true;
+        footprintContent.querySelectorAll('.review-book-picker button').forEach(button => {
+          button.classList.toggle('is-selected', button.dataset.bookId === reviewSelectedBookId);
+        });
         const selected = footprintContent.querySelector('.review-selected-book');
         const title = bookTitleMap().get(reviewSelectedBookId);
-        if (selected) selected.textContent = title ? `《${title}》` : '选择书籍';
+        if (selected) {
+          selected.textContent = title ? `《${title}》` : '选择书籍';
+          selected.classList.toggle('is-selected', Boolean(title));
+        }
       } else if (action === 'menu') {
         const reviewId = target.dataset.reviewId;
         openReviewMenuId = openReviewMenuId === reviewId ? null : reviewId;
@@ -2488,6 +2575,17 @@
         closeReviewComposer();
         renderFootprints();
       }
+    });
+    leafBookToggle.addEventListener('click', () => {
+      leafBookPickerOpen = !leafBookPickerOpen;
+      leafBookPicker.hidden = !leafBookPickerOpen;
+    });
+    leafBookPicker.addEventListener('click', event => {
+      const option = event.target.closest('[data-leaf-book-id]');
+      if (!option) return;
+      leafBookSelect.value = option.dataset.leafBookId || '';
+      leafBookPickerOpen = false;
+      refreshLeafBooks();
     });
     leafPlus.addEventListener('click', openLeafComposer);
     leafComposerBackdrop.addEventListener('click', closeLeafComposer);
@@ -2627,6 +2725,10 @@
           openLeafCommentId = null;
           renderLeafPosts();
         }
+      }
+      if (activeMainView === 'leaves' && leafBookPickerOpen && !event.target.closest('.leaf-book-control')) {
+        leafBookPickerOpen = false;
+        leafBookPicker.hidden = true;
       }
       if (activeMainView === 'footprints' && activeFootprintKind === 'reviews'
         && !event.target.closest('.review-compose-shell, .review-card, .footprint-tabs, .footprint-person, .main-nav, .confirm-backdrop')) {
