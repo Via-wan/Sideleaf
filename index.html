@@ -522,14 +522,25 @@
     font: 540 12px/1 inherit;
   }
   .footprint-shell {
+    position: relative;
     height: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
     padding: 10px 0 0;
   }
+  .footprint-shell::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset: 0 34px 0 calc(-1 * var(--shelf-gutter));
+    background: rgba(247,242,235,.62);
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
+  }
   #view-footprints {
-    height: calc(100svh - max(34px, env(safe-area-inset-top)) - 110px - env(safe-area-inset-bottom));
-    overflow: hidden;
+    height: calc(100svh - max(34px, env(safe-area-inset-top)) - 72px - env(safe-area-inset-bottom));
+    overflow: visible;
   }
   .footprint-person {
     position: absolute;
@@ -571,19 +582,10 @@
   .footprint-person button[data-footprint-author="zheng"].is-active { color: #6f8489; }
   .footprint-volume {
     position: relative;
+    z-index: 1;
     height: 100%;
     margin-right: 34px;
     isolation: isolate;
-  }
-  .footprint-volume::before {
-    content: '';
-    position: absolute;
-    z-index: -4;
-    inset: 0 0 0 calc(-1 * var(--shelf-gutter));
-    background: rgba(247,242,235,.62);
-    pointer-events: none;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
   }
   .footprint-layer,
   .footprint-paper {
@@ -624,7 +626,7 @@
     height: 100%;
     min-height: 0;
     flex-direction: column;
-    padding: 0 16px;
+    padding: 0 48px 0 16px;
     background: transparent;
     transform: translateX(0);
     transition: transform .3s cubic-bezier(.22,.78,.18,1);
@@ -668,19 +670,20 @@
   .footprint-tabs button:nth-child(2).is-active { transform: translateX(9px); }
   .footprint-tabs button:nth-child(3).is-active { transform: translateX(15px); }
   .footprint-content {
-    flex: 1;
-    min-height: 0;
+    flex: 0 0 clamp(150px, 20svh, 180px);
+    min-height: 150px;
     overflow-y: auto;
-    margin-top: 0;
-    padding: 56px 0 48px;
+    margin-top: 90px;
+    padding: 21px 0 24px;
     overscroll-behavior: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 27px, #000 calc(100% - 42px), transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0, #000 27px, #000 calc(100% - 42px), transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 22px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 22px), transparent 100%);
     animation: content-settle .24s ease both;
   }
   .footprint-content::-webkit-scrollbar { display: none; }
+  .footprint-content .empty-state { min-height: 100%; }
   .review-compose-shell {
     position: relative;
     margin: 0 0 18px;
@@ -1520,7 +1523,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.2';
+    const appVersion = '0.20.3';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
