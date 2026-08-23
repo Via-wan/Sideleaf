@@ -56,7 +56,7 @@
     margin: 0 auto;
     padding: max(34px, env(safe-area-inset-top)) 22px calc(110px + env(safe-area-inset-bottom));
   }
-  header {
+  .shelf-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -70,7 +70,7 @@
     font-weight: 650;
     letter-spacing: -.02em;
   }
-  header p {
+  .shelf-header p {
     margin: 9px 0 0;
     color: var(--muted);
     font-size: 14px;
@@ -185,7 +185,7 @@
     position: fixed;
     z-index: 10;
     left: 50%;
-    bottom: calc(24px + env(safe-area-inset-bottom));
+    bottom: calc(82px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     min-width: 154px;
     padding: 13px 22px;
@@ -208,6 +208,270 @@
     text-align: center;
     font-size: 13px;
     line-height: 1.6;
+  }
+  .app-view[hidden],
+  .leaf-composer[hidden],
+  .leaf-composer-backdrop[hidden] { display: none; }
+  .section-heading {
+    margin: 14px 2px 30px;
+  }
+  .section-heading h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 25px;
+    font-weight: 630;
+    letter-spacing: -.02em;
+  }
+  .section-heading p {
+    margin: 8px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .leaf-feed,
+  .footprint-content {
+    display: grid;
+    gap: 16px;
+  }
+  .leaf-card,
+  .footprint-card {
+    padding: 17px 18px;
+    border: 1px solid rgba(255,255,255,.72);
+    border-radius: 21px;
+    background: rgba(255,255,255,.43);
+    box-shadow: 0 10px 30px rgba(79, 65, 53, .055), inset 0 0 0 1px rgba(91, 74, 59, .035);
+    backdrop-filter: blur(16px) saturate(112%);
+    -webkit-backdrop-filter: blur(16px) saturate(112%);
+  }
+  .leaf-card.is-zheng { background: rgba(225, 232, 229, .52); }
+  .leaf-card.is-wish { background: rgba(242, 224, 216, .48); }
+  .leaf-card-meta,
+  .footprint-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .leaf-card-body,
+  .footprint-body {
+    margin: 10px 0 0;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+  }
+  .leaf-book,
+  .footprint-book {
+    display: inline-flex;
+    margin-top: 13px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(143, 111, 96, .08);
+    color: #9b7667;
+    font-size: 11px;
+  }
+  .footprint-shell {
+    min-height: calc(100svh - 180px);
+  }
+  .footprint-person {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 18px;
+    margin: 17px 0 22px;
+  }
+  .footprint-person button,
+  .footprint-tabs button,
+  .main-nav button {
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font-family: inherit;
+  }
+  .footprint-person button {
+    padding: 2px 4px;
+    font-size: 16px;
+    font-weight: 520;
+    transition: color .2s ease, transform .2s ease, font-size .2s ease;
+  }
+  .footprint-person button.is-active {
+    color: var(--ink);
+    font-size: 24px;
+    font-weight: 640;
+  }
+  .footprint-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    margin: 0 0 30px;
+    border-bottom: 1px solid var(--line);
+  }
+  .footprint-tabs button {
+    position: relative;
+    padding: 11px 4px 13px;
+    font-size: 13px;
+  }
+  .footprint-tabs button.is-active { color: var(--ink); }
+  .footprint-tabs button.is-active::after {
+    content: '';
+    position: absolute;
+    right: 28%;
+    bottom: -1px;
+    left: 28%;
+    height: 2px;
+    border-radius: 999px;
+    background: #c88d77;
+  }
+  .footprint-content {
+    animation: content-settle .24s ease both;
+  }
+  @keyframes content-settle {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .footprint-quote {
+    margin: 0 0 10px;
+    padding-left: 11px;
+    border-left: 2px solid rgba(200, 141, 119, .45);
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+  }
+  .empty-state {
+    display: grid;
+    min-height: 44svh;
+    place-items: center;
+    color: rgba(139, 131, 120, .72);
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .main-nav {
+    position: fixed;
+    z-index: 15;
+    right: 18px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    left: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    width: min(calc(100% - 36px), 480px);
+    margin: 0 auto;
+    padding: 6px;
+    border: 1px solid rgba(255,255,255,.78);
+    border-radius: 999px;
+    background: rgba(249, 247, 243, .76);
+    box-shadow: 0 10px 35px rgba(60, 51, 43, .12), inset 0 0 0 1px rgba(87, 73, 60, .04);
+    backdrop-filter: blur(22px) saturate(118%);
+    -webkit-backdrop-filter: blur(22px) saturate(118%);
+  }
+  .main-nav button {
+    padding: 9px 6px;
+    border-radius: 999px;
+    font-size: 12px;
+    transition: background .2s ease, color .2s ease;
+  }
+  .main-nav button.is-active {
+    background: rgba(255,255,255,.72);
+    color: var(--ink);
+    box-shadow: 0 3px 12px rgba(70, 58, 49, .07);
+  }
+  .leaf-composer-backdrop {
+    position: fixed;
+    z-index: 18;
+    inset: 0;
+    background: rgba(50, 44, 38, .12);
+    opacity: 0;
+    transition: opacity .24s ease;
+  }
+  .leaf-composer-backdrop.is-open { opacity: 1; }
+  .leaf-composer {
+    position: fixed;
+    z-index: 20;
+    right: 22px;
+    bottom: calc(82px + env(safe-area-inset-bottom));
+    width: 52px;
+    height: 52px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.78);
+    border-radius: 50%;
+    background: rgba(197, 139, 116, .92);
+    box-shadow: 0 12px 30px rgba(91, 63, 50, .19);
+    transition: width .42s cubic-bezier(.22,.78,.18,1), height .42s cubic-bezier(.22,.78,.18,1), right .42s cubic-bezier(.22,.78,.18,1), border-radius .42s cubic-bezier(.22,.78,.18,1), background .3s ease;
+  }
+  .leaf-composer.is-open {
+    right: 18px;
+    width: min(calc(100vw - 36px), 520px);
+    height: 190px;
+    border-radius: 25px;
+    background: rgba(252,250,247,.92);
+    backdrop-filter: blur(22px) saturate(116%);
+    -webkit-backdrop-filter: blur(22px) saturate(116%);
+  }
+  .leaf-plus {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: transparent;
+    color: #fffaf5;
+    font: 300 29px/1 inherit;
+    transition: opacity .16s ease, transform .36s ease;
+  }
+  .leaf-composer.is-open .leaf-plus {
+    opacity: 0;
+    pointer-events: none;
+    transform: rotate(90deg) scale(.7);
+  }
+  .leaf-compose-body {
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(7px);
+    transition: opacity .18s ease .16s, transform .24s ease .14s;
+  }
+  .leaf-composer.is-open .leaf-compose-body {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .leaf-compose-body textarea {
+    width: 100%;
+    min-height: 82px;
+    resize: none;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 400 15px/1.7 inherit;
+  }
+  .leaf-compose-body textarea::placeholder { color: rgba(139, 131, 120, .62); }
+  .leaf-compose-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .leaf-book-select {
+    min-width: 0;
+    max-width: 68%;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: 999px;
+    outline: 0;
+    background: rgba(143,111,96,.07);
+    color: var(--muted);
+    font: 500 12px/1.2 inherit;
+  }
+  .leaf-publish {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 999px;
+    background: #bd8975;
+    color: #fffaf5;
+    font: 560 12px/1.2 inherit;
   }
   .sheet-backdrop {
     position: fixed;
@@ -402,7 +666,8 @@
 </head>
 <body>
   <main class="shelf">
-    <header>
+    <section id="view-shelf" class="app-view">
+    <header class="shelf-header">
       <div>
         <h1>Sideleaf</h1>
         <p>愿与峥的共读书架</p>
@@ -413,11 +678,56 @@
     <section id="book-grid" class="book-grid" aria-label="书架">
       <div id="format-note" class="format-note" hidden>先放一本小样章在这里。你也可以从“文件”里导入 EPUB、TXT 或 Markdown。</div>
     </section>
+    </section>
+
+    <section id="view-leaves" class="app-view" hidden>
+      <div class="section-heading">
+        <h2>叶间</h2>
+        <p>读到这里，想留下一点什么。</p>
+      </div>
+      <div id="leaf-feed" class="leaf-feed"></div>
+    </section>
+
+    <section id="view-footprints" class="app-view" hidden>
+      <div class="footprint-shell">
+        <div class="footprint-person" aria-label="选择足迹主人">
+          <button type="button" data-footprint-author="wish" class="is-active">愿</button>
+          <button type="button" data-footprint-author="zheng">峥</button>
+        </div>
+        <div class="footprint-tabs" role="tablist" aria-label="足迹类型">
+          <button type="button" class="is-active" data-footprint-kind="notes">说一句</button>
+          <button type="button" data-footprint-kind="likes">喜欢</button>
+          <button type="button" data-footprint-kind="reviews">书评</button>
+        </div>
+        <div id="footprint-content" class="footprint-content"></div>
+      </div>
+    </section>
   </main>
 
   <input id="book-file" type="file" accept=".epub,.txt,.md,.markdown,application/epub+zip,text/plain,text/markdown" hidden>
   <input id="backup-file" type="file" accept=".json,.sideleaf.json,application/json" hidden>
   <button id="import-button" class="import-button" type="button">＋ 导入一本书</button>
+
+  <nav class="main-nav" aria-label="Sideleaf 主栏目">
+    <button type="button" class="is-active" data-main-view="shelf">书房</button>
+    <button type="button" data-main-view="leaves">叶间</button>
+    <button type="button" data-main-view="footprints">足迹</button>
+  </nav>
+
+  <div id="leaf-composer-backdrop" class="leaf-composer-backdrop" hidden></div>
+  <section id="leaf-composer" class="leaf-composer" hidden aria-label="写一条叶间动态">
+    <button id="leaf-plus" class="leaf-plus" type="button" aria-label="写一条叶间动态">＋</button>
+    <div class="leaf-compose-body">
+      <textarea id="leaf-input" maxlength="3000" placeholder="写下一点此刻的想法。"></textarea>
+      <div></div>
+      <div class="leaf-compose-actions">
+        <select id="leaf-book-select" class="leaf-book-select" aria-label="关联书籍">
+          <option value="">不关联书籍</option>
+        </select>
+        <button id="leaf-publish" class="leaf-publish" type="button">留下</button>
+      </div>
+    </div>
+  </section>
 
   <div id="data-backdrop" class="sheet-backdrop" aria-hidden="true">
     <section class="data-sheet" role="dialog" aria-modal="true" aria-labelledby="data-title">
@@ -505,9 +815,12 @@
   }
 
   (() => {
-    const appVersion = '0.15.24';
+    const appVersion = '0.16.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
+    const notesKey = 'sideleaf.notes.v1';
+    const likesKey = 'sideleaf.likes.v1';
+    const leafPostsKey = 'sideleaf.leaf-posts.v1';
     const grid = document.getElementById('book-grid');
     const fileInput = document.getElementById('book-file');
     const importButton = document.getElementById('import-button');
@@ -542,12 +855,27 @@
     const backupToast = document.getElementById('backup-toast');
     const toastMessage = document.getElementById('toast-message');
     const undoRestore = document.getElementById('undo-restore');
+    const mainViews = [...document.querySelectorAll('.app-view')];
+    const mainViewButtons = [...document.querySelectorAll('[data-main-view]')];
+    const leafFeed = document.getElementById('leaf-feed');
+    const leafComposer = document.getElementById('leaf-composer');
+    const leafComposerBackdrop = document.getElementById('leaf-composer-backdrop');
+    const leafPlus = document.getElementById('leaf-plus');
+    const leafInput = document.getElementById('leaf-input');
+    const leafBookSelect = document.getElementById('leaf-book-select');
+    const leafPublish = document.getElementById('leaf-publish');
+    const footprintContent = document.getElementById('footprint-content');
+    const footprintAuthorButtons = [...document.querySelectorAll('[data-footprint-author]')];
+    const footprintKindButtons = [...document.querySelectorAll('[data-footprint-kind]')];
     let pendingBackup = null;
     let pendingBackupSource = 'file';
     let pendingCoreSnapshotId = null;
     let coreRecovery = null;
     let undoRestoreAction = null;
     let toastTimer = 0;
+    let activeMainView = 'shelf';
+    let activeFootprintAuthor = 'wish';
+    let activeFootprintKind = 'notes';
 
     SideleafLibrary.ensure(localStorage);
 
@@ -939,8 +1267,113 @@
 
     function escapeText(value) {
       const span = document.createElement('span');
-      span.textContent = value;
+      span.textContent = String(value ?? '');
       return span.innerHTML;
+    }
+
+    function readArray(key) {
+      try {
+        const value = JSON.parse(localStorage.getItem(key) || '[]');
+        return Array.isArray(value) ? value : [];
+      } catch (_) { return []; }
+    }
+
+    function formatMoment(timestamp) {
+      const date = new Date(Number(timestamp));
+      if (!Number.isFinite(date.getTime())) return '';
+      const pad = value => String(value).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    function bookTitleMap() {
+      return new Map(readBooks().map(book => [book.id, book.title]));
+    }
+
+    function refreshLeafBooks() {
+      const selected = leafBookSelect.value;
+      const options = ['<option value="">不关联书籍</option>'];
+      readBooks().forEach(book => options.push(`<option value="${escapeText(book.id)}">${escapeText(book.title)}</option>`));
+      leafBookSelect.innerHTML = options.join('');
+      if ([...leafBookSelect.options].some(option => option.value === selected)) leafBookSelect.value = selected;
+    }
+
+    function renderLeafPosts() {
+      const books = bookTitleMap();
+      const posts = readArray(leafPostsKey).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      if (!posts.length) {
+        leafFeed.innerHTML = '<div class="empty-state">叶间还很安静。<br>右下角可以留下第一片。</div>';
+        return;
+      }
+      leafFeed.innerHTML = posts.map(post => {
+        const author = post.author === 'zheng' ? 'zheng' : 'wish';
+        const title = post.bookId ? books.get(post.bookId) : '';
+        return `<article class="leaf-card is-${author}">
+          <div class="leaf-card-meta"><span>${author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(post.createdAt))}</time></div>
+          <p class="leaf-card-body">${escapeText(post.body)}</p>
+          ${title ? `<span class="leaf-book">《${escapeText(title)}》</span>` : ''}
+        </article>`;
+      }).join('');
+    }
+
+    function renderFootprints() {
+      footprintAuthorButtons.forEach(button => button.classList.toggle('is-active', button.dataset.footprintAuthor === activeFootprintAuthor));
+      footprintKindButtons.forEach(button => button.classList.toggle('is-active', button.dataset.footprintKind === activeFootprintKind));
+      const books = bookTitleMap();
+      let items = [];
+      if (activeFootprintKind === 'notes') {
+        items = readArray(notesKey)
+          .filter(note => (note.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
+          .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
+          .map(note => `<article class="footprint-card">
+            ${note.quote ? `<blockquote class="footprint-quote">${escapeText(note.quote)}</blockquote>` : ''}
+            <p class="footprint-body">${escapeText(note.text)}</p>
+            <div class="footprint-meta"><span>${escapeText(books.get(note.bookId) || '')}</span><time>${escapeText(formatMoment(note.createdAt || note.updatedAt))}</time></div>
+          </article>`);
+      } else if (activeFootprintKind === 'likes') {
+        items = readArray(likesKey)
+          .filter(like => (like.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
+          .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
+          .map(like => `<article class="footprint-card">
+            <blockquote class="footprint-quote">${escapeText(like.quote)}</blockquote>
+            <div class="footprint-meta"><span>${escapeText(books.get(like.bookId) || '')}</span><time>${escapeText(formatMoment(like.createdAt || like.updatedAt))}</time></div>
+          </article>`);
+      }
+      footprintContent.style.animation = 'none';
+      void footprintContent.offsetWidth;
+      footprintContent.style.animation = '';
+      footprintContent.innerHTML = items.length
+        ? items.join('')
+        : `<div class="empty-state">${activeFootprintKind === 'reviews' ? '书评会落在这里。' : '这里还没有留下足迹。'}</div>`;
+    }
+
+    function closeLeafComposer() {
+      leafComposer.classList.remove('is-open');
+      leafComposerBackdrop.classList.remove('is-open');
+      window.setTimeout(() => { leafComposerBackdrop.hidden = true; }, 240);
+    }
+
+    function openLeafComposer() {
+      leafComposerBackdrop.hidden = false;
+      window.requestAnimationFrame(() => {
+        leafComposerBackdrop.classList.add('is-open');
+        leafComposer.classList.add('is-open');
+        window.setTimeout(() => leafInput.focus(), 260);
+      });
+    }
+
+    function setMainView(view) {
+      activeMainView = ['shelf', 'leaves', 'footprints'].includes(view) ? view : 'shelf';
+      mainViews.forEach(element => { element.hidden = element.id !== `view-${activeMainView}`; });
+      mainViewButtons.forEach(button => button.classList.toggle('is-active', button.dataset.mainView === activeMainView));
+      importButton.hidden = activeMainView !== 'shelf';
+      leafComposer.hidden = activeMainView !== 'leaves';
+      if (activeMainView !== 'leaves') closeLeafComposer();
+      if (activeMainView === 'leaves') {
+        refreshLeafBooks();
+        renderLeafPosts();
+      }
+      if (activeMainView === 'footprints') renderFootprints();
+      window.scrollTo({ top:0, behavior:'instant' });
     }
 
     function localNameOf(element) {
@@ -1209,6 +1642,7 @@
         updateBookLines(link.querySelector('.book-reading-lines'), readingLines[book.id], book.content.length, book.progress);
       });
       formatNote.hidden = books.length > 0;
+      refreshLeafBooks();
     }
 
     grid.addEventListener('click', event => {
@@ -1217,9 +1651,43 @@
       link.classList.add('is-opening');
     });
 
+    mainViewButtons.forEach(button => button.addEventListener('click', () => setMainView(button.dataset.mainView)));
+    footprintAuthorButtons.forEach(button => button.addEventListener('click', () => {
+      activeFootprintAuthor = button.dataset.footprintAuthor;
+      renderFootprints();
+    }));
+    footprintKindButtons.forEach(button => button.addEventListener('click', () => {
+      activeFootprintKind = button.dataset.footprintKind;
+      renderFootprints();
+    }));
+    leafPlus.addEventListener('click', openLeafComposer);
+    leafComposerBackdrop.addEventListener('click', closeLeafComposer);
+    leafPublish.addEventListener('click', () => {
+      const body = leafInput.value.trim();
+      if (!body) return;
+      const posts = readArray(leafPostsKey);
+      const now = Date.now();
+      posts.push({
+        id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+        author:'wish',
+        body,
+        bookId:leafBookSelect.value || null,
+        createdAt:now,
+        updatedAt:now
+      });
+      localStorage.setItem(leafPostsKey, JSON.stringify(posts));
+      SideleafSync.markDirty(localStorage, [leafPostsKey]);
+      leafInput.value = '';
+      leafBookSelect.value = '';
+      closeLeafComposer();
+      renderLeafPosts();
+    });
+
     window.addEventListener('pageshow', () => {
       grid.querySelectorAll('.book.is-opening').forEach(link => link.classList.remove('is-opening'));
       renderBooks();
+      if (activeMainView === 'leaves') renderLeafPosts();
+      if (activeMainView === 'footprints') renderFootprints();
     });
 
     dataButton.addEventListener('click', openDataSheet);
@@ -1316,6 +1784,7 @@
     });
     window.addEventListener('sideleaf:core-state', renderBooks);
     renderBooks();
+    setMainView('shelf');
   })();
 </script>
 </body>
