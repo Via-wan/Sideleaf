@@ -522,13 +522,18 @@
   }
   .footprint-shell {
     min-height: calc(100svh - 180px);
+    padding: 4px 0 26px;
   }
   .footprint-person {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 18px;
-    margin: 17px 0 22px;
+    display: inline-grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2px;
+    margin: 13px 0 21px;
+    padding: 3px;
+    border: 1px solid rgba(84,76,68,.12);
+    border-radius: 999px;
+    background: rgba(255,253,249,.68);
+    box-shadow: inset 0 1px rgba(255,255,255,.8), 0 3px 12px rgba(67,54,43,.04);
   }
   .footprint-person button,
   .footprint-tabs button,
@@ -539,40 +544,128 @@
     font-family: inherit;
   }
   .footprint-person button {
-    padding: 2px 4px;
-    font-size: 16px;
-    font-weight: 520;
-    transition: color .2s ease, transform .2s ease, font-size .2s ease;
+    min-width: 42px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 560;
+    letter-spacing: .08em;
+    transition: color .2s ease, background .2s ease, box-shadow .2s ease;
   }
   .footprint-person button.is-active {
-    color: var(--ink);
-    font-size: 24px;
-    font-weight: 640;
+    background: rgba(143,111,96,.86);
+    color: #fffaf4;
+    box-shadow: 0 2px 8px rgba(90,67,56,.13);
+  }
+  .footprint-person button[data-footprint-author="zheng"].is-active { background: #76888b; }
+  .footprint-volume {
+    position: relative;
+    margin-right: 43px;
+    isolation: isolate;
+  }
+  .footprint-layer,
+  .footprint-paper {
+    border: 1px solid rgba(86,72,58,.11);
+    border-radius: 4px 14px 14px 5px;
+  }
+  .footprint-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    transition: opacity .24s ease, transform .28s cubic-bezier(.22,.78,.18,1);
+  }
+  .footprint-layer-one {
+    z-index: -1;
+    background: #faf6f0;
+    transform: translate(6px, 5px);
+  }
+  .footprint-layer-two {
+    z-index: -2;
+    background: #f5efe7;
+    transform: translate(12px, 10px);
+  }
+  .footprint-layer-cover {
+    z-index: -3;
+    background: #d9d0c4;
+    box-shadow: 0 13px 28px rgba(66,52,42,.10);
+    transform: translate(18px, 15px);
+  }
+  .footprint-volume.is-likes .footprint-layer-one,
+  .footprint-volume.is-reviews .footprint-layer-one,
+  .footprint-volume.is-reviews .footprint-layer-two { opacity: 0; }
+  .footprint-volume.is-likes .footprint-layer-two { transform: translate(6px, 5px); }
+  .footprint-volume.is-likes .footprint-layer-cover { transform: translate(12px, 10px); }
+  .footprint-volume.is-reviews .footprint-layer-cover { transform: translate(6px, 5px); }
+  .footprint-paper {
+    position: relative;
+    min-height: calc(100svh - 265px);
+    padding: 24px 20px 30px;
+    background:
+      linear-gradient(90deg, rgba(114,91,72,.055), transparent 9px),
+      repeating-linear-gradient(0deg, rgba(86,73,58,.012) 0, rgba(86,73,58,.012) 1px, transparent 1px, transparent 5px),
+      #fffdf9;
+    box-shadow: inset 2px 0 rgba(255,255,255,.72), 0 8px 22px rgba(70,56,45,.055);
+    animation: footprint-page-in .3s cubic-bezier(.22,.78,.18,1) both;
+  }
+  .footprint-page-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 14px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(84,76,68,.105);
+  }
+  .footprint-page-header h2 {
+    margin: 0;
+    font: 620 21px/1.1 inherit;
+    letter-spacing: .04em;
+  }
+  .footprint-page-header p {
+    margin: 0;
+    color: rgba(139,131,120,.78);
+    font-size: 10px;
+    letter-spacing: .05em;
   }
   .footprint-tabs {
+    position: absolute;
+    z-index: -1;
+    top: 42px;
+    right: -58px;
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    margin: 0 0 30px;
-    border-bottom: 1px solid var(--line);
+    gap: 10px;
+    width: 72px;
   }
   .footprint-tabs button {
-    position: relative;
-    padding: 11px 4px 13px;
-    font-size: 13px;
+    width: 72px;
+    height: 42px;
+    padding: 0 12px 0 22px;
+    clip-path: polygon(0 0, 100% 0, 82% 50%, 100% 100%, 0 100%);
+    color: rgba(255,255,255,.82);
+    text-align: center;
+    font-size: 11px;
+    font-weight: 560;
+    letter-spacing: .04em;
+    filter: saturate(.72);
+    opacity: .72;
+    transition: opacity .2s ease, filter .2s ease, transform .2s ease;
   }
-  .footprint-tabs button.is-active { color: var(--ink); }
-  .footprint-tabs button.is-active::after {
-    content: '';
-    position: absolute;
-    right: 28%;
-    bottom: -1px;
-    left: 28%;
-    height: 2px;
-    border-radius: 999px;
-    background: #c88d77;
+  .footprint-tabs button:nth-child(1) { background: #c58d7d; }
+  .footprint-tabs button:nth-child(2) { background: #788c91; }
+  .footprint-tabs button:nth-child(3) { background: #9ba187; }
+  .footprint-tabs button.is-active {
+    z-index: 2;
+    color: #fffdf8;
+    filter: none;
+    opacity: 1;
+    transform: translateX(3px);
   }
   .footprint-content {
+    margin-top: 4px;
     animation: content-settle .24s ease both;
+  }
+  @keyframes footprint-page-in {
+    from { opacity: .5; transform: translateX(5px) rotate(.15deg); }
+    to { opacity: 1; transform: none; }
   }
   .review-compose-shell {
     position: relative;
@@ -739,6 +832,89 @@
     font-size: 13px;
     line-height: 1.65;
   }
+  .footprint-index {
+    border-bottom: 1px solid rgba(84,76,68,.095);
+  }
+  .footprint-index.review-card { padding: 0; }
+  .footprint-index:last-child { border-bottom-color: transparent; }
+  .footprint-index summary {
+    position: relative;
+    padding: 17px 20px 17px 3px;
+    cursor: pointer;
+    list-style: none;
+  }
+  .footprint-index summary::-webkit-details-marker { display: none; }
+  .footprint-index summary::after {
+    content: '›';
+    position: absolute;
+    top: 50%;
+    right: 3px;
+    color: rgba(139,131,120,.58);
+    font: 300 20px/1 inherit;
+    transform: translateY(-50%);
+    transition: transform .2s ease;
+  }
+  .footprint-index[open] summary::after { transform: translateY(-50%) rotate(90deg); }
+  .footprint-index-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    color: rgba(139,131,120,.82);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .footprint-index-book {
+    overflow: hidden;
+    color: #8e7568;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .footprint-index-preview,
+  .footprint-index-note-preview {
+    display: -webkit-box;
+    overflow: hidden;
+    margin: 0;
+    -webkit-box-orient: vertical;
+    white-space: pre-wrap;
+  }
+  .footprint-index-preview {
+    -webkit-line-clamp: 2;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.62;
+  }
+  .footprint-index-note-preview {
+    margin-top: 6px;
+    -webkit-line-clamp: 1;
+    color: rgba(139,131,120,.84);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .footprint-index[open] .footprint-index-preview,
+  .footprint-index[open] .footprint-index-note-preview { display: none; }
+  .footprint-index-detail {
+    margin: -2px 2px 17px;
+    padding: 13px 14px 14px;
+    border-left: 2px solid rgba(197,141,125,.34);
+    background: rgba(247,242,235,.44);
+    color: var(--ink);
+  }
+  .footprint-index-detail blockquote,
+  .footprint-index-detail p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.72;
+    white-space: pre-wrap;
+  }
+  .footprint-index-detail blockquote { color: var(--muted); }
+  .footprint-index-detail blockquote + p {
+    margin-top: 11px;
+    padding-top: 11px;
+    border-top: 1px solid rgba(84,76,68,.08);
+  }
+  .footprint-index-detail .footprint-body { margin-top: 0; }
   .empty-state {
     display: grid;
     min-height: 44svh;
@@ -1155,12 +1331,23 @@
           <button type="button" data-footprint-author="wish" class="is-active">愿</button>
           <button type="button" data-footprint-author="zheng">峥</button>
         </div>
-        <div class="footprint-tabs" role="tablist" aria-label="足迹类型">
-          <button type="button" class="is-active" data-footprint-kind="notes">说一句</button>
-          <button type="button" data-footprint-kind="likes">喜欢</button>
-          <button type="button" data-footprint-kind="reviews">书评</button>
+        <div id="footprint-volume" class="footprint-volume is-notes">
+          <div class="footprint-layer footprint-layer-one" aria-hidden="true"></div>
+          <div class="footprint-layer footprint-layer-two" aria-hidden="true"></div>
+          <div class="footprint-layer footprint-layer-cover" aria-hidden="true"></div>
+          <section class="footprint-paper">
+            <header class="footprint-page-header">
+              <h2>足迹</h2>
+              <p id="footprint-page-subtitle">愿留下的说一句</p>
+            </header>
+            <div id="footprint-content" class="footprint-content"></div>
+          </section>
+          <div class="footprint-tabs" role="tablist" aria-label="足迹类型">
+            <button type="button" role="tab" aria-selected="true" class="is-active" data-footprint-kind="notes">说一句</button>
+            <button type="button" role="tab" aria-selected="false" data-footprint-kind="likes">喜欢</button>
+            <button type="button" role="tab" aria-selected="false" data-footprint-kind="reviews">书评</button>
+          </div>
         </div>
-        <div id="footprint-content" class="footprint-content"></div>
       </div>
     </section>
   </main>
@@ -1314,7 +1501,7 @@
   }
 
   (() => {
-    const appVersion = '0.19.1';
+    const appVersion = '0.20.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1368,6 +1555,8 @@
     const leafBookPicker = document.getElementById('leaf-book-picker');
     const leafPublish = document.getElementById('leaf-publish');
     const footprintContent = document.getElementById('footprint-content');
+    const footprintVolume = document.getElementById('footprint-volume');
+    const footprintPageSubtitle = document.getElementById('footprint-page-subtitle');
     const footprintAuthorButtons = [...document.querySelectorAll('[data-footprint-author]')];
     const footprintKindButtons = [...document.querySelectorAll('[data-footprint-kind]')];
     const libraryMenu = document.getElementById('library-menu');
@@ -1882,39 +2071,59 @@
 
     function renderFootprints() {
       footprintAuthorButtons.forEach(button => button.classList.toggle('is-active', button.dataset.footprintAuthor === activeFootprintAuthor));
-      footprintKindButtons.forEach(button => button.classList.toggle('is-active', button.dataset.footprintKind === activeFootprintKind));
+      footprintKindButtons.forEach(button => {
+        const active = button.dataset.footprintKind === activeFootprintKind;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', String(active));
+      });
+      footprintVolume.className = `footprint-volume is-${activeFootprintKind}`;
+      const authorLabel = activeFootprintAuthor === 'zheng' ? '峥' : '愿';
+      const kindLabel = { notes:'说一句', likes:'喜欢', reviews:'书评' }[activeFootprintKind];
+      footprintPageSubtitle.textContent = `${authorLabel}留下的${kindLabel}`;
       const books = bookTitleMap();
       let items = [];
       if (activeFootprintKind === 'notes') {
         items = readArray(notesKey)
           .filter(note => (note.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(note => `<article class="footprint-card">
-            ${note.quote ? `<blockquote class="footprint-quote">${escapeText(note.quote)}</blockquote>` : ''}
-            <p class="footprint-body">${escapeText(note.text)}</p>
-            <div class="footprint-meta"><span>${escapeText(books.get(note.bookId) || '')}</span><time>${escapeText(formatMoment(note.createdAt || note.updatedAt))}</time></div>
-          </article>`);
+          .map(note => `<details class="footprint-index">
+            <summary>
+              <span class="footprint-index-line"><span class="footprint-index-book">《${escapeText(books.get(note.bookId) || '已移除的书')}》</span><time>${escapeText(formatMoment(note.createdAt || note.updatedAt))}</time></span>
+              <p class="footprint-index-preview">${escapeText(note.quote || note.text)}</p>
+              ${note.quote ? `<p class="footprint-index-note-preview">${escapeText(note.text)}</p>` : ''}
+            </summary>
+            <div class="footprint-index-detail">
+              ${note.quote ? `<blockquote>${escapeText(note.quote)}</blockquote>` : ''}
+              <p>${escapeText(note.text)}</p>
+            </div>
+          </details>`);
       } else if (activeFootprintKind === 'likes') {
         items = readArray(likesKey)
           .filter(like => (like.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(like => `<article class="footprint-card">
-            <blockquote class="footprint-quote">${escapeText(like.quote)}</blockquote>
-            <div class="footprint-meta"><span>${escapeText(books.get(like.bookId) || '')}</span><time>${escapeText(formatMoment(like.createdAt || like.updatedAt))}</time></div>
-          </article>`);
+          .map(like => `<details class="footprint-index">
+            <summary>
+              <span class="footprint-index-line"><span class="footprint-index-book">《${escapeText(books.get(like.bookId) || '已移除的书')}》</span><time>${escapeText(formatMoment(like.createdAt || like.updatedAt))}</time></span>
+              <p class="footprint-index-preview">${escapeText(like.quote)}</p>
+            </summary>
+            <div class="footprint-index-detail"><blockquote>${escapeText(like.quote)}</blockquote></div>
+          </details>`);
       } else if (activeFootprintKind === 'reviews') {
         items = readArray(reviewsKey)
           .filter(review => (review.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(review => `<article class="review-card" data-review-id="${escapeText(review.id)}">
-            <p class="footprint-body">${escapeText(review.body)}</p>
-            <div class="footprint-meta"><span>《${escapeText(books.get(review.bookId) || '已移除的书')}》</span><time>${escapeText(formatMoment(review.createdAt || review.updatedAt))}</time></div>
+          .map(review => `<details class="footprint-index review-card" data-review-id="${escapeText(review.id)}" ${openReviewMenuId === review.id ? 'open' : ''}>
+            <summary>
+              <span class="footprint-index-line"><span class="footprint-index-book">《${escapeText(books.get(review.bookId) || '已移除的书')}》</span><time>${escapeText(formatMoment(review.createdAt || review.updatedAt))}</time></span>
+              <p class="footprint-index-preview">${escapeText(review.body)}</p>
+            </summary>
+            <div class="footprint-index-detail"><p class="footprint-body">${escapeText(review.body)}</p>
             ${activeFootprintAuthor === 'wish' ? `<div class="review-card-actions"><button class="leaf-more" type="button" data-review-action="menu" data-review-id="${escapeText(review.id)}" aria-label="书评操作">…</button></div>
             <div class="review-action-menu" ${openReviewMenuId === review.id ? '' : 'hidden'}>
               <button type="button" data-review-action="edit" data-review-id="${escapeText(review.id)}">编辑</button>
               <button type="button" data-review-action="delete" data-review-id="${escapeText(review.id)}">删除</button>
-            </div>` : ''}
-          </article>`);
+            </div>` : ''}</div>
+          </details>`);
       }
       footprintContent.style.animation = 'none';
       void footprintContent.offsetWidth;
