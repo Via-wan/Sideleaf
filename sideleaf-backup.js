@@ -13,6 +13,8 @@
     'sideleaf.settings.v1': 'object',
     'sideleaf.notes.v1': 'array',
     'sideleaf.likes.v1': 'array',
+    'sideleaf.leaf-posts.v1': 'array',
+    'sideleaf.hidden-built-ins.v1': 'array',
     'sideleaf.reading-lines.v1': 'object',
     'sideleaf.chapter-journals.v1': 'array',
     'sideleaf.read-requests.v1': 'array'

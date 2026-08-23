@@ -15,7 +15,8 @@
     'sideleaf.likes.v1',
     'sideleaf.reading-lines.v1',
     'sideleaf.chapter-journals.v1',
-    'sideleaf.read-requests.v1'
+    'sideleaf.read-requests.v1',
+    'sideleaf.hidden-built-ins.v1'
   ]);
   let timer = 0;
   let inFlight = null;

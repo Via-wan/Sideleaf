@@ -6,6 +6,7 @@
   'use strict';
 
   const BOOKS_KEY = 'sideleaf.books.v1';
+  const HIDDEN_BUILT_INS_KEY = 'sideleaf.hidden-built-ins.v1';
   const SAMPLE_BOOK = Object.freeze({
     id: 'sideleaf-sample-rain',
     title: '雨停以后',
@@ -48,19 +49,35 @@
     }
   }
 
-  function includeBuiltIns(books) {
+  function includeBuiltIns(books, hiddenIds = []) {
     const next = Array.isArray(books) ? books.slice() : [];
     const existingIds = new Set(next.map(book => book?.id).filter(Boolean));
+    const hidden = new Set(Array.isArray(hiddenIds) ? hiddenIds : []);
     const missing = BUILT_IN_BOOKS
-      .filter(book => !existingIds.has(book.id))
+      .filter(book => !existingIds.has(book.id) && !hidden.has(book.id))
       .map(cloneBook);
     return [...missing, ...next];
+  }
+
+  function readHiddenBuiltIns(storage) {
+    try {
+      const ids = JSON.parse(storage.getItem(HIDDEN_BUILT_INS_KEY) || '[]');
+      return Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : [];
+    } catch (_) { return []; }
+  }
+
+  function hideBuiltIn(storage, id) {
+    if (!BUILT_IN_BOOKS.some(book => book.id === id)) return readHiddenBuiltIns(storage);
+    const hidden = readHiddenBuiltIns(storage);
+    if (!hidden.includes(id)) hidden.push(id);
+    storage.setItem(HIDDEN_BUILT_INS_KEY, JSON.stringify(hidden));
+    return hidden;
   }
 
   function ensure(storage) {
     const currentRaw = storage.getItem(BOOKS_KEY);
     const current = parseBooks(currentRaw);
-    const books = includeBuiltIns(current);
+    const books = includeBuiltIns(current, readHiddenBuiltIns(storage));
     if (books.length !== current.length) {
       storage.setItem(BOOKS_KEY, JSON.stringify(books));
     }
@@ -69,12 +86,14 @@
 
   function ensureSnapshot(storageSnapshot) {
     const next = { ...(storageSnapshot || {}) };
-    next[BOOKS_KEY] = JSON.stringify(includeBuiltIns(parseBooks(next[BOOKS_KEY])));
+    let hidden = [];
+    try { hidden = JSON.parse(next[HIDDEN_BUILT_INS_KEY] || '[]'); } catch (_) {}
+    next[BOOKS_KEY] = JSON.stringify(includeBuiltIns(parseBooks(next[BOOKS_KEY]), hidden));
     return next;
   }
 
-  function insertImported(books, importedBook) {
-    const next = includeBuiltIns(books);
+  function insertImported(books, importedBook, hiddenIds = []) {
+    const next = includeBuiltIns(books, hiddenIds);
     const lastBuiltInIndex = next.reduce((lastIndex, book, index) => book?.builtIn ? index : lastIndex, -1);
     next.splice(lastBuiltInIndex + 1, 0, importedBook);
     return next;
@@ -140,9 +159,12 @@
 
   return {
     BOOKS_KEY,
+    HIDDEN_BUILT_INS_KEY,
     BUILT_IN_BOOKS,
     DEFAULT_BOOK_ID,
     includeBuiltIns,
+    readHiddenBuiltIns,
+    hideBuiltIn,
     ensure,
     ensureSnapshot,
     insertImported,

@@ -31,6 +31,16 @@ test('重复初始化不会复制内置书', () => {
   assert.equal(books.filter(book => book.id === 'sideleaf-sample-rain').length, 1);
 });
 
+test('明确隐藏内置样章后不会在初始化或导入时重新出现', () => {
+  const storage = new MemoryStorage();
+  SideleafLibrary.ensure(storage);
+  storage.setItem('sideleaf.books.v1', '[]');
+  const hidden = SideleafLibrary.hideBuiltIn(storage, 'sideleaf-sample-rain');
+  assert.deepEqual(SideleafLibrary.ensure(storage), []);
+  const imported = { id:'book-new', title:'新书', content:'正文' };
+  assert.deepEqual(SideleafLibrary.insertImported([], imported, hidden), [imported]);
+});
+
 test('恢复旧备份时补齐内置书，已有快照则保持原样', () => {
   const oldSnapshot = {
     'sideleaf.books.v1': JSON.stringify([{ id: 'book-1', title: '索拉里斯星', content: '正文' }])

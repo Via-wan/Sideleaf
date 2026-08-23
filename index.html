@@ -108,6 +108,34 @@
     box-shadow: 0 9px 22px rgba(65, 52, 41, .12), inset 2px 0 rgba(255,255,255,.35);
     transition: transform .18s ease, box-shadow .18s ease;
   }
+  .book-manage-control {
+    position: absolute;
+    z-index: 3;
+    top: 10px;
+    right: 10px;
+    display: grid;
+    width: 31px;
+    height: 31px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid rgba(255,255,255,.72);
+    border-radius: 50%;
+    background: rgba(252,250,247,.72);
+    color: #756b62;
+    box-shadow: 0 4px 14px rgba(53,44,37,.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .book-manage-control svg { width: 15px; height: 15px; }
+  .book-manage-control.is-bookmark {
+    background: rgba(54,47,41,.13);
+    color: rgba(255,255,255,.95);
+  }
+  .book-manage-control.is-starred {
+    background: rgba(255,250,242,.84);
+    color: #e9b94f;
+    font-size: 20px;
+  }
   .book:nth-child(3n + 2) .cover {
     background: linear-gradient(90deg, rgba(91, 72, 57, .10), transparent 9px), linear-gradient(145deg, #c5cdc5, #91a097);
   }
@@ -187,8 +215,11 @@
     left: 50%;
     bottom: calc(82px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
-    min-width: 154px;
-    padding: 13px 22px;
+    display: grid;
+    width: 54px;
+    height: 54px;
+    padding: 0;
+    place-items: center;
     border: 1px solid rgba(255,255,255,.25);
     border-radius: 999px;
     background: var(--accent);
@@ -196,8 +227,83 @@
     box-shadow: 0 10px 28px rgba(74, 55, 44, .22);
     font: 560 15px/1.2 inherit;
   }
+  .import-button svg { width: 25px; height: 25px; }
   .import-button:active { transform: translateX(-50%) scale(.98); }
   .import-button:disabled { opacity: .72; }
+  .library-menu {
+    position: fixed;
+    z-index: 17;
+    left: 50%;
+    bottom: calc(146px + env(safe-area-inset-bottom));
+    display: grid;
+    min-width: 174px;
+    gap: 7px;
+    padding: 9px;
+    transform: translate(-50%, 8px) scale(.96);
+    border: 1px solid rgba(255,255,255,.78);
+    border-radius: 21px;
+    background: rgba(249,247,243,.9);
+    box-shadow: 0 14px 36px rgba(60,48,40,.14);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .18s ease, transform .22s ease;
+    backdrop-filter: blur(22px) saturate(116%);
+    -webkit-backdrop-filter: blur(22px) saturate(116%);
+  }
+  .library-menu.is-open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, 0) scale(1);
+  }
+  .library-menu > div { display: grid; gap: 7px; }
+  .library-menu > div[hidden] { display: none; }
+  .library-menu button {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 14px;
+    background: rgba(255,255,255,.54);
+    color: var(--ink);
+    font: 520 13px/1.2 inherit;
+  }
+  .library-menu button.is-danger { color: #a86f63; }
+  .manage-mode-note {
+    margin: -14px 0 22px;
+    color: var(--muted);
+    text-align: center;
+    font-size: 12px;
+  }
+  .confirm-backdrop {
+    position: fixed;
+    z-index: 45;
+    inset: 0;
+    display: grid;
+    padding: 22px;
+    place-items: center;
+    background: rgba(47,41,35,.2);
+  }
+  .confirm-backdrop[hidden] { display: none; }
+  .confirm-dialog {
+    width: min(100%, 330px);
+    padding: 22px;
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 25px;
+    background: rgba(252,250,247,.94);
+    box-shadow: 0 18px 46px rgba(48,40,34,.18);
+    text-align: center;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  .confirm-dialog p { margin: 0; font-size: 15px; line-height: 1.7; }
+  .confirm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 20px; }
+  .confirm-actions button {
+    padding: 11px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(114,102,91,.08);
+    color: var(--ink);
+    font: 540 13px/1.2 inherit;
+  }
+  .confirm-actions button.danger { background: #bd8372; color: #fffaf5; }
   .format-note {
     grid-column: 1 / -1;
     margin: 2px 0 0;
@@ -350,16 +456,16 @@
   .main-nav {
     position: fixed;
     z-index: 15;
-    right: 18px;
-    bottom: calc(14px + env(safe-area-inset-bottom));
-    left: 18px;
+    bottom: 0;
+    left: 50%;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    width: min(calc(100% - 36px), 480px);
+    width: min(100%, 760px);
     margin: 0 auto;
-    padding: 6px;
+    padding: 7px 18px calc(7px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
     border: 1px solid rgba(255,255,255,.78);
-    border-radius: 999px;
+    border-radius: 24px 24px 0 0;
     background: rgba(249, 247, 243, .76);
     box-shadow: 0 10px 35px rgba(60, 51, 43, .12), inset 0 0 0 1px rgba(87, 73, 60, .04);
     backdrop-filter: blur(22px) saturate(118%);
@@ -675,6 +781,7 @@
       <button id="data-button" class="data-button" type="button">备份</button>
     </header>
 
+    <p id="manage-mode-note" class="manage-mode-note" hidden></p>
     <section id="book-grid" class="book-grid" aria-label="书架">
       <div id="format-note" class="format-note" hidden>先放一本小样章在这里。你也可以从“文件”里导入 EPUB、TXT 或 Markdown。</div>
     </section>
@@ -706,7 +813,23 @@
 
   <input id="book-file" type="file" accept=".epub,.txt,.md,.markdown,application/epub+zip,text/plain,text/markdown" hidden>
   <input id="backup-file" type="file" accept=".json,.sideleaf.json,application/json" hidden>
-  <button id="import-button" class="import-button" type="button">＋ 导入一本书</button>
+  <button id="import-button" class="import-button" type="button" aria-label="书房操作" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M4.5 5.5c3.1-.9 5.5-.35 7.5 1.35v11c-2-1.7-4.4-2.25-7.5-1.35v-11Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/>
+      <path d="M19.5 5.5c-3.1-.9-5.5-.35-7.5 1.35v11c2-1.7 4.4-2.25 7.5-1.35v-11Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <div id="library-menu" class="library-menu" aria-hidden="true">
+    <div id="library-menu-main">
+      <button id="library-import" type="button">导入</button>
+      <button id="library-manage" type="button">管理</button>
+    </div>
+    <div id="library-menu-manage" hidden>
+      <button type="button" class="is-danger" data-manage-mode="delete">删除书籍</button>
+      <button type="button" data-manage-mode="star">星标书籍</button>
+      <button type="button" data-manage-mode="done">完成管理</button>
+    </div>
+  </div>
 
   <nav class="main-nav" aria-label="Sideleaf 主栏目">
     <button type="button" class="is-active" data-main-view="shelf">书房</button>
@@ -728,6 +851,16 @@
       </div>
     </div>
   </section>
+
+  <div id="delete-book-backdrop" class="confirm-backdrop" hidden>
+    <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="delete-book-message">
+      <p id="delete-book-message"></p>
+      <div class="confirm-actions">
+        <button id="cancel-delete-book" type="button">取消</button>
+        <button id="confirm-delete-book" class="danger" type="button">确认删除</button>
+      </div>
+    </section>
+  </div>
 
   <div id="data-backdrop" class="sheet-backdrop" aria-hidden="true">
     <section class="data-sheet" role="dialog" aria-modal="true" aria-labelledby="data-title">
@@ -815,7 +948,7 @@
   }
 
   (() => {
-    const appVersion = '0.16.0';
+    const appVersion = '0.16.1';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -867,6 +1000,16 @@
     const footprintContent = document.getElementById('footprint-content');
     const footprintAuthorButtons = [...document.querySelectorAll('[data-footprint-author]')];
     const footprintKindButtons = [...document.querySelectorAll('[data-footprint-kind]')];
+    const libraryMenu = document.getElementById('library-menu');
+    const libraryMenuMain = document.getElementById('library-menu-main');
+    const libraryMenuManage = document.getElementById('library-menu-manage');
+    const libraryImport = document.getElementById('library-import');
+    const libraryManage = document.getElementById('library-manage');
+    const manageModeNote = document.getElementById('manage-mode-note');
+    const deleteBookBackdrop = document.getElementById('delete-book-backdrop');
+    const deleteBookMessage = document.getElementById('delete-book-message');
+    const cancelDeleteBook = document.getElementById('cancel-delete-book');
+    const confirmDeleteBook = document.getElementById('confirm-delete-book');
     let pendingBackup = null;
     let pendingBackupSource = 'file';
     let pendingCoreSnapshotId = null;
@@ -876,6 +1019,8 @@
     let activeMainView = 'shelf';
     let activeFootprintAuthor = 'wish';
     let activeFootprintKind = 'notes';
+    let bookManageMode = null;
+    let pendingDeleteBookId = null;
 
     SideleafLibrary.ensure(localStorage);
 
@@ -1366,6 +1511,7 @@
       mainViews.forEach(element => { element.hidden = element.id !== `view-${activeMainView}`; });
       mainViewButtons.forEach(button => button.classList.toggle('is-active', button.dataset.mainView === activeMainView));
       importButton.hidden = activeMainView !== 'shelf';
+      if (activeMainView !== 'shelf') setLibraryMenu(false);
       leafComposer.hidden = activeMainView !== 'leaves';
       if (activeMainView !== 'leaves') closeLeafComposer();
       if (activeMainView === 'leaves') {
@@ -1616,9 +1762,100 @@
       };
     }
 
+    function setLibraryMenu(open, managePanel = Boolean(bookManageMode)) {
+      libraryMenu.classList.toggle('is-open', open);
+      libraryMenu.setAttribute('aria-hidden', String(!open));
+      importButton.setAttribute('aria-expanded', String(open));
+      libraryMenuMain.hidden = managePanel;
+      libraryMenuManage.hidden = !managePanel;
+    }
+
+    function setBookManageMode(mode) {
+      bookManageMode = ['delete', 'star'].includes(mode) ? mode : null;
+      manageModeNote.hidden = !bookManageMode;
+      manageModeNote.textContent = bookManageMode === 'delete'
+        ? '选择要删除的书籍'
+        : bookManageMode === 'star' ? '选择要星标的书籍' : '';
+      setLibraryMenu(false);
+      renderBooks();
+    }
+
+    function bookControlMarkup(book) {
+      if (bookManageMode === 'delete') {
+        return `<span class="book-manage-control" role="button" tabindex="0" data-book-action="delete" data-book-id="${escapeText(book.id)}" aria-label="删除《${escapeText(book.title)}》">
+          <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m6.4 6.4 7.2 7.2m0-7.2-7.2 7.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>`;
+      }
+      if (bookManageMode === 'star') {
+        if (book.starred) {
+          return `<span class="book-manage-control is-starred" role="button" tabindex="0" data-book-action="star" data-book-id="${escapeText(book.id)}" aria-label="取消星标《${escapeText(book.title)}》">★</span>`;
+        }
+        return `<span class="book-manage-control is-bookmark" role="button" tabindex="0" data-book-action="star" data-book-id="${escapeText(book.id)}" aria-label="星标《${escapeText(book.title)}》">
+          <svg viewBox="0 0 18 22" fill="currentColor" aria-hidden="true"><path d="M3 2.4c0-.77.63-1.4 1.4-1.4h9.2c.77 0 1.4.63 1.4 1.4v17.2l-6-3.8-6 3.8V2.4Z"/></svg>
+        </span>`;
+      }
+      return '';
+    }
+
+    function toggleBookStar(bookId) {
+      const books = readBooks();
+      const target = books.find(book => book.id === bookId);
+      if (!target) return;
+      target.starred = !target.starred;
+      target.updatedAt = Date.now();
+      localStorage.setItem(booksKey, JSON.stringify(books));
+      SideleafSync.markDirty(localStorage, [booksKey]);
+      renderBooks();
+    }
+
+    function askToDeleteBook(bookId) {
+      const book = readBooks().find(item => item.id === bookId);
+      if (!book) return;
+      pendingDeleteBookId = book.id;
+      deleteBookMessage.textContent = `是否确认删除《${book.title}》？`;
+      deleteBookBackdrop.hidden = false;
+    }
+
+    function closeDeleteBookDialog() {
+      pendingDeleteBookId = null;
+      deleteBookBackdrop.hidden = true;
+    }
+
+    function deletePendingBook() {
+      const bookId = pendingDeleteBookId;
+      if (!bookId) return;
+      const books = readBooks();
+      const book = books.find(item => item.id === bookId);
+      if (!book) return closeDeleteBookDialog();
+      if (book.builtIn) SideleafLibrary.hideBuiltIn(localStorage, bookId);
+      localStorage.setItem(booksKey, JSON.stringify(books.filter(item => item.id !== bookId)));
+      const filteredKeys = [notesKey, likesKey, 'sideleaf.chapter-journals.v1', 'sideleaf.read-requests.v1'];
+      filteredKeys.forEach(key => {
+        localStorage.setItem(key, JSON.stringify(readArray(key).filter(item => item.bookId !== bookId)));
+      });
+      const readingLines = readReadingLines();
+      delete readingLines[bookId];
+      localStorage.setItem(readingLinesKey, JSON.stringify(readingLines));
+      const posts = readArray(leafPostsKey).map(post => post.bookId === bookId ? { ...post, bookId:null } : post);
+      localStorage.setItem(leafPostsKey, JSON.stringify(posts));
+      SideleafSync.markDirty(localStorage, [
+        booksKey, notesKey, likesKey, readingLinesKey,
+        'sideleaf.chapter-journals.v1', 'sideleaf.read-requests.v1', SideleafLibrary.HIDDEN_BUILT_INS_KEY
+      ]);
+      SideleafSync.queueDeletion(localStorage, { entity:'book', id:bookId });
+      closeDeleteBookDialog();
+      renderBooks();
+      renderLeafPosts();
+      renderFootprints();
+      showToast(`《${book.title}》已经删除。`);
+    }
+
     function renderBooks() {
       grid.querySelectorAll('[data-book-card]').forEach(node => node.remove());
-      const books = readBooks();
+      const books = readBooks()
+        .map((book, order) => ({ book, order }))
+        .sort((left, right) => Number(Boolean(right.book.starred)) - Number(Boolean(left.book.starred)) || left.order - right.order)
+        .map(item => item.book);
       const readingLines = readReadingLines();
       books.forEach(book => {
         const percent = book.content.length
@@ -1632,6 +1869,7 @@
           <div class="cover">
             <span class="cover-title">${escapeText(book.title)}</span>
             <span class="leaf-mark">SIDELEAF</span>
+            ${bookControlMarkup(book)}
           </div>
           <div class="book-info">
             <p class="book-name">${escapeText(book.title)}</p>
@@ -1646,9 +1884,23 @@
     }
 
     grid.addEventListener('click', event => {
+      const control = event.target.closest('[data-book-action]');
+      if (control) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (control.dataset.bookAction === 'delete') askToDeleteBook(control.dataset.bookId);
+        if (control.dataset.bookAction === 'star') toggleBookStar(control.dataset.bookId);
+        return;
+      }
       const link = event.target.closest('a.book');
       if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       link.classList.add('is-opening');
+    });
+    grid.addEventListener('keydown', event => {
+      const control = event.target.closest('[data-book-action]');
+      if (!control || !['Enter', ' '].includes(event.key)) return;
+      event.preventDefault();
+      control.click();
     });
 
     mainViewButtons.forEach(button => button.addEventListener('click', () => setMainView(button.dataset.mainView)));
@@ -1731,13 +1983,27 @@
       }
     });
 
-    importButton.addEventListener('click', () => fileInput.click());
+    importButton.addEventListener('click', () => setLibraryMenu(!libraryMenu.classList.contains('is-open')));
+    libraryImport.addEventListener('click', () => {
+      setLibraryMenu(false);
+      fileInput.click();
+    });
+    libraryManage.addEventListener('click', () => setLibraryMenu(true, true));
+    libraryMenuManage.addEventListener('click', event => {
+      const mode = event.target.closest('[data-manage-mode]')?.dataset.manageMode;
+      if (!mode) return;
+      setBookManageMode(mode);
+    });
+    cancelDeleteBook.addEventListener('click', closeDeleteBookDialog);
+    confirmDeleteBook.addEventListener('click', deletePendingBook);
+    deleteBookBackdrop.addEventListener('click', event => {
+      if (event.target === deleteBookBackdrop) closeDeleteBookDialog();
+    });
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files?.[0];
       if (!file) return;
-      const originalLabel = importButton.textContent;
       importButton.disabled = true;
-      importButton.textContent = '正在导入…';
+      importButton.setAttribute('aria-label', '正在导入');
       try {
         const parsed = await parseBookFile(file);
         const books = readBooks();
@@ -1761,7 +2027,7 @@
           updatedAt: Date.now()
         };
         if (legacyIndex >= 0) books.splice(legacyIndex, 1);
-        const nextBooks = SideleafLibrary.insertImported(books, imported);
+        const nextBooks = SideleafLibrary.insertImported(books, imported, SideleafLibrary.readHiddenBuiltIns(localStorage));
         localStorage.setItem(booksKey, JSON.stringify(nextBooks));
         SideleafSync.markDirty(localStorage, [booksKey]);
         renderBooks();
@@ -1770,7 +2036,7 @@
       } finally {
         fileInput.value = '';
         importButton.disabled = false;
-        importButton.textContent = originalLabel;
+        importButton.setAttribute('aria-label', '书房操作');
       }
     });
 
