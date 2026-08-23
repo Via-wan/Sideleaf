@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#fcfaf7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -49,6 +49,7 @@
     background: var(--paper);
     color: var(--ink);
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "PingFang TC", "Microsoft YaHei", sans-serif;
+    touch-action: manipulation;
   }
   .shelf {
     width: min(100%, 760px);
@@ -571,17 +572,26 @@
     animation: content-settle .24s ease both;
   }
   .review-compose-shell {
+    position: relative;
     margin: 0 0 18px;
     padding: 3px 2px 16px;
     border-bottom: 1px solid rgba(84,76,68,.1);
   }
   .review-pen {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
     padding: 4px 1px;
     border: 0;
     background: transparent;
     color: rgba(139,131,120,.75);
     font: 400 16px/1.2 inherit;
     letter-spacing: .08em;
+  }
+  .review-pen svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
   }
   .review-editor[hidden] { display: none; }
   .review-editor {
@@ -626,24 +636,79 @@
     background: rgba(197,139,116,.14);
     font-size: 17px;
   }
-  .review-book-select {
-    min-width: 0;
+  .review-selected-book {
+    overflow: hidden;
     max-width: calc(100% - 78px);
-    padding: 6px 9px;
-    border: 0;
-    border-radius: 999px;
-    outline: 0;
-    background: rgba(143,111,96,.07);
     color: var(--muted);
-    font: 500 16px/1.2 inherit;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .review-book-select[hidden] { display: none; }
+  .review-book-picker {
+    position: absolute;
+    z-index: 4;
+    bottom: 51px;
+    left: 0;
+    display: grid;
+    width: min(230px, calc(100vw - 50px));
+    max-height: 210px;
+    overflow-y: auto;
+    padding: 7px;
+    border: 1px solid rgba(255,255,255,.8);
+    border-radius: 18px;
+    background: rgba(252,250,247,.94);
+    box-shadow: 0 14px 38px rgba(61,49,40,.14);
+    backdrop-filter: blur(22px) saturate(116%);
+    -webkit-backdrop-filter: blur(22px) saturate(116%);
+  }
+  .review-book-picker[hidden] { display: none; }
+  .review-book-picker button {
+    overflow: hidden;
+    padding: 10px 11px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 500 13px/1.3 inherit;
+  }
+  .review-book-picker button.is-selected {
+    background: rgba(197,139,116,.12);
+    color: #a96f5d;
+  }
   .review-card {
+    position: relative;
     padding: 18px 2px 20px;
     border-bottom: 1px solid rgba(84,76,68,.1);
   }
   .review-card .footprint-body { margin-top: 0; }
   .review-card .footprint-meta { margin-top: 12px; }
+  .review-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 5px;
+  }
+  .review-action-menu {
+    display: flex;
+    justify-content: flex-end;
+    color: var(--muted);
+    font-size: 12px;
+  }
+  .review-action-menu[hidden] { display: none; }
+  .review-action-menu button {
+    padding: 4px 10px;
+    border: 0;
+    border-right: 1px solid rgba(84,76,68,.12);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+  }
+  .review-action-menu button:last-child {
+    border-right: 0;
+    color: #a66f65;
+  }
   @keyframes content-settle {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
@@ -1174,7 +1239,7 @@
   }
 
   (() => {
-    const appVersion = '0.17.2';
+    const appVersion = '0.17.3';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1257,6 +1322,10 @@
     let pendingDeleteLeafPostId = null;
     let reviewComposerOpen = false;
     let reviewBookSelectOpen = false;
+    let reviewSelectedBookId = null;
+    let editingReviewId = null;
+    let openReviewMenuId = null;
+    let pendingDeleteReviewId = null;
     let dataSheetCloseTimer = 0;
 
     SideleafLibrary.ensure(localStorage);
@@ -1751,30 +1820,42 @@
         items = readArray(reviewsKey)
           .filter(review => (review.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(review => `<article class="review-card">
+          .map(review => `<article class="review-card" data-review-id="${escapeText(review.id)}">
             <p class="footprint-body">${escapeText(review.body)}</p>
-            <div class="footprint-meta"><span>${review.bookId ? `《${escapeText(books.get(review.bookId) || '已移除的书')}》` : '未关联书籍'}</span><time>${escapeText(formatMoment(review.createdAt || review.updatedAt))}</time></div>
+            <div class="footprint-meta"><span>《${escapeText(books.get(review.bookId) || '已移除的书')}》</span><time>${escapeText(formatMoment(review.createdAt || review.updatedAt))}</time></div>
+            ${activeFootprintAuthor === 'wish' ? `<div class="review-card-actions"><button class="leaf-more" type="button" data-review-action="menu" data-review-id="${escapeText(review.id)}" aria-label="书评操作">…</button></div>
+            <div class="review-action-menu" ${openReviewMenuId === review.id ? '' : 'hidden'}>
+              <button type="button" data-review-action="edit" data-review-id="${escapeText(review.id)}">编辑</button>
+              <button type="button" data-review-action="delete" data-review-id="${escapeText(review.id)}">删除</button>
+            </div>` : ''}
           </article>`);
       }
       footprintContent.style.animation = 'none';
       void footprintContent.offsetWidth;
       footprintContent.style.animation = '';
       if (activeFootprintKind === 'reviews' && activeFootprintAuthor === 'wish') {
-        const bookOptions = readBooks().map(book => `<option value="${escapeText(book.id)}">${escapeText(book.title)}</option>`).join('');
+        const bookOptions = readBooks().map(book => `<button type="button" class="${reviewSelectedBookId === book.id ? 'is-selected' : ''}" data-review-action="choose-book" data-book-id="${escapeText(book.id)}">${escapeText(book.title)}</button>`).join('');
+        const selectedTitle = reviewSelectedBookId ? books.get(reviewSelectedBookId) : '';
         footprintContent.innerHTML = `<section class="review-compose-shell">
-          <button class="review-pen" type="button" data-review-action="open" ${reviewComposerOpen ? 'hidden' : ''}>🪶……</button>
+          <button class="review-pen" type="button" data-review-action="open" ${reviewComposerOpen ? 'hidden' : ''} aria-label="写一篇书评">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.4 3.4c-4.7.7-8.3 2.9-10.6 6.5-1.5 2.3-2.1 5-2.3 7.9 2.4-2.5 4.8-4.5 7.4-6.2M5 20l5.7-5.7" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>……</span>
+          </button>
           <div class="review-editor" ${reviewComposerOpen ? '' : 'hidden'}>
             <textarea id="review-input" maxlength="12000" placeholder="写下关于这本书的想法。"></textarea>
             <div class="review-editor-footer">
               <button class="review-book-toggle" type="button" data-review-action="book" aria-label="关联书籍">＋</button>
-              <select id="review-book-select" class="review-book-select" aria-label="关联书籍" ${reviewBookSelectOpen ? '' : 'hidden'}>
-                <option value="">不关联书籍</option>
-                ${bookOptions}
-              </select>
+              <span class="review-selected-book">${selectedTitle ? `《${escapeText(selectedTitle)}》` : '选择书籍'}</span>
               <button class="review-send" type="button" data-review-action="send" aria-label="发表书评">↑</button>
             </div>
+            <div class="review-book-picker" ${reviewBookSelectOpen ? '' : 'hidden'}>${bookOptions || '<span class="empty-state">书房里还没有书。</span>'}</div>
           </div>
         </section>${items.length ? items.join('') : '<div class="empty-state">书评会落在这里。</div>'}`;
+        if (reviewComposerOpen && editingReviewId) {
+          const review = readArray(reviewsKey).find(item => item.id === editingReviewId);
+          const input = document.getElementById('review-input');
+          if (review && input) input.value = review.body || '';
+        }
         return;
       }
       footprintContent.innerHTML = items.length
@@ -1841,13 +1922,16 @@
       const post = readArray(leafPostsKey).find(item => item.id === postId && item.author !== 'zheng');
       if (!post) return;
       pendingDeleteLeafPostId = postId;
+      pendingDeleteReviewId = null;
       openLeafMenuId = null;
+      document.getElementById('delete-leaf-message').textContent = '确认删除这条叶间记录吗？';
       deleteLeafBackdrop.hidden = false;
       renderLeafPosts();
     }
 
     function closeDeleteLeafDialog() {
       pendingDeleteLeafPostId = null;
+      pendingDeleteReviewId = null;
       deleteLeafBackdrop.hidden = true;
     }
 
@@ -1861,6 +1945,53 @@
       openLeafCommentId = null;
       closeDeleteLeafDialog();
       saveLeafPosts(posts.filter(item => item.id !== postId));
+    }
+
+    function closeReviewComposer() {
+      reviewComposerOpen = false;
+      reviewBookSelectOpen = false;
+      reviewSelectedBookId = null;
+      editingReviewId = null;
+    }
+
+    function beginReviewEdit(reviewId) {
+      const review = readArray(reviewsKey).find(item => item.id === reviewId && item.author !== 'zheng');
+      if (!review) return;
+      reviewComposerOpen = true;
+      reviewBookSelectOpen = false;
+      reviewSelectedBookId = review.bookId || null;
+      editingReviewId = review.id;
+      openReviewMenuId = null;
+      renderFootprints();
+    }
+
+    function askToDeleteReview(reviewId) {
+      const review = readArray(reviewsKey).find(item => item.id === reviewId && item.author !== 'zheng');
+      if (!review) return;
+      pendingDeleteReviewId = reviewId;
+      pendingDeleteLeafPostId = null;
+      openReviewMenuId = null;
+      document.getElementById('delete-leaf-message').textContent = '确认删除这篇书评吗？';
+      deleteLeafBackdrop.hidden = false;
+      renderFootprints();
+    }
+
+    function deletePendingReview() {
+      const reviewId = pendingDeleteReviewId;
+      if (!reviewId) return;
+      const reviews = readArray(reviewsKey);
+      const review = reviews.find(item => item.id === reviewId && item.author !== 'zheng');
+      if (!review) return closeDeleteLeafDialog();
+      closeDeleteLeafDialog();
+      localStorage.setItem(reviewsKey, JSON.stringify(reviews.filter(item => item.id !== reviewId)));
+      SideleafSync.markDirty(localStorage, [reviewsKey]);
+      closeReviewComposer();
+      renderFootprints();
+    }
+
+    function confirmPendingLeafDeletion() {
+      if (pendingDeleteReviewId) deletePendingReview();
+      else deletePendingLeafPost();
     }
 
     function addLeafComment(postId) {
@@ -2284,41 +2415,77 @@
     mainViewButtons.forEach(button => button.addEventListener('click', () => setMainView(button.dataset.mainView)));
     footprintAuthorButtons.forEach(button => button.addEventListener('click', () => {
       activeFootprintAuthor = button.dataset.footprintAuthor;
+      closeReviewComposer();
+      openReviewMenuId = null;
       renderFootprints();
     }));
     footprintKindButtons.forEach(button => button.addEventListener('click', () => {
       activeFootprintKind = button.dataset.footprintKind;
       reviewComposerOpen = false;
       reviewBookSelectOpen = false;
+      reviewSelectedBookId = null;
+      editingReviewId = null;
+      openReviewMenuId = null;
       renderFootprints();
     }));
     footprintContent.addEventListener('click', event => {
-      const action = event.target.closest('[data-review-action]')?.dataset.reviewAction;
+      const target = event.target.closest('[data-review-action]');
+      const action = target?.dataset.reviewAction;
       if (!action) return;
       if (action === 'open') {
         reviewComposerOpen = true;
+        editingReviewId = null;
+        reviewSelectedBookId = null;
         renderFootprints();
       } else if (action === 'book') {
         reviewBookSelectOpen = !reviewBookSelectOpen;
-        const select = document.getElementById('review-book-select');
-        if (select) select.hidden = !reviewBookSelectOpen;
+        const picker = footprintContent.querySelector('.review-book-picker');
+        if (picker) picker.hidden = !reviewBookSelectOpen;
+      } else if (action === 'choose-book') {
+        reviewSelectedBookId = target.dataset.bookId || null;
+        reviewBookSelectOpen = false;
+        const picker = footprintContent.querySelector('.review-book-picker');
+        if (picker) picker.hidden = true;
+        const selected = footprintContent.querySelector('.review-selected-book');
+        const title = bookTitleMap().get(reviewSelectedBookId);
+        if (selected) selected.textContent = title ? `《${title}》` : '选择书籍';
+      } else if (action === 'menu') {
+        const reviewId = target.dataset.reviewId;
+        openReviewMenuId = openReviewMenuId === reviewId ? null : reviewId;
+        renderFootprints();
+      } else if (action === 'edit') {
+        beginReviewEdit(target.dataset.reviewId);
+      } else if (action === 'delete') {
+        askToDeleteReview(target.dataset.reviewId);
       } else if (action === 'send') {
         const body = document.getElementById('review-input')?.value.trim();
         if (!body) return;
+        if (!reviewSelectedBookId) {
+          reviewBookSelectOpen = true;
+          const picker = footprintContent.querySelector('.review-book-picker');
+          if (picker) picker.hidden = false;
+          return;
+        }
         const now = Date.now();
         const reviews = readArray(reviewsKey);
-        reviews.push({
-          id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
-          author:'wish',
-          body,
-          bookId:document.getElementById('review-book-select')?.value || null,
-          createdAt:now,
-          updatedAt:now
-        });
+        const editing = editingReviewId ? reviews.find(review => review.id === editingReviewId && review.author !== 'zheng') : null;
+        if (editing) {
+          editing.body = body;
+          editing.bookId = reviewSelectedBookId;
+          editing.updatedAt = now;
+        } else {
+          reviews.push({
+            id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
+            author:'wish',
+            body,
+            bookId:reviewSelectedBookId,
+            createdAt:now,
+            updatedAt:now
+          });
+        }
         localStorage.setItem(reviewsKey, JSON.stringify(reviews));
         SideleafSync.markDirty(localStorage, [reviewsKey]);
-        reviewComposerOpen = false;
-        reviewBookSelectOpen = false;
+        closeReviewComposer();
         renderFootprints();
       }
     });
@@ -2384,7 +2551,7 @@
       renderLeafPosts();
     });
     cancelDeleteLeaf.addEventListener('click', closeDeleteLeafDialog);
-    confirmDeleteLeaf.addEventListener('click', deletePendingLeafPost);
+    confirmDeleteLeaf.addEventListener('click', confirmPendingLeafDeletion);
     deleteLeafBackdrop.addEventListener('click', event => {
       if (event.target === deleteLeafBackdrop) closeDeleteLeafDialog();
     });
@@ -2459,6 +2626,14 @@
           openLeafMenuId = null;
           openLeafCommentId = null;
           renderLeafPosts();
+        }
+      }
+      if (activeMainView === 'footprints' && activeFootprintKind === 'reviews'
+        && !event.target.closest('.review-compose-shell, .review-card, .footprint-tabs, .footprint-person, .main-nav, .confirm-backdrop')) {
+        if (reviewComposerOpen || reviewBookSelectOpen || openReviewMenuId) {
+          closeReviewComposer();
+          openReviewMenuId = null;
+          renderFootprints();
         }
       }
     });
