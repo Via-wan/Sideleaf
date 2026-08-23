@@ -658,29 +658,34 @@
     position: absolute;
     z-index: -1;
     top: 42px;
-    right: -37px;
+    right: -40px;
     display: grid;
     gap: 10px;
-    width: 72px;
+    width: 40px;
   }
   .footprint-tabs button {
     --tab-offset: 0px;
     position: relative;
-    width: 72px;
+    display: grid;
+    width: 34px;
     height: 42px;
-    padding: 0 12px 0 22px;
+    padding: 0 7px 0 1px;
+    place-items: center;
     clip-path: polygon(0 0, 100% 0, 82% 50%, 100% 100%, 0 100%);
     color: rgba(255,255,255,.82);
     text-align: center;
     font-family: "HanziPen SC", "Kaiti SC", "STKaiti", "KaiTi", cursive;
-    font-size: 14px;
-    font-weight: 400;
-    letter-spacing: .08em;
     filter: saturate(.72);
     opacity: .72;
     transform: translateX(var(--tab-offset));
     transform-origin: left center;
-    transition: opacity .22s ease, filter .22s ease, transform .3s cubic-bezier(.22,.78,.18,1), font-size .22s ease;
+    transition: width .3s cubic-bezier(.22,.78,.18,1), opacity .22s ease, filter .22s ease, transform .3s cubic-bezier(.22,.78,.18,1);
+  }
+  .footprint-tabs button svg {
+    width: 18px;
+    height: 18px;
+    overflow: visible;
+    pointer-events: none;
   }
   .footprint-tabs button::before {
     content: '';
@@ -696,23 +701,25 @@
   .footprint-tabs button:nth-child(2) { --tab-offset: 6px; background: #788c91; }
   .footprint-tabs button:nth-child(3) { --tab-offset: 12px; background: #9ba187; }
   .footprint-tabs button.is-past {
+    width: 28px;
     filter: saturate(.48);
     opacity: .43;
-    transform: translateX(calc(var(--tab-offset) - 9px));
+    transform: translateX(var(--tab-offset));
   }
   .footprint-tabs button.is-past::before { opacity: 1; }
   .footprint-tabs button.is-future {
+    width: 34px;
     filter: saturate(.62);
     opacity: .62;
-    transform: translateX(calc(var(--tab-offset) + 5px));
+    transform: translateX(var(--tab-offset));
   }
   .footprint-tabs button.is-active {
     z-index: 2;
+    width: 40px;
     color: #fffdf8;
-    font-size: 15px;
     filter: none;
     opacity: 1;
-    transform: translateX(calc(var(--tab-offset) - 4px)) scale(1.035);
+    transform: translateX(var(--tab-offset)) scale(1.035);
   }
   .footprint-content {
     flex: 1;
@@ -1410,9 +1417,15 @@
             <div id="footprint-content" class="footprint-content"></div>
           </section>
           <div class="footprint-tabs" role="tablist" aria-label="足迹类型">
-            <button type="button" role="tab" aria-selected="true" class="is-active" data-footprint-kind="notes">说一句</button>
-            <button type="button" role="tab" aria-selected="false" data-footprint-kind="likes">喜欢</button>
-            <button type="button" role="tab" aria-selected="false" data-footprint-kind="reviews">书评</button>
+            <button type="button" role="tab" aria-label="说一句" aria-selected="true" class="is-active" data-footprint-kind="notes">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.3 6.5c0-2 1.8-3.5 4.1-3.5h3.2c2.3 0 4.1 1.5 4.1 3.5v2.2c0 2-1.8 3.5-4.1 3.5H9l-3.1 2.2.7-2.7c-1.4-.6-2.3-1.7-2.3-3V6.5Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M10.2 14.2c.5 1.2 1.8 2 3.4 2H16l2.7 2-.6-2.5c1.1-.6 1.8-1.6 1.8-2.7v-1.8c0-1.6-1.3-2.9-3-3.2" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" role="tab" aria-label="喜欢" aria-selected="false" data-footprint-kind="likes">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19.7 4.6 12.8C.8 9.3 3.1 3.5 7.8 4.4c1.8.3 3.1 1.5 4.2 3 1.1-1.5 2.4-2.7 4.2-3 4.7-.9 7 4.9 3.2 8.4L12 19.7Z" stroke="currentColor" stroke-width="1.65" stroke-linejoin="round"/></svg>
+            </button>
+            <button type="button" role="tab" aria-label="书评" aria-selected="false" data-footprint-kind="reviews">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.8 5.2c3.3-.7 6 .1 8.2 2v12c-2.2-1.9-4.9-2.6-8.2-1.9V5.2Zm16.4 0c-3.3-.7-6 .1-8.2 2v12c2.2-1.9 4.9-2.6 8.2-1.9V5.2Z" stroke="currentColor" stroke-width="1.55" stroke-linejoin="round"/><path d="M12 7.2v12" stroke="currentColor" stroke-width="1.3"/></svg>
+            </button>
           </div>
         </div>
       </div>
@@ -1568,7 +1581,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.8';
+    const appVersion = '0.20.9';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
