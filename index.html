@@ -52,6 +52,7 @@
     touch-action: manipulation;
   }
   .shelf {
+    --shelf-gutter: 22px;
     width: min(100%, 760px);
     min-height: 100svh;
     margin: 0 auto;
@@ -521,13 +522,19 @@
     font: 540 12px/1 inherit;
   }
   .footprint-shell {
-    min-height: calc(100svh - 180px);
-    padding: 10px 0 26px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 10px 0 0;
+  }
+  #view-footprints {
+    height: calc(100svh - max(34px, env(safe-area-inset-top)) - 110px - env(safe-area-inset-bottom));
+    overflow: hidden;
   }
   .footprint-person {
     position: absolute;
     z-index: 4;
-    top: 3px;
+    top: 17px;
     right: 14px;
     display: flex;
     align-items: baseline;
@@ -564,8 +571,19 @@
   .footprint-person button[data-footprint-author="zheng"].is-active { color: #6f8489; }
   .footprint-volume {
     position: relative;
+    height: 100%;
     margin-right: 34px;
     isolation: isolate;
+  }
+  .footprint-volume::before {
+    content: '';
+    position: absolute;
+    z-index: -4;
+    inset: 0 0 0 calc(-1 * var(--shelf-gutter));
+    background: rgba(247,242,235,.62);
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 28px, #000 100%);
   }
   .footprint-layer,
   .footprint-paper {
@@ -577,6 +595,8 @@
     inset: 0;
     pointer-events: none;
     transition: opacity .24s ease;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 34px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 34px), transparent 100%);
   }
   .footprint-layer-one {
     z-index: -1;
@@ -600,8 +620,11 @@
   .footprint-volume.is-reviews .footprint-layer-two { opacity: 0; }
   .footprint-paper {
     position: relative;
-    min-height: calc(100svh - 265px);
-    padding: 46px 16px 30px;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0 16px;
     background: transparent;
     transform: translateX(0);
     transition: transform .3s cubic-bezier(.22,.78,.18,1);
@@ -612,7 +635,7 @@
     position: absolute;
     z-index: -1;
     top: 42px;
-    right: -58px;
+    right: -37px;
     display: grid;
     gap: 10px;
     width: 72px;
@@ -645,9 +668,19 @@
   .footprint-tabs button:nth-child(2).is-active { transform: translateX(9px); }
   .footprint-tabs button:nth-child(3).is-active { transform: translateX(15px); }
   .footprint-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     margin-top: 0;
+    padding: 56px 0 48px;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 27px, #000 calc(100% - 42px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 27px, #000 calc(100% - 42px), transparent 100%);
     animation: content-settle .24s ease both;
   }
+  .footprint-content::-webkit-scrollbar { display: none; }
   .review-compose-shell {
     position: relative;
     margin: 0 0 18px;
@@ -1286,7 +1319,7 @@
   .toast[hidden] { display: none; }
   @media (min-width: 620px) {
     .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .shelf { padding-right: 30px; padding-left: 30px; }
+    .shelf { --shelf-gutter: 30px; padding-right: 30px; padding-left: 30px; }
   }
 </style>
 </head>
@@ -1487,7 +1520,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.1';
+    const appVersion = '0.20.2';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
