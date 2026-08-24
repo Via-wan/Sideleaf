@@ -611,7 +611,6 @@
   .footprint-layer,
   .footprint-paper {
     border: 0;
-    border-right: 1px solid rgba(86,72,58,.13);
   }
   .footprint-layer {
     position: absolute;
@@ -633,14 +632,14 @@
   }
   .footprint-layer-cover {
     z-index: -3;
-    border-right-color: rgba(115,101,87,.24);
+    color: rgba(115,101,87,.24);
     background: linear-gradient(to left, rgba(217,208,196,.28), transparent 23px);
     box-shadow: 8px 0 20px rgba(66,52,42,.07);
     transform: translateX(18px);
   }
   .footprint-back-cover {
     z-index: -4;
-    border-right-color: rgba(143,111,96,.34);
+    border-right: 1px solid rgba(143,111,96,.34);
     background:
       repeating-linear-gradient(0deg,
         rgba(255,255,255,.04) 0 .55px,
@@ -653,6 +652,23 @@
         transparent 23px);
     box-shadow: 7px 0 18px rgba(78,57,45,.075);
     transform: translateX(24px);
+  }
+  .footprint-page-edge {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    right: -3px;
+    width: 7px;
+    height: 100%;
+    overflow: visible;
+    color: rgba(86,72,58,.13);
+    pointer-events: none;
+  }
+  .footprint-page-edge path {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
   }
   .footprint-volume.is-likes .footprint-layer-one,
   .footprint-volume.is-reviews .footprint-layer-one,
@@ -1463,11 +1479,18 @@
     <section id="view-footprints" class="app-view" hidden>
       <div class="footprint-shell">
         <div id="footprint-volume" class="footprint-volume is-notes">
-          <div class="footprint-layer footprint-layer-one" aria-hidden="true"></div>
-          <div class="footprint-layer footprint-layer-two" aria-hidden="true"></div>
-          <div class="footprint-layer footprint-layer-cover" aria-hidden="true"></div>
+          <div class="footprint-layer footprint-layer-one" aria-hidden="true">
+            <svg class="footprint-page-edge" viewBox="0 0 7 100" preserveAspectRatio="none"><path d="M3.5 0 C2.7 13 4.3 27 3.1 41 C2.2 56 4.2 70 3 84 C2.6 92 3.7 97 3.5 100"/></svg>
+          </div>
+          <div class="footprint-layer footprint-layer-two" aria-hidden="true">
+            <svg class="footprint-page-edge" viewBox="0 0 7 100" preserveAspectRatio="none"><path d="M3.5 0 C4.2 15 2.6 29 3.8 44 C4.4 57 2.8 72 3.7 86 C4 93 3.2 98 3.5 100"/></svg>
+          </div>
+          <div class="footprint-layer footprint-layer-cover" aria-hidden="true">
+            <svg class="footprint-page-edge" viewBox="0 0 7 100" preserveAspectRatio="none"><path d="M3.5 0 C2.8 11 4.1 25 3.3 38 C2.5 53 4.4 67 3.2 82 C2.8 91 3.8 97 3.5 100"/></svg>
+          </div>
           <div class="footprint-layer footprint-back-cover" aria-hidden="true"></div>
           <section class="footprint-paper">
+            <svg class="footprint-page-edge" viewBox="0 0 7 100" preserveAspectRatio="none" aria-hidden="true"><path d="M3.5 0 C4 12 2.8 26 3.7 40 C4.3 55 2.7 69 3.8 84 C4.1 92 3.2 97 3.5 100"/></svg>
             <div class="footprint-person" aria-label="选择足迹主人">
               <button type="button" data-footprint-author="wish" class="is-active">愿</button>
               <button type="button" data-footprint-author="zheng">峥</button>
@@ -1639,7 +1662,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.23';
+    const appVersion = '0.20.24';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
