@@ -641,6 +641,14 @@
   .footprint-volume.is-likes .footprint-layer-one,
   .footprint-volume.is-reviews .footprint-layer-one,
   .footprint-volume.is-reviews .footprint-layer-two { opacity: 0; }
+  .footprint-volume.is-reviews .footprint-layer-cover {
+    border-right-color: rgba(143,111,96,.34);
+    background: linear-gradient(to left,
+      rgba(143,111,96,.38) 0 6px,
+      rgba(143,111,96,.16) 6px 11px,
+      transparent 23px);
+    box-shadow: 7px 0 18px rgba(78,57,45,.075);
+  }
   .footprint-paper {
     position: relative;
     display: flex;
@@ -1604,7 +1612,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.19';
+    const appVersion = '0.20.20';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
