@@ -791,14 +791,19 @@
     position: relative;
     z-index: 1;
     display: flex;
+    width: 100%;
     flex: 1;
     min-height: 0;
+    min-width: 0;
     flex-direction: column;
+    overflow-x: hidden;
     overflow-y: auto;
     margin: 70px 0;
     padding: 21px 0 24px;
     overscroll-behavior: contain;
+    overscroll-behavior-x: none;
     scrollbar-width: none;
+    touch-action: pan-y;
     -webkit-overflow-scrolling: touch;
     -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 22px), transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0, #000 18px, #000 calc(100% - 22px), transparent 100%);
@@ -1676,7 +1681,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.26';
+    const appVersion = '0.20.27';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
