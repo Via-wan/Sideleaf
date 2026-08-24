@@ -94,40 +94,11 @@
       const local = parseJson(storage.getItem('sideleaf.reading-lines.v1'), {});
       Object.entries(state.readingLines).forEach(([bookId, incoming]) => {
         if (!incoming?.zheng) return;
-        const localEntry = local[bookId] || {};
-        const localZheng = localEntry.zheng || {};
-        const incomingZheng = incoming.zheng;
-        const localUpdatedAt = Number(localZheng.updatedAt || localEntry.updatedAt || 0);
-        const incomingUpdatedAt = Number(incomingZheng.updatedAt || incoming.updatedAt || 0);
-        const localCurrent = Number.isFinite(Number(localZheng.current)) && localZheng.current !== null
-          ? Number(localZheng.current)
-          : null;
-        const incomingCurrent = Number.isFinite(Number(incomingZheng.current)) && incomingZheng.current !== null
-          ? Number(incomingZheng.current)
-          : null;
-        const useIncomingCurrent = incomingCurrent !== null
-          && (localCurrent === null || incomingUpdatedAt >= localUpdatedAt);
-        const mergedCurrent = useIncomingCurrent ? incomingCurrent : localCurrent;
-        const furthestCandidates = [
-          localZheng.furthest,
-          localCurrent,
-          incomingZheng.furthest,
-          incomingCurrent
-        ].filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)));
-        const mergedFurthest = furthestCandidates.length
-          ? Math.max(...furthestCandidates.map(Number))
-          : null;
         local[bookId] = {
-          ...localEntry,
-          zheng:{
-            ...localZheng,
-            ...incomingZheng,
-            current:mergedCurrent ?? mergedFurthest,
-            furthest:mergedFurthest,
-            updatedAt:Math.max(localUpdatedAt, incomingUpdatedAt)
-          },
+          ...(local[bookId] || {}),
+          zheng:{ ...(local[bookId]?.zheng || {}), ...incoming.zheng },
           schemaVersion:2,
-          updatedAt:Math.max(Number(localEntry.updatedAt || 0), localUpdatedAt, incomingUpdatedAt)
+          updatedAt:Math.max(Number(local[bookId]?.updatedAt || 0), Number(incoming.zheng.updatedAt || 0))
         };
         changed = true;
       });
@@ -172,38 +143,6 @@
       });
       if (journalsChanged) {
         storage.setItem('sideleaf.chapter-journals.v1', JSON.stringify(journals));
-        changed = true;
-      }
-      const localLines = parseJson(storage.getItem('sideleaf.reading-lines.v1'), {});
-      let linesRepaired = false;
-      const latestJournalEnds = new Map();
-      journals.forEach(journal => {
-        const chapterEnd = Number(journal?.chapterEnd);
-        if (!journal?.bookId || !Number.isFinite(chapterEnd) || chapterEnd <= 0) return;
-        const previous = latestJournalEnds.get(journal.bookId);
-        if (!previous || chapterEnd > previous.chapterEnd) {
-          latestJournalEnds.set(journal.bookId, { chapterEnd, updatedAt:Number(journal.updatedAt || 0) });
-        }
-      });
-      latestJournalEnds.forEach((journal, bookId) => {
-        const entry = localLines[bookId] || {};
-        const zheng = entry.zheng || {};
-        const hasCurrent = zheng.current !== null
-          && zheng.current !== undefined
-          && Number.isFinite(Number(zheng.current));
-        if (hasCurrent) return;
-        const furthest = Math.max(Number(zheng.furthest || 0), journal.chapterEnd);
-        const updatedAt = Math.max(Number(zheng.updatedAt || entry.updatedAt || 0), journal.updatedAt);
-        localLines[bookId] = {
-          ...entry,
-          zheng:{ ...zheng, current:journal.chapterEnd, furthest, updatedAt },
-          schemaVersion:2,
-          updatedAt:Math.max(Number(entry.updatedAt || 0), updatedAt)
-        };
-        linesRepaired = true;
-      });
-      if (linesRepaired) {
-        storage.setItem('sideleaf.reading-lines.v1', JSON.stringify(localLines));
         changed = true;
       }
     }
