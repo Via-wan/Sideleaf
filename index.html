@@ -633,13 +633,20 @@
   }
   .footprint-layer-cover {
     z-index: -3;
+    border-right-color: rgba(115,101,87,.24);
+    background: linear-gradient(to left, rgba(217,208,196,.28), transparent 23px);
+    box-shadow: 8px 0 20px rgba(66,52,42,.07);
+    transform: translateX(18px);
+  }
+  .footprint-back-cover {
+    z-index: -4;
     border-right-color: rgba(143,111,96,.34);
     background: linear-gradient(to left,
       rgba(143,111,96,.38) 0 6px,
       rgba(143,111,96,.16) 6px 11px,
       transparent 23px);
     box-shadow: 7px 0 18px rgba(78,57,45,.075);
-    transform: translateX(18px);
+    transform: translateX(24px);
   }
   .footprint-volume.is-likes .footprint-layer-one,
   .footprint-volume.is-reviews .footprint-layer-one,
@@ -1435,6 +1442,7 @@
           <div class="footprint-layer footprint-layer-one" aria-hidden="true"></div>
           <div class="footprint-layer footprint-layer-two" aria-hidden="true"></div>
           <div class="footprint-layer footprint-layer-cover" aria-hidden="true"></div>
+          <div class="footprint-layer footprint-back-cover" aria-hidden="true"></div>
           <section class="footprint-paper">
             <div class="footprint-person" aria-label="选择足迹主人">
               <button type="button" data-footprint-author="wish" class="is-active">愿</button>
@@ -1607,7 +1615,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.21';
+    const appVersion = '0.20.22';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
