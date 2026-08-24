@@ -641,10 +641,16 @@
   .footprint-back-cover {
     z-index: -4;
     border-right-color: rgba(143,111,96,.34);
-    background: linear-gradient(to left,
-      rgba(143,111,96,.38) 0 6px,
-      rgba(143,111,96,.16) 6px 11px,
-      transparent 23px);
+    background:
+      repeating-linear-gradient(0deg,
+        rgba(255,255,255,.04) 0 .55px,
+        rgba(88,61,47,.018) .55px 1.1px,
+        transparent 1.1px 3.8px),
+      linear-gradient(105deg, rgba(255,255,255,.07), transparent 42%),
+      linear-gradient(to left,
+        rgba(143,111,96,.38) 0 6px,
+        rgba(143,111,96,.16) 6px 11px,
+        transparent 23px);
     box-shadow: 7px 0 18px rgba(78,57,45,.075);
     transform: translateX(24px);
   }
@@ -708,6 +714,8 @@
     transition: width .3s cubic-bezier(.22,.78,.18,1), opacity .22s ease, filter .22s ease, transform .3s cubic-bezier(.22,.78,.18,1);
   }
   .footprint-tabs button svg {
+    position: relative;
+    z-index: 2;
     width: 18px;
     height: 18px;
     overflow: visible;
@@ -721,6 +729,22 @@
     background: linear-gradient(to right, rgba(69,54,45,.2), transparent);
     opacity: 0;
     transition: opacity .22s ease;
+    pointer-events: none;
+  }
+  .footprint-tabs button::after {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    background:
+      repeating-linear-gradient(8deg,
+        rgba(255,255,255,.045) 0 .55px,
+        transparent .55px 3.4px),
+      linear-gradient(112deg,
+        rgba(255,255,255,.10),
+        transparent 38% 72%,
+        rgba(66,47,38,.045));
+    opacity: .72;
     pointer-events: none;
   }
   .footprint-tabs button:nth-child(1) { --tab-offset: 0px; background: #c58d7d; }
@@ -1615,7 +1639,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.22';
+    const appVersion = '0.20.23';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
