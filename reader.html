@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.12</small>
+      <small class="build-version">Sideleaf 0.20.13</small>
     </div>
 
     <div class="page-wrap">
@@ -1152,10 +1152,11 @@
         current: migratedWishCurrent
       },
       zheng: {
-        current: migratedZhengCurrent,
+        current: migratedZhengCurrent ?? nullableAnchor(storedReadingState.zheng?.furthest),
         furthest: readingStateIsCurrent
           ? nullableAnchor(storedReadingState.zheng?.furthest)
-          : migratedZhengCurrent
+          : migratedZhengCurrent,
+        updatedAt: Number(storedReadingState.zheng?.updatedAt || storedReadingState.updatedAt || 0)
       },
       schemaVersion: 2,
       textLength: text.length,
@@ -2696,6 +2697,7 @@
       if (!page) return;
       readingState.zheng.current = page.start;
       readingState.zheng.furthest = Math.max(readingState.zheng.furthest ?? 0, page.start);
+      readingState.zheng.updatedAt = Date.now();
       persistReadingState();
       renderReadingLines();
     });
@@ -2899,8 +2901,9 @@
       catch (_) { readingLineStates = {}; }
       const incoming = readingLineStates[activeBookId]?.zheng;
       if (incoming) {
-        readingState.zheng.current = nullableAnchor(incoming.current);
+        readingState.zheng.current = nullableAnchor(incoming.current) ?? nullableAnchor(incoming.furthest);
         readingState.zheng.furthest = nullableAnchor(incoming.furthest);
+        readingState.zheng.updatedAt = Number(incoming.updatedAt) || readingState.zheng.updatedAt;
       }
       renderReadingLines();
       if (pages[index]) renderPageContent(pages[index]);

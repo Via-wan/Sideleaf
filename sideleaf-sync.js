@@ -94,11 +94,40 @@
       const local = parseJson(storage.getItem('sideleaf.reading-lines.v1'), {});
       Object.entries(state.readingLines).forEach(([bookId, incoming]) => {
         if (!incoming?.zheng) return;
+        const localEntry = local[bookId] || {};
+        const localZheng = localEntry.zheng || {};
+        const incomingZheng = incoming.zheng;
+        const localUpdatedAt = Number(localZheng.updatedAt || localEntry.updatedAt || 0);
+        const incomingUpdatedAt = Number(incomingZheng.updatedAt || incoming.updatedAt || 0);
+        const localCurrent = Number.isFinite(Number(localZheng.current)) && localZheng.current !== null
+          ? Number(localZheng.current)
+          : null;
+        const incomingCurrent = Number.isFinite(Number(incomingZheng.current)) && incomingZheng.current !== null
+          ? Number(incomingZheng.current)
+          : null;
+        const useIncomingCurrent = incomingCurrent !== null
+          && (localCurrent === null || incomingUpdatedAt >= localUpdatedAt);
+        const mergedCurrent = useIncomingCurrent ? incomingCurrent : localCurrent;
+        const furthestCandidates = [
+          localZheng.furthest,
+          localCurrent,
+          incomingZheng.furthest,
+          incomingCurrent
+        ].filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)));
+        const mergedFurthest = furthestCandidates.length
+          ? Math.max(...furthestCandidates.map(Number))
+          : null;
         local[bookId] = {
-          ...(local[bookId] || {}),
-          zheng:{ ...(local[bookId]?.zheng || {}), ...incoming.zheng },
+          ...localEntry,
+          zheng:{
+            ...localZheng,
+            ...incomingZheng,
+            current:mergedCurrent ?? mergedFurthest,
+            furthest:mergedFurthest,
+            updatedAt:Math.max(localUpdatedAt, incomingUpdatedAt)
+          },
           schemaVersion:2,
-          updatedAt:Math.max(Number(local[bookId]?.updatedAt || 0), Number(incoming.zheng.updatedAt || 0))
+          updatedAt:Math.max(Number(localEntry.updatedAt || 0), localUpdatedAt, incomingUpdatedAt)
         };
         changed = true;
       });
