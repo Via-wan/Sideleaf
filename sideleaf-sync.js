@@ -174,6 +174,38 @@
         storage.setItem('sideleaf.chapter-journals.v1', JSON.stringify(journals));
         changed = true;
       }
+      const localLines = parseJson(storage.getItem('sideleaf.reading-lines.v1'), {});
+      let linesRepaired = false;
+      const latestJournalEnds = new Map();
+      journals.forEach(journal => {
+        const chapterEnd = Number(journal?.chapterEnd);
+        if (!journal?.bookId || !Number.isFinite(chapterEnd) || chapterEnd <= 0) return;
+        const previous = latestJournalEnds.get(journal.bookId);
+        if (!previous || chapterEnd > previous.chapterEnd) {
+          latestJournalEnds.set(journal.bookId, { chapterEnd, updatedAt:Number(journal.updatedAt || 0) });
+        }
+      });
+      latestJournalEnds.forEach((journal, bookId) => {
+        const entry = localLines[bookId] || {};
+        const zheng = entry.zheng || {};
+        const hasCurrent = zheng.current !== null
+          && zheng.current !== undefined
+          && Number.isFinite(Number(zheng.current));
+        if (hasCurrent) return;
+        const furthest = Math.max(Number(zheng.furthest || 0), journal.chapterEnd);
+        const updatedAt = Math.max(Number(zheng.updatedAt || entry.updatedAt || 0), journal.updatedAt);
+        localLines[bookId] = {
+          ...entry,
+          zheng:{ ...zheng, current:journal.chapterEnd, furthest, updatedAt },
+          schemaVersion:2,
+          updatedAt:Math.max(Number(entry.updatedAt || 0), updatedAt)
+        };
+        linesRepaired = true;
+      });
+      if (linesRepaired) {
+        storage.setItem('sideleaf.reading-lines.v1', JSON.stringify(localLines));
+        changed = true;
+      }
     }
     if (Array.isArray(state.likes)) {
       const localLikes = parseJson(storage.getItem('sideleaf.likes.v1'), []);

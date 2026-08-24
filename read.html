@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.13</small>
+      <small class="build-version">Sideleaf 0.20.14</small>
     </div>
 
     <div class="page-wrap">
@@ -1147,15 +1147,28 @@
     const readingStateIsCurrent = storedReadingState.schemaVersion === 2;
     const migratedWishCurrent = clampAnchor(storedReadingState.wish?.current, legacyAnchor);
     const migratedZhengCurrent = nullableAnchor(storedReadingState.zheng?.current);
+    function journalReadingFallback() {
+      try {
+        const journals = JSON.parse(localStorage.getItem(chapterJournalsKey) || '[]');
+        if (!Array.isArray(journals)) return null;
+        const ends = journals
+          .filter(journal => journal?.bookId === activeBookId)
+          .map(journal => Number(journal.chapterEnd))
+          .filter(value => Number.isFinite(value) && value > 0);
+        return ends.length ? clampAnchor(Math.max(...ends)) : null;
+      } catch (_) { return null; }
+    }
+    const journalLine = journalReadingFallback();
+    const migratedZhengFurthest = readingStateIsCurrent
+      ? nullableAnchor(storedReadingState.zheng?.furthest)
+      : migratedZhengCurrent;
     const readingState = {
       wish: {
         current: migratedWishCurrent
       },
       zheng: {
-        current: migratedZhengCurrent ?? nullableAnchor(storedReadingState.zheng?.furthest),
-        furthest: readingStateIsCurrent
-          ? nullableAnchor(storedReadingState.zheng?.furthest)
-          : migratedZhengCurrent,
+        current: migratedZhengCurrent ?? migratedZhengFurthest ?? journalLine,
+        furthest: Math.max(migratedZhengFurthest ?? 0, migratedZhengCurrent ?? 0, journalLine ?? 0) || null,
         updatedAt: Number(storedReadingState.zheng?.updatedAt || storedReadingState.updatedAt || 0)
       },
       schemaVersion: 2,
@@ -2901,8 +2914,10 @@
       catch (_) { readingLineStates = {}; }
       const incoming = readingLineStates[activeBookId]?.zheng;
       if (incoming) {
-        readingState.zheng.current = nullableAnchor(incoming.current) ?? nullableAnchor(incoming.furthest);
-        readingState.zheng.furthest = nullableAnchor(incoming.furthest);
+        const fallback = journalReadingFallback();
+        const incomingCurrent = nullableAnchor(incoming.current);
+        readingState.zheng.current = incomingCurrent ?? nullableAnchor(incoming.furthest) ?? fallback;
+        readingState.zheng.furthest = Math.max(nullableAnchor(incoming.furthest) ?? 0, incomingCurrent ?? 0, fallback ?? 0) || null;
         readingState.zheng.updatedAt = Number(incoming.updatedAt) || readingState.zheng.updatedAt;
       }
       renderReadingLines();

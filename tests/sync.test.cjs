@@ -233,6 +233,27 @@ test('更新更晚的有效书签仍可回退当前页，同时保留最远阅�
   assert.equal(line.furthest, 2304);
 });
 
+test('阅读线已空时用最新章节札记的章尾恢复峥的位置', () => {
+  const storage = new MemoryStorage({
+    'sideleaf.reading-lines.v1': JSON.stringify({
+      'book-1':{ wish:{ current:7000 }, zheng:{ current:null, furthest:null }, schemaVersion:2 }
+    })
+  });
+
+  SideleafSync.applyServerState(storage, {
+    journals:[{
+      id:'journal-1', bookId:'book-1', chapterKey:'1:1050:新来者',
+      chapterTitle:'新来者', chapterAnchor:1050, chapterEnd:7995,
+      text:'第一篇札记。', updatedAt:21
+    }]
+  });
+
+  const lines = JSON.parse(storage.getItem('sideleaf.reading-lines.v1'));
+  assert.equal(lines['book-1'].wish.current, 7000);
+  assert.equal(lines['book-1'].zheng.current, 7995);
+  assert.equal(lines['book-1'].zheng.furthest, 7995);
+});
+
 test('切页发生在同步途中时，结束后会再拉一次最新的峥活动', async () => {
   const storage = new MemoryStorage({
     [SideleafSync.AUTH_KEY]: JSON.stringify({ baseUrl:'https://core.example', token:'device-token' }),
