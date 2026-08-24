@@ -652,6 +652,22 @@
     transform: translateX(0);
     transition: transform .3s cubic-bezier(.22,.78,.18,1);
   }
+  .footprint-paper::before {
+    content: '';
+    position: absolute;
+    z-index: 0;
+    top: 70px;
+    right: 48px;
+    bottom: 70px;
+    left: 16px;
+    background-image:
+      linear-gradient(rgba(142,108,80,.105) 0 .55px, transparent .55px),
+      linear-gradient(90deg, rgba(142,108,80,.105) 0 .55px, transparent .55px);
+    background-size: 19px 19px;
+    pointer-events: none;
+    -webkit-mask-image: radial-gradient(ellipse 72% 66% at 50% 48%, #000 0, rgba(0,0,0,.74) 42%, transparent 88%);
+    mask-image: radial-gradient(ellipse 72% 66% at 50% 48%, #000 0, rgba(0,0,0,.74) 42%, transparent 88%);
+  }
   .footprint-volume.is-likes .footprint-paper { transform: translateX(6px); }
   .footprint-volume.is-reviews .footprint-paper { transform: translateX(12px); }
   .footprint-tabs {
@@ -722,6 +738,8 @@
     transform: translateX(var(--tab-offset)) scale(1.035);
   }
   .footprint-content {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex: 1;
     min-height: 0;
@@ -1586,7 +1604,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.16';
+    const appVersion = '0.20.17';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
