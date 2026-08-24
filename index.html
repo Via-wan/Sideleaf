@@ -1051,9 +1051,19 @@
   }
   .footprint-index-detail blockquote { color: var(--muted); }
   .footprint-index-detail blockquote + p {
+    position: relative;
     margin-top: 11px;
-    padding-top: 11px;
-    border-top: 1px solid rgba(84,76,68,.08);
+    padding-top: 13px;
+  }
+  .footprint-index-detail blockquote + p::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent 0%, rgba(142,117,104,.08) 16%, rgba(142,117,104,.22) 50%, rgba(142,117,104,.08) 84%, transparent 100%);
+    clip-path: polygon(0 50%, 50% 0, 100% 50%, 50% 100%);
   }
   .footprint-detail-time {
     display: block;
@@ -1064,6 +1074,11 @@
     text-align: right;
     font-size: 10px;
     font-variant-numeric: tabular-nums;
+  }
+  .footprint-index.is-note .footprint-detail-time,
+  .footprint-index.is-like .footprint-detail-time {
+    padding-top: 0;
+    border-top: 0;
   }
   .footprint-index-detail .footprint-body { margin-top: 0; }
   .empty-state {
@@ -1662,7 +1677,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.24';
+    const appVersion = '0.20.25';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2247,7 +2262,7 @@
         items = readArray(notesKey)
           .filter(note => (note.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(note => `<details class="footprint-index">
+          .map(note => `<details class="footprint-index is-note">
             <summary>
               <span class="footprint-index-line"><span class="footprint-index-book">《${escapeText(books.get(note.bookId) || '已移除的书')}》</span></span>
               <p class="footprint-index-preview">${escapeText(note.quote || note.text)}</p>
@@ -2263,7 +2278,7 @@
         items = readArray(likesKey)
           .filter(like => (like.author === 'zheng' ? 'zheng' : 'wish') === activeFootprintAuthor)
           .sort((a, b) => Number(b.createdAt || b.updatedAt || 0) - Number(a.createdAt || a.updatedAt || 0))
-          .map(like => `<details class="footprint-index">
+          .map(like => `<details class="footprint-index is-like">
             <summary>
               <span class="footprint-index-line"><span class="footprint-index-book">《${escapeText(books.get(like.bookId) || '已移除的书')}》</span></span>
               <p class="footprint-index-preview">${escapeText(like.quote)}</p>
