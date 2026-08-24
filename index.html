@@ -633,22 +633,17 @@
   }
   .footprint-layer-cover {
     z-index: -3;
-    border-right-color: rgba(115,101,87,.24);
-    background: linear-gradient(to left, rgba(217,208,196,.28), transparent 23px);
-    box-shadow: 8px 0 20px rgba(66,52,42,.07);
-    transform: translateX(18px);
-  }
-  .footprint-volume.is-likes .footprint-layer-one,
-  .footprint-volume.is-reviews .footprint-layer-one,
-  .footprint-volume.is-reviews .footprint-layer-two { opacity: 0; }
-  .footprint-volume.is-reviews .footprint-layer-cover {
     border-right-color: rgba(143,111,96,.34);
     background: linear-gradient(to left,
       rgba(143,111,96,.38) 0 6px,
       rgba(143,111,96,.16) 6px 11px,
       transparent 23px);
     box-shadow: 7px 0 18px rgba(78,57,45,.075);
+    transform: translateX(18px);
   }
+  .footprint-volume.is-likes .footprint-layer-one,
+  .footprint-volume.is-reviews .footprint-layer-one,
+  .footprint-volume.is-reviews .footprint-layer-two { opacity: 0; }
   .footprint-paper {
     position: relative;
     display: flex;
@@ -1612,7 +1607,7 @@
   }
 
   (() => {
-    const appVersion = '0.20.20';
+    const appVersion = '0.20.21';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
