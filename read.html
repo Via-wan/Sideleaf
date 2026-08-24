@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.14</small>
+      <small class="build-version">Sideleaf 0.20.15</small>
     </div>
 
     <div class="page-wrap">
@@ -1527,10 +1527,7 @@
     function renderPageContent(page) {
       const annotations = rangeNotesForPage(page);
       const likes = rangeLikesForPage(page);
-      const zhengMarkerOffset = readingState.zheng.current > page.displayStart
-        && readingState.zheng.current <= page.displayEnd
-        ? Number(readingState.zheng.current)
-        : null;
+      const zhengMarkerOffset = SideleafLibrary.readingMarkerOffset(page, readingState.zheng.current);
       const selection = activeSelectionHighlightVisible && activeSelection
         && activeSelection.start < page.displayEnd
         && activeSelection.end > page.displayStart

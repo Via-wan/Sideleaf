@@ -157,6 +157,17 @@
     };
   }
 
+  function readingMarkerOffset(page, anchor) {
+    const offset = Number(anchor);
+    const displayStart = Number(page?.displayStart);
+    const displayEnd = Number(page?.displayEnd);
+    const pageEnd = Number(page?.end);
+    if (![offset, displayStart, displayEnd, pageEnd].every(Number.isFinite)) return null;
+    if (offset > displayStart && offset <= displayEnd) return offset;
+    if (offset > displayEnd && offset <= pageEnd && displayEnd > displayStart) return displayEnd;
+    return null;
+  }
+
   return {
     BOOKS_KEY,
     HIDDEN_BUILT_INS_KEY,
@@ -168,6 +179,7 @@
     ensure,
     ensureSnapshot,
     insertImported,
-    expandReadingRange
+    expandReadingRange,
+    readingMarkerOffset
   };
 });

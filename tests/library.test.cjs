@@ -79,3 +79,10 @@ test('超长段落改用完整句边界，不在句中截断', () => {
   const range = SideleafLibrary.expandReadingRange(text, visibleStart, visibleEnd, { maxParagraphChars: 200 });
   assert.equal(text.slice(range.start, range.end), secondSentence);
 });
+
+test('阅读线落在页尾不可见空白时圆点贴回最后一个可见字', () => {
+  const page = { start:7600, displayStart:7600, displayEnd:7989, end:8000 };
+  assert.equal(SideleafLibrary.readingMarkerOffset(page, 7980), 7980);
+  assert.equal(SideleafLibrary.readingMarkerOffset(page, 7995), 7989);
+  assert.equal(SideleafLibrary.readingMarkerOffset(page, 8001), null);
+});
