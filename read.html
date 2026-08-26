@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.18</small>
+      <small class="build-version">Sideleaf 0.20.19</small>
     </div>
 
     <div class="page-wrap">
@@ -2338,7 +2338,15 @@
       };
       activeSelectionHighlightVisible = true;
       focusedNoteIds = null;
-      renderPageContent(pages[index]);
+      const page = pages[index];
+      renderPageContent(page);
+      if (page && sentence.start < page.displayStart) {
+        showSelectionContinuation('previous');
+      } else if (page && sentence.end > page.displayEnd) {
+        showSelectionContinuation('next');
+      } else {
+        hideSelectionContinuation();
+      }
       window.requestAnimationFrame(() => {
         const rects = selectionRects();
         if (!rects.length) return;
