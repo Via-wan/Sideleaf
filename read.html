@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.16</small>
+      <small class="build-version">Sideleaf 0.20.17</small>
     </div>
 
     <div class="page-wrap">
@@ -779,6 +779,13 @@
     display: none;
     margin: 0;
   }
+  #pagination-tester .notes-sheet.is-keyboard-open .notes-list:not(:empty) {
+    flex-basis: 82px;
+    min-height: 64px;
+  }
+  #pagination-tester .notes-sheet.is-keyboard-open .note-compose {
+    flex-shrink: 0;
+  }
   #pagination-tester .note-item {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -927,9 +934,11 @@
       inset 0 -1px 0 rgba(84, 76, 68, .08);
     -webkit-backdrop-filter: blur(18px) saturate(1.20);
     backdrop-filter: blur(18px) saturate(1.20);
-    color: var(--foreground);
+    color: var(--muted-foreground);
+    -webkit-text-fill-color: var(--muted-foreground);
     caret-color: #d18b55;
     accent-color: #d18b55;
+    opacity: 1;
     font: 400 16px/1.55 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
   }
   #pagination-tester .notes-sheet .save-note {
@@ -1249,6 +1258,7 @@
     let longPressStartY = 0;
     let draggingSelectionEdge = null;
     let selectionDragFrame = null;
+    let selectionPageTurnAt = 0;
     let activeJournalUnit = null;
     let paginationRun = 0;
     let paginationComplete = false;
@@ -1639,6 +1649,45 @@
       noteCompose.dataset.author = composingNoteAuthor;
     }
 
+    const noteDraftKey = `sideleaf.note-draft.v1.${activeBookId}`;
+
+    function readNoteDraft() {
+      try { return JSON.parse(localStorage.getItem(noteDraftKey) || 'null'); }
+      catch (_) { return null; }
+    }
+
+    function clearNoteDraft() {
+      localStorage.removeItem(noteDraftKey);
+    }
+
+    function preserveNoteDraft() {
+      const value = noteInput.value;
+      if (!value.trim()) return;
+      localStorage.setItem(noteDraftKey, JSON.stringify({
+        text: value,
+        author: composingNoteAuthor,
+        editingNoteId,
+        rangeStart: activeSelection?.start ?? null,
+        rangeEnd: activeSelection?.end ?? null,
+        updatedAt: Date.now()
+      }));
+    }
+
+    function restoreNoteDraft(editId = null) {
+      const draft = readNoteDraft();
+      const matchesEdit = editId && draft?.editingNoteId === editId;
+      const matchesSelection = !editId && !draft?.editingNoteId && activeSelection
+        && Number(draft.rangeStart) === activeSelection.start
+        && Number(draft.rangeEnd) === activeSelection.end;
+      if (!matchesEdit && !matchesSelection) {
+        noteInput.value = '';
+        return false;
+      }
+      noteInput.value = String(draft.text || '');
+      setNoteAuthor(draft.author);
+      return true;
+    }
+
     function resizeNoteInput() {
       noteInput.style.height = 'auto';
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
@@ -1765,8 +1814,8 @@
           saveNote.hidden = false;
           selectionQuote.hidden = !activeSelection;
           selectionQuote.textContent = activeSelection?.quote || '';
-          noteInput.value = note.text;
           setNoteAuthor(note.author);
+          if (!restoreNoteDraft(note.id)) noteInput.value = note.text;
           saveNote.textContent = '保存修改';
           resizeNoteInput();
           noteInput.focus();
@@ -1835,7 +1884,11 @@
       const viewportHeight = viewport?.height || window.innerHeight;
       const margin = 14;
       const gap = 10;
-      notesSheet.style.maxHeight = `${Math.max(180, Math.min(500, viewportHeight - margin * 2))}px`;
+      const availableHeight = Math.max(180, Math.min(500, viewportHeight - margin * 2));
+      const keyboardOpen = document.activeElement === noteInput;
+      notesSheet.classList.toggle('is-keyboard-open', keyboardOpen);
+      notesSheet.style.maxHeight = `${availableHeight}px`;
+      notesSheet.style.height = keyboardOpen ? `${availableHeight}px` : '';
       const panelWidth = notesSheet.offsetWidth;
       const panelHeight = notesSheet.offsetHeight;
       const center = rect.left + rect.width / 2;
@@ -1875,12 +1928,15 @@
     }
 
     function hideNotes() {
+      preserveNoteDraft();
       notesSheet.hidden = true;
       notesSheet.setAttribute('aria-hidden', 'true');
       noteInput.blur();
       editingNoteId = null;
       noteInput.value = '';
       noteInput.style.height = '';
+      notesSheet.classList.remove('is-keyboard-open');
+      notesSheet.style.height = '';
       setNoteAuthor('wish');
       saveNote.textContent = '发送';
       noteCompose.hidden = true;
@@ -2022,15 +2078,57 @@
         hideSelectionHandles();
         return;
       }
+      const page = pages[index];
       const first = rects[0];
       const last = rects[rects.length - 1];
-      selectionHandleStart.style.left = `${first.left}px`;
-      selectionHandleStart.style.top = `${first.top - 12}px`;
-      selectionHandleStart.style.setProperty('--selection-line-height', `${first.height}px`);
-      selectionHandleEnd.style.left = `${last.right}px`;
-      selectionHandleEnd.style.top = `${last.top}px`;
-      selectionHandleEnd.style.setProperty('--selection-line-height', `${last.height}px`);
-      selectionHandles.hidden = false;
+      const startVisible = Boolean(page && activeSelection.start >= page.displayStart && activeSelection.start < page.displayEnd);
+      const endVisible = Boolean(page && activeSelection.end > page.displayStart && activeSelection.end <= page.displayEnd);
+      selectionHandleStart.hidden = !startVisible;
+      selectionHandleEnd.hidden = !endVisible;
+      if (startVisible) {
+        selectionHandleStart.style.left = `${first.left}px`;
+        selectionHandleStart.style.top = `${first.top - 12}px`;
+        selectionHandleStart.style.setProperty('--selection-line-height', `${first.height}px`);
+      }
+      if (endVisible) {
+        selectionHandleEnd.style.left = `${last.right}px`;
+        selectionHandleEnd.style.top = `${last.top}px`;
+        selectionHandleEnd.style.setProperty('--selection-line-height', `${last.height}px`);
+      }
+      selectionHandles.hidden = !startVisible && !endVisible;
+    }
+
+    function maybeTurnSelectionPage(clientY) {
+      if (!draggingSelectionEdge || !activeSelection) return false;
+      const bounds = pageText.getBoundingClientRect();
+      const now = Date.now();
+      if (now - selectionPageTurnAt < 420) return false;
+      let direction = 0;
+      if (draggingSelectionEdge === 'start' && clientY <= bounds.top + 18 && index > 0) direction = -1;
+      if (draggingSelectionEdge === 'end' && clientY >= bounds.bottom - 18 && index < pages.length - 1) direction = 1;
+      if (!direction) return false;
+      selectionPageTurnAt = now;
+      index += direction;
+      const page = pages[index];
+      if (direction < 0) {
+        activeSelection.start = Math.max(page.displayStart, Math.min(page.displayEnd - 1, activeSelection.end - 1));
+      } else {
+        activeSelection.end = Math.min(page.displayEnd, Math.max(page.displayStart + 1, activeSelection.start + 1));
+      }
+      activeSelection.quote = text.slice(activeSelection.start, activeSelection.end);
+      activeSelection.prefix = text.slice(Math.max(0, activeSelection.start - 60), activeSelection.start);
+      activeSelection.suffix = text.slice(activeSelection.end, Math.min(text.length, activeSelection.end + 60));
+      render();
+      window.requestAnimationFrame(() => {
+        const rects = selectionRects();
+        positionSelectionHandles(rects);
+        const last = rects[rects.length - 1];
+        if (!draggingSelectionEdge && last) {
+          activeSelection.anchorRect = rememberRect(last);
+          positionSelectionToolbar(last);
+        }
+      });
+      return true;
     }
 
     function updateActiveSelection(start, end) {
@@ -2096,6 +2194,7 @@
       window.cancelAnimationFrame(selectionDragFrame);
       selectionDragFrame = window.requestAnimationFrame(() => {
         const page = pages[index];
+        if (maybeTurnSelectionPage(clientY)) return;
         handle.style.pointerEvents = 'none';
         const anchor = pageAnchorFromPoint(clientX, clientY);
         handle.style.pointerEvents = '';
@@ -2115,6 +2214,13 @@
       event.preventDefault();
       event.stopPropagation();
       window.cancelAnimationFrame(selectionDragFrame);
+      if (maybeTurnSelectionPage(event.clientY)) {
+        draggingSelectionEdge = null;
+        selectionHandles.classList.remove('is-dragging');
+        selectionHandleStart.classList.remove('is-dragging');
+        selectionHandleEnd.classList.remove('is-dragging');
+        return;
+      }
       const page = pages[index];
       event.currentTarget.style.pointerEvents = 'none';
       const anchor = pageAnchorFromPoint(event.clientX, event.clientY);
@@ -2207,8 +2313,8 @@
       activeSelectionHighlightVisible = true;
       focusedNoteIds = [];
       editingNoteId = null;
-      noteInput.value = '';
       setNoteAuthor('wish');
+      restoreNoteDraft();
       saveNote.textContent = '发送';
       noteCompose.hidden = false;
       saveNote.hidden = false;
@@ -2235,8 +2341,8 @@
       activeSelectionHighlightVisible = false;
       focusedNoteIds = noteIds;
       editingNoteId = null;
-      noteInput.value = '';
       setNoteAuthor('wish');
+      restoreNoteDraft();
       saveNote.textContent = '发送';
       noteCompose.hidden = false;
       saveNote.hidden = false;
@@ -2687,7 +2793,10 @@
     requestZhengRead.addEventListener('click', requestCurrentPageReading);
     openChapterJournal.addEventListener('click', openCurrentChapterJournal);
     copyChapterJournal.addEventListener('click', copyCurrentChapterJournal);
-    noteInput.addEventListener('input', resizeNoteInput);
+    noteInput.addEventListener('input', () => {
+      preserveNoteDraft();
+      resizeNoteInput();
+    });
     markZhengLine.addEventListener('click', () => {
       const page = pages[index];
       if (!page) return;
@@ -2776,6 +2885,7 @@
       }
       activeSelectionHighlightVisible = false;
       editingNoteId = null;
+      clearNoteDraft();
       noteInput.value = '';
       noteInput.style.height = '';
       setNoteAuthor('wish');
@@ -2875,6 +2985,10 @@
 
     noteInput.addEventListener('focus', () => {
       stabilizeNotesForKeyboard();
+      [80, 180, 320].forEach(delay => window.setTimeout(stabilizeNotesForKeyboard, delay));
+    });
+    noteInput.addEventListener('blur', () => {
+      preserveNoteDraft();
       [80, 180, 320].forEach(delay => window.setTimeout(stabilizeNotesForKeyboard, delay));
     });
     window.visualViewport?.addEventListener('resize', stabilizeNotesForKeyboard);
