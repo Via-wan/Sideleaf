@@ -87,7 +87,7 @@
       <input id="font-slider" type="range" min="16" max="25" value="17">
       <label for="line-slider">行距 <output id="line-output">1.55</output></label>
       <input id="line-slider" type="range" min="1.55" max="2.45" step="0.05" value="1.55">
-      <small class="build-version">Sideleaf 0.20.17</small>
+      <small class="build-version">Sideleaf 0.20.18</small>
     </div>
 
     <div class="page-wrap">
@@ -138,6 +138,9 @@
     <div id="selection-handles" class="selection-handles" aria-hidden="true" hidden>
       <button class="selection-handle is-start" type="button" data-selection-edge="start" tabindex="-1" aria-label="调整选区开头"></button>
       <button class="selection-handle is-end" type="button" data-selection-edge="end" tabindex="-1" aria-label="调整选区结尾"></button>
+    </div>
+    <div id="selection-continuation" class="selection-continuation" aria-hidden="true" hidden>
+      <div id="selection-continuation-text" class="selection-continuation-text"></div>
     </div>
 
     <section class="notes-sheet" role="dialog" aria-modal="false" aria-label="原句对话" aria-hidden="true" hidden>
@@ -726,6 +729,38 @@
   #pagination-tester .selection-handles.is-dragging .selection-handle:not(.is-dragging) {
     opacity: .45;
   }
+  #pagination-tester .selection-continuation {
+    position: fixed;
+    z-index: 43;
+    overflow: hidden;
+    color: var(--foreground);
+    background: rgba(252, 250, 247, .97);
+    pointer-events: auto;
+    touch-action: none;
+  }
+  #pagination-tester .selection-continuation[hidden] { display: none; }
+  #pagination-tester .selection-continuation[data-direction="next"] {
+    padding-top: 12px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 8px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 12px, #000 calc(100% - 8px), transparent 100%);
+  }
+  #pagination-tester .selection-continuation[data-direction="previous"] {
+    padding-bottom: 12px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 12px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 8px, #000 calc(100% - 12px), transparent 100%);
+  }
+  #pagination-tester .selection-continuation-text {
+    position: absolute;
+    left: 0;
+    right: 0;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+  #pagination-tester .selection-continuation[data-direction="next"] .selection-continuation-text { top: 12px; }
+  #pagination-tester .selection-continuation[data-direction="previous"] .selection-continuation-text { bottom: 12px; }
   #pagination-tester .notes-sheet {
     position: fixed;
     z-index: 40;
@@ -1106,6 +1141,8 @@
     const selectionHandles = root.querySelector('#selection-handles');
     const selectionHandleStart = root.querySelector('[data-selection-edge="start"]');
     const selectionHandleEnd = root.querySelector('[data-selection-edge="end"]');
+    const selectionContinuation = root.querySelector('#selection-continuation');
+    const selectionContinuationText = root.querySelector('#selection-continuation-text');
     const selectionQuote = root.querySelector('#selection-quote');
     const sendContext = root.querySelector('#send-context');
     const requestZhengRead = root.querySelector('#request-zheng-read');
@@ -1258,7 +1295,6 @@
     let longPressStartY = 0;
     let draggingSelectionEdge = null;
     let selectionDragFrame = null;
-    let selectionPageTurnAt = 0;
     let activeJournalUnit = null;
     let paginationRun = 0;
     let paginationComplete = false;
@@ -1676,7 +1712,7 @@
     function restoreNoteDraft(editId = null) {
       const draft = readNoteDraft();
       const matchesEdit = editId && draft?.editingNoteId === editId;
-      const matchesSelection = !editId && !draft?.editingNoteId && activeSelection
+      const matchesSelection = !editId && draft && !draft.editingNoteId && activeSelection
         && Number(draft.rangeStart) === activeSelection.start
         && Number(draft.rangeEnd) === activeSelection.end;
       if (!matchesEdit && !matchesSelection) {
@@ -1961,6 +1997,7 @@
       selectionHandleStart.classList.remove('is-dragging');
       selectionHandleEnd.classList.remove('is-dragging');
       draggingSelectionEdge = null;
+      hideSelectionContinuation();
     }
 
     function clearLongPress() {
@@ -2067,10 +2104,181 @@
       likeSelection.classList.add('did-toggle');
     }
 
+    function hideSelectionContinuation() {
+      selectionContinuation.hidden = true;
+      selectionContinuation.setAttribute('aria-hidden', 'true');
+      selectionContinuation.removeAttribute('data-direction');
+      selectionContinuationText.replaceChildren();
+      delete selectionContinuationText.dataset.rangeStart;
+      delete selectionContinuationText.dataset.rangeEnd;
+    }
+
+    function syncSelectionContinuationLayout(direction) {
+      const bounds = pageText.getBoundingClientRect();
+      const viewportTop = window.visualViewport?.offsetTop || 0;
+      const viewportBottom = viewportTop + (window.visualViewport?.height || window.innerHeight);
+      const wantedHeight = Math.min(180, Math.max(92, bounds.height * .22));
+      let top;
+      let height;
+      if (direction === 'next') {
+        const naturalTop = bounds.bottom - 1;
+        const available = viewportBottom - 8 - naturalTop;
+        height = Math.min(wantedHeight, Math.max(76, available));
+        top = available >= 76 ? naturalTop : viewportBottom - 8 - height;
+      } else {
+        const naturalBottom = bounds.top + 1;
+        const available = naturalBottom - (viewportTop + 8);
+        height = Math.min(wantedHeight, Math.max(76, available));
+        top = available >= 76 ? naturalBottom - height : viewportTop + 8;
+      }
+      const typography = window.getComputedStyle(pageText);
+      selectionContinuation.style.left = `${bounds.left}px`;
+      selectionContinuation.style.top = `${top}px`;
+      selectionContinuation.style.width = `${bounds.width}px`;
+      selectionContinuation.style.height = `${height}px`;
+      selectionContinuationText.style.fontFamily = typography.fontFamily;
+      selectionContinuationText.style.fontSize = typography.fontSize;
+      selectionContinuationText.style.fontWeight = typography.fontWeight;
+      selectionContinuationText.style.lineHeight = typography.lineHeight;
+      selectionContinuationText.style.letterSpacing = typography.letterSpacing;
+    }
+
+    function continuationPageAndSlice() {
+      if (selectionContinuation.hidden) return null;
+      const direction = selectionContinuation.dataset.direction;
+      const targetIndex = index + (direction === 'previous' ? -1 : 1);
+      const page = pages[targetIndex];
+      if (!page) return null;
+      const sliceStart = direction === 'previous'
+        ? Math.max(page.displayStart, page.displayEnd - 420)
+        : page.displayStart;
+      const sliceEnd = direction === 'previous'
+        ? page.displayEnd
+        : Math.min(page.displayEnd, page.displayStart + 420);
+      return { direction, page, sliceStart, sliceEnd };
+    }
+
+    function renderSelectionContinuation() {
+      const preview = continuationPageAndSlice();
+      if (!preview) {
+        hideSelectionContinuation();
+        return;
+      }
+      const { sliceStart, sliceEnd } = preview;
+      selectionContinuationText.dataset.rangeStart = String(sliceStart);
+      selectionContinuationText.dataset.rangeEnd = String(sliceEnd);
+      const selection = activeSelectionHighlightVisible && activeSelection
+        && activeSelection.start < sliceEnd
+        && activeSelection.end > sliceStart
+        ? activeSelection
+        : null;
+      const boundaries = new Set([sliceStart, sliceEnd]);
+      for (let offset = sliceStart; offset < sliceEnd; offset += 1) {
+        if (text[offset] === '\n' && offset + 1 < sliceEnd) boundaries.add(offset + 1);
+      }
+      if (selection) {
+        boundaries.add(Math.max(sliceStart, selection.start));
+        boundaries.add(Math.min(sliceEnd, selection.end));
+      }
+      const points = [...boundaries].sort((a, b) => a - b);
+      const fragment = document.createDocumentFragment();
+      for (let pointIndex = 0; pointIndex < points.length - 1; pointIndex += 1) {
+        const from = points[pointIndex];
+        const to = points[pointIndex + 1];
+        if (to <= from) continue;
+        const content = text.slice(from, to);
+        if (isParagraphStart(from) && content[0] !== '\n') {
+          const indent = document.createElement('span');
+          indent.className = 'paragraph-indent';
+          indent.setAttribute('aria-hidden', 'true');
+          fragment.appendChild(indent);
+        }
+        const selected = selection && selection.start < to && selection.end > from;
+        if (selected) {
+          const mark = document.createElement('span');
+          mark.className = 'active-selection-highlight';
+          mark.textContent = content;
+          fragment.appendChild(mark);
+        } else {
+          fragment.appendChild(document.createTextNode(content));
+        }
+      }
+      selectionContinuationText.replaceChildren(fragment);
+    }
+
+    function showSelectionContinuation(direction) {
+      const targetIndex = index + (direction === 'previous' ? -1 : 1);
+      if (!pages[targetIndex]) return false;
+      const alreadyVisible = !selectionContinuation.hidden
+        && selectionContinuation.dataset.direction === direction;
+      selectionContinuation.hidden = false;
+      selectionContinuation.setAttribute('aria-hidden', 'false');
+      selectionContinuation.dataset.direction = direction;
+      syncSelectionContinuationLayout(direction);
+      renderSelectionContinuation();
+      return !alreadyVisible;
+    }
+
+    function continuationAnchorFromPoint(clientX, clientY) {
+      if (selectionContinuation.hidden) return null;
+      const bounds = selectionContinuation.getBoundingClientRect();
+      if (clientX < bounds.left || clientX > bounds.right || clientY < bounds.top || clientY > bounds.bottom) return null;
+      let node = null;
+      let offset = 0;
+      if (document.caretPositionFromPoint) {
+        const caret = document.caretPositionFromPoint(clientX, clientY);
+        node = caret?.offsetNode || null;
+        offset = caret?.offset || 0;
+      } else if (document.caretRangeFromPoint) {
+        const caret = document.caretRangeFromPoint(clientX, clientY);
+        node = caret?.startContainer || null;
+        offset = caret?.startOffset || 0;
+      }
+      const rangeStart = Number(selectionContinuationText.dataset.rangeStart);
+      const rangeEnd = Number(selectionContinuationText.dataset.rangeEnd);
+      if (!node || !selectionContinuationText.contains(node) || !Number.isFinite(rangeStart) || !Number.isFinite(rangeEnd)) return null;
+      const probe = document.createRange();
+      probe.selectNodeContents(selectionContinuationText);
+      probe.setEnd(node, offset);
+      return Math.max(rangeStart, Math.min(rangeEnd, rangeStart + probe.toString().length));
+    }
+
+    function selectionDragAnchorFromPoint(clientX, clientY) {
+      return continuationAnchorFromPoint(clientX, clientY) ?? pageAnchorFromPoint(clientX, clientY);
+    }
+
+    function maybeOpenSelectionContinuation(clientY) {
+      if (!draggingSelectionEdge || !activeSelection) return false;
+      const bounds = pageText.getBoundingClientRect();
+      if (draggingSelectionEdge === 'start' && clientY <= bounds.top + 8 && index > 0) {
+        return showSelectionContinuation('previous');
+      }
+      if (draggingSelectionEdge === 'end' && clientY >= bounds.bottom - 8 && index < pages.length - 1) {
+        return showSelectionContinuation('next');
+      }
+      return false;
+    }
+
     function selectionRects() {
-      return [...pageText.querySelectorAll('.active-selection-highlight')]
+      const roots = [pageText];
+      if (!selectionContinuation.hidden) roots.push(selectionContinuationText);
+      return roots
+        .flatMap(rootNode => [...rootNode.querySelectorAll('.active-selection-highlight')])
         .flatMap(highlight => [...highlight.getClientRects()])
-        .filter(rect => rect.width > 0 && rect.height > 0);
+        .filter(rect => rect.width > 0 && rect.height > 0)
+        .sort((a, b) => Math.abs(a.top - b.top) > 1 ? a.top - b.top : a.left - b.left);
+    }
+
+    function selectionBoundaryVisible(offset, edge, page) {
+      const onPage = edge === 'start'
+        ? offset >= page.displayStart && offset < page.displayEnd
+        : offset > page.displayStart && offset <= page.displayEnd;
+      if (onPage || selectionContinuation.hidden) return onPage;
+      const rangeStart = Number(selectionContinuationText.dataset.rangeStart);
+      const rangeEnd = Number(selectionContinuationText.dataset.rangeEnd);
+      return edge === 'start'
+        ? offset >= rangeStart && offset < rangeEnd
+        : offset > rangeStart && offset <= rangeEnd;
     }
 
     function positionSelectionHandles(rects = selectionRects()) {
@@ -2081,8 +2289,8 @@
       const page = pages[index];
       const first = rects[0];
       const last = rects[rects.length - 1];
-      const startVisible = Boolean(page && activeSelection.start >= page.displayStart && activeSelection.start < page.displayEnd);
-      const endVisible = Boolean(page && activeSelection.end > page.displayStart && activeSelection.end <= page.displayEnd);
+      const startVisible = Boolean(page && selectionBoundaryVisible(activeSelection.start, 'start', page));
+      const endVisible = Boolean(page && selectionBoundaryVisible(activeSelection.end, 'end', page));
       selectionHandleStart.hidden = !startVisible;
       selectionHandleEnd.hidden = !endVisible;
       if (startVisible) {
@@ -2098,39 +2306,6 @@
       selectionHandles.hidden = !startVisible && !endVisible;
     }
 
-    function maybeTurnSelectionPage(clientY) {
-      if (!draggingSelectionEdge || !activeSelection) return false;
-      const bounds = pageText.getBoundingClientRect();
-      const now = Date.now();
-      if (now - selectionPageTurnAt < 420) return false;
-      let direction = 0;
-      if (draggingSelectionEdge === 'start' && clientY <= bounds.top + 18 && index > 0) direction = -1;
-      if (draggingSelectionEdge === 'end' && clientY >= bounds.bottom - 18 && index < pages.length - 1) direction = 1;
-      if (!direction) return false;
-      selectionPageTurnAt = now;
-      index += direction;
-      const page = pages[index];
-      if (direction < 0) {
-        activeSelection.start = Math.max(page.displayStart, Math.min(page.displayEnd - 1, activeSelection.end - 1));
-      } else {
-        activeSelection.end = Math.min(page.displayEnd, Math.max(page.displayStart + 1, activeSelection.start + 1));
-      }
-      activeSelection.quote = text.slice(activeSelection.start, activeSelection.end);
-      activeSelection.prefix = text.slice(Math.max(0, activeSelection.start - 60), activeSelection.start);
-      activeSelection.suffix = text.slice(activeSelection.end, Math.min(text.length, activeSelection.end + 60));
-      render();
-      window.requestAnimationFrame(() => {
-        const rects = selectionRects();
-        positionSelectionHandles(rects);
-        const last = rects[rects.length - 1];
-        if (!draggingSelectionEdge && last) {
-          activeSelection.anchorRect = rememberRect(last);
-          positionSelectionToolbar(last);
-        }
-      });
-      return true;
-    }
-
     function updateActiveSelection(start, end) {
       if (!activeSelection || end <= start) return false;
       activeSelectionHighlightVisible = true;
@@ -2140,6 +2315,7 @@
       activeSelection.prefix = text.slice(Math.max(0, start - 60), start);
       activeSelection.suffix = text.slice(end, Math.min(text.length, end + 60));
       renderPageContent(pages[index]);
+      if (!selectionContinuation.hidden) renderSelectionContinuation();
       const rects = selectionRects();
       if (!rects.length) return false;
       const last = rects[rects.length - 1];
@@ -2193,18 +2369,21 @@
       const handle = event.currentTarget;
       window.cancelAnimationFrame(selectionDragFrame);
       selectionDragFrame = window.requestAnimationFrame(() => {
-        const page = pages[index];
-        if (maybeTurnSelectionPage(clientY)) return;
+        if (maybeOpenSelectionContinuation(clientY)) return;
         handle.style.pointerEvents = 'none';
-        const anchor = pageAnchorFromPoint(clientX, clientY);
+        const anchor = selectionDragAnchorFromPoint(clientX, clientY);
         handle.style.pointerEvents = '';
-        if (!page || anchor === null) return;
+        if (anchor === null) return;
         if (draggingSelectionEdge === 'start') {
-          const start = Math.max(page.displayStart, Math.min(anchor, activeSelection.end - 1));
-          updateActiveSelection(start, activeSelection.end);
+          updateActiveSelection(
+            Math.max(0, Math.min(anchor, activeSelection.end - 1)),
+            activeSelection.end
+          );
         } else {
-          const end = Math.min(page.displayEnd, Math.max(anchor, activeSelection.start + 1));
-          updateActiveSelection(activeSelection.start, end);
+          updateActiveSelection(
+            activeSelection.start,
+            Math.min(text.length, Math.max(anchor, activeSelection.start + 1))
+          );
         }
       });
     }
@@ -2214,27 +2393,20 @@
       event.preventDefault();
       event.stopPropagation();
       window.cancelAnimationFrame(selectionDragFrame);
-      if (maybeTurnSelectionPage(event.clientY)) {
-        draggingSelectionEdge = null;
-        selectionHandles.classList.remove('is-dragging');
-        selectionHandleStart.classList.remove('is-dragging');
-        selectionHandleEnd.classList.remove('is-dragging');
-        return;
-      }
-      const page = pages[index];
+      maybeOpenSelectionContinuation(event.clientY);
       event.currentTarget.style.pointerEvents = 'none';
-      const anchor = pageAnchorFromPoint(event.clientX, event.clientY);
+      const anchor = selectionDragAnchorFromPoint(event.clientX, event.clientY);
       event.currentTarget.style.pointerEvents = '';
-      if (page && anchor !== null && activeSelection) {
+      if (anchor !== null && activeSelection) {
         if (draggingSelectionEdge === 'start') {
           updateActiveSelection(
-            Math.max(page.displayStart, Math.min(anchor, activeSelection.end - 1)),
+            Math.max(0, Math.min(anchor, activeSelection.end - 1)),
             activeSelection.end
           );
         } else {
           updateActiveSelection(
             activeSelection.start,
-            Math.min(page.displayEnd, Math.max(anchor, activeSelection.start + 1))
+            Math.min(text.length, Math.max(anchor, activeSelection.start + 1))
           );
         }
       }
@@ -2242,6 +2414,10 @@
       selectionHandles.classList.remove('is-dragging');
       selectionHandleStart.classList.remove('is-dragging');
       selectionHandleEnd.classList.remove('is-dragging');
+      const page = pages[index];
+      const crossesPage = page && activeSelection
+        && (activeSelection.start < page.displayStart || activeSelection.end > page.displayEnd);
+      if (!crossesPage) hideSelectionContinuation();
       const rects = selectionRects();
       const last = rects[rects.length - 1];
       if (last) {
@@ -2819,6 +2995,7 @@
       const annotationTarget = event.target.closest('.annotation-highlight');
       const customSelectionTarget = event.target.closest('.active-selection-highlight');
       const selectionHandleTarget = event.target.closest('.selection-handle');
+      const selectionContinuationTarget = event.target.closest('.selection-continuation');
       if (!event.target.closest('.note-more') && !event.target.closest('.note-actions')) closeNoteActions();
       if (!chapterJournal.hidden && !chapterJournal.contains(event.target) && !openChapterJournal.contains(event.target)) {
         closeCurrentChapterJournal();
@@ -2828,7 +3005,7 @@
         hideNotes();
         dismissed = true;
       }
-      if (!activeSelection || !notesSheet.hidden || selectionToolbar.contains(event.target) || selectionHandleTarget || customSelectionTarget || annotationTarget) {
+      if (!activeSelection || !notesSheet.hidden || selectionToolbar.contains(event.target) || selectionHandleTarget || selectionContinuationTarget || customSelectionTarget || annotationTarget) {
         // Keep the current sentence selected while interacting with its own controls.
       } else {
         activeSelection = null;
