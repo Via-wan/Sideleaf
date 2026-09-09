@@ -1,10 +1,10 @@
-# 叶间 0.22.2 — bounded botanical feed / pending live verification
+# 叶间 0.22.2 — bounded botanical feed / deployed
 
 ## 0.22.2 current checkpoint
 
 PR #37 merged to main at 8697a159e5df5c38b3f265e7792c1b1efa76c057. Reply arrows are now inline stroked SVG, avoiding iPhone emoji substitution. The leaf feed and measured SVG share a relative content wrapper inside a fixed-height scroll region; upper/lower masks fade both together. Heading and bottom controls stay outside that region. Body scroll locking applies only to the leaves view. The content wrapper preserves the vine's feed-relative coordinates without scroll-time redraws. Reader Aa version is 0.22.2, cache v88.
 
-37 Node tests and diff whitespace checks pass. At this checkpoint the live site still returned 0.22.1 and no publish workflow run for this merge was listed; do not claim deployed or browser-verified until the new region appears live. The unpaired QA browser has a temporary long post beginning “滚动区域验收” for scroll verification; remove that generated post after checking. User data/Core were not connected or modified.
+37 Node tests and diff whitespace checks pass. Publish run 34347824351 succeeded for PR #37's merge. Live read.html confirmed 0.22.2. In the unpaired desktop QA browser, a temporary 30-line post produced a 669px scroll viewport with 1136px content. Scrolling 330px left heading y=48 unchanged and moved text/vine together; screenshot confirmed upper/lower fading. Menu opened and blank-heading click dismissed it. The generated long post was removed, leaving the pre-existing QA post. Returning to the shelf restored normal body positioning. User data/Core were not connected or modified. iPhone final visual acceptance remains for the user; desktop QA is not an iOS keyboard/viewport test.
 
 Below are earlier implementation notes; their version/test counts are historical.
 
