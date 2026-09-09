@@ -1,6 +1,6 @@
 # Sideleaf
 
-当前版本：**0.22.0**。评论叶片与叶柄一同上移；评论新增“…”菜单，愿可编辑、删除自己的评论，点击任意评论可定向回复，显示“愿 ↪ 峥：”。回复关系由 Sideleaf Core 0.5.1 保存并同步，删除原评论不连带删除后续回复。正文 Aa 显示同一版本。
+当前版本：**0.22.1**。评论叶片与叶柄一同上移；评论新增“…”菜单，愿可编辑、删除自己的评论，点击任意评论可定向回复，显示“愿 ↪ 峥：”。回复关系由 Sideleaf Core 0.5.1 保存并同步，删除原评论不连带删除后续回复。正文 Aa 显示同一版本。
 
 A quiet co-reading space for reading side by side without forced synchronization.
 
