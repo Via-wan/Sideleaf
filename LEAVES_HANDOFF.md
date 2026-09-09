@@ -1,4 +1,8 @@
-# 叶间 / 足迹 0.22.4 — title hierarchy and author accents
+# 叶间 0.22.5 — matching menus and keyboard layout
+
+## 0.22.5
+
+Post menus now match comment menus: borderless warm-paper surface, 12px corners, shared shadow/padding/button typography, no divider lines or backdrop blur. Composer textarea is 16px to avoid iPhone small-input zoom. Opening freezes the background leaf region at the pre-keyboard height and hides navigation; visualViewport offset is compensated on the shelf while the composer alone follows the keyboard. No-keyboard focus keeps the default bottom position; dismissal restores default styles, and closing blurs the editor. Short viewports cap composer height. Tests exercise keyboard opening/panning/dismissal, no-keyboard focus, pinch zoom and short viewport geometry. 39 Node tests pass; Aa 0.22.5, cache v91. iOS keyboard behavior requires real-device acceptance; these are calculation regressions, not a claim of iPhone browser testing.
 
 ## 0.22.4
 
