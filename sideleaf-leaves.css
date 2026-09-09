@@ -1,7 +1,30 @@
-/* Sideleaf 0.22.1 — one calm vine, semantic leaves, stable text grid.
+/* Sideleaf 0.22.2 — one calm vine, semantic leaves, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
 #view-leaves { position: relative; }
+body.is-leaves { position: fixed; inset: 0; width: 100%; overflow: hidden; overscroll-behavior: none; }
+#view-leaves:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  height: calc(100svh - max(34px, env(safe-area-inset-top)) - 140px - env(safe-area-inset-bottom));
+  height: calc(100dvh - max(34px, env(safe-area-inset-top)) - 140px - env(safe-area-inset-bottom));
+  min-height: 0;
+}
+#view-leaves .section-heading { flex: 0 0 auto; }
+#view-leaves .leaf-scroll-window {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none;
+  margin: 0 calc(-1 * var(--shelf-gutter));
+  padding: 0 var(--shelf-gutter);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 32px), transparent);
+}
+#view-leaves .leaf-scroll-window::-webkit-scrollbar { display: none; }
+#view-leaves .leaf-scroll-content { position: relative; padding: 32px 0 36px; }
 #view-leaves .leaf-vine,
 #view-leaves .leaf-post-node,
 #view-leaves .leaf-reply-node,
@@ -22,7 +45,7 @@
 #view-leaves .vine-midvein, #view-leaves .vine-finevein { fill: none; stroke: var(--vein); stroke-width: .48; stroke-opacity: .48; stroke-linecap: round; }
 #view-leaves .vine-finevein { stroke-width: .36; stroke-opacity: .38; }
 #view-leaves .vine-leaf.is-small { opacity: .7; }
-#view-leaves .section-heading { margin-bottom: 40px; }
+#view-leaves .section-heading { margin-bottom: 8px; }
 #view-leaves .section-heading h2 {
   font-family: "Songti SC", "Noto Serif CJK SC", "STSong", serif;
   font-size: 30px;
@@ -112,7 +135,7 @@
 .leaf-comment-timestamp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 #view-leaves .leaf-comment { padding-right: 26px; }
 #view-leaves .leaf-reply-text { display: inline; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; line-height: inherit; cursor: pointer; }
-#view-leaves .leaf-reply-arrow { font-size: .85em; opacity: .7; }
+#view-leaves .leaf-reply-arrow { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; fill: none; stroke: currentColor; stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
 #view-leaves .leaf-comment-more { position: absolute; right: -5px; top: -8px; width: 30px; min-height: 36px; padding: 0; color: #aaa197; border: 0; background: transparent; box-shadow: none; appearance: none; font-family: inherit; font-size: 16px; line-height: 1; cursor: pointer; }
 #view-leaves .leaf-comment-menu { position: absolute; right: 0; top: 27px; z-index: 6; padding: 4px; border-radius: 12px; background: #fcfaf7; box-shadow: 0 5px 22px #544c4420; }
 #view-leaves .leaf-comment-menu button { padding: 8px 10px; border: 0; background: transparent; color: var(--ink); font-family: inherit; cursor: pointer; }

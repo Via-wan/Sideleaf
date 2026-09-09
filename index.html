@@ -1493,7 +1493,9 @@
         <h2>叶间</h2>
         <p>读到这里，想留下一点什么。</p>
       </div>
-      <div id="leaf-feed" class="leaf-feed"></div>
+      <div class="leaf-scroll-window" tabindex="0" role="region" aria-label="叶间动态">
+        <div class="leaf-scroll-content"><div id="leaf-feed" class="leaf-feed"></div></div>
+      </div>
     </section>
 
     <section id="view-footprints" class="app-view" hidden>
@@ -1689,7 +1691,7 @@
   }
 
   (() => {
-    const appVersion = '0.22.1';
+    const appVersion = '0.22.2';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2247,7 +2249,7 @@
           ${title ? `<span class="leaf-book"><svg class="leaf-open-book" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 6.5C9.2 4.4 5.9 4 2.5 5.2v14c3.4-1.2 6.7-.8 9.5 1.3m0-14c2.8-2.1 6.1-2.5 9.5-1.3v14c-3.4-1.2-6.7-.8-9.5 1.3m0-14v14"/><path class="leaf-book-pages" d="M5.5 8.2c1.4-.1 2.6.2 3.7.8m5.6 0c1.1-.6 2.3-.9 3.7-.8"/></svg>《${escapeText(title)}》</span>` : ''}
           ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment is-${comment.author === 'zheng' ? 'zheng' : 'wish'}">
             <svg class="leaf-reply-branch" viewBox="0 0 28 22" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M1 2 C5 12 13 17 27 17"/></svg>${botanicalLeaf('leaf-reply-node')}
-            <p><button class="leaf-reply-text" type="button" data-leaf-action="reply-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}" aria-label="回复${comment.author === 'zheng' ? '峥' : '愿'}的评论"><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}${comment.replyToAuthor ? ` <span class="leaf-reply-arrow" aria-label="回复">↪</span> ${comment.replyToAuthor === 'zheng' ? '峥' : '愿'}` : ''}：</span>${escapeText(comment.body)}</button></p>
+            <p><button class="leaf-reply-text" type="button" data-leaf-action="reply-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}" aria-label="回复${comment.author === 'zheng' ? '峥' : '愿'}的评论"><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}${comment.replyToAuthor ? ` <svg class="leaf-reply-arrow" viewBox="0 0 16 16" role="img" aria-label="回复"><path d="M3 3v4a3 3 0 0 0 3 3h7m-3-3 3 3-3 3"/></svg> ${comment.replyToAuthor === 'zheng' ? '峥' : '愿'}` : ''}：</span>${escapeText(comment.body)}</button></p>
             <button class="leaf-comment-more" type="button" data-leaf-action="comment-menu" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}" aria-label="评论操作" aria-expanded="${leafReplyState.menu === comment.id && leafReplyState.post === post.id ? 'true' : 'false'}">…</button>
             <div class="leaf-comment-menu" ${leafReplyState.menu === comment.id && leafReplyState.post === post.id ? '' : 'hidden'}>
               <button type="button" data-leaf-action="reply-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}">回复</button>
@@ -2543,6 +2545,7 @@
     function setMainView(view) {
       activeMainView = ['shelf', 'leaves', 'footprints'].includes(view) ? view : 'shelf';
       document.body.classList.toggle('is-footprints', activeMainView === 'footprints');
+      document.body.classList.toggle('is-leaves', activeMainView === 'leaves');
       mainViews.forEach(element => { element.hidden = element.id !== `view-${activeMainView}`; });
       mainViewButtons.forEach(button => button.classList.toggle('is-active', button.dataset.mainView === activeMainView));
       importButton.hidden = activeMainView !== 'shelf';
