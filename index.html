@@ -1689,7 +1689,7 @@
   }
 
   (() => {
-    const appVersion = '0.21.4';
+    const appVersion = '0.21.5';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2242,7 +2242,7 @@
           <div class="leaf-vine" aria-hidden="true"><svg viewBox="0 0 40 200" preserveAspectRatio="none" focusable="false"><path d="M20 0 C20 38 36 67 20 100 C4 134 20 162 20 200"/></svg></div>
           <div class="leaf-card-meta">${botanicalLeaf('leaf-post-node')}<span class="leaf-author">${author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(post.createdAt))}</time><svg class="leaf-header-branch" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M0 5 C28 4 68 6 100 3.5"/></svg><button class="leaf-more" type="button" data-leaf-action="menu" data-post-id="${escapeText(post.id)}" aria-label="动态操作" aria-expanded="${openLeafMenuId === post.id ? 'true' : 'false'}">…</button></div>
           <p class="leaf-card-body">${escapeText(post.body)}</p>
-          ${title ? `<span class="leaf-book">《${escapeText(title)}》</span>` : ''}
+          ${title ? `<span class="leaf-book"><svg class="leaf-open-book" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 6.5C9.2 4.4 5.9 4 2.5 5.2v14c3.4-1.2 6.7-.8 9.5 1.3m0-14c2.8-2.1 6.1-2.5 9.5-1.3v14c-3.4-1.2-6.7-.8-9.5 1.3m0-14v14"/><path class="leaf-book-pages" d="M5.5 8.2c1.4-.1 2.6.2 3.7.8m5.6 0c1.1-.6 2.3-.9 3.7-.8"/></svg>《${escapeText(title)}》</span>` : ''}
           ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment is-${comment.author === 'zheng' ? 'zheng' : 'wish'}">
             <svg class="leaf-reply-branch" viewBox="0 0 28 22" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M1 2 C5 12 13 17 27 17"/></svg>${botanicalLeaf('leaf-reply-node')}
             <p><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}：</span>${escapeText(comment.body)}</p>
