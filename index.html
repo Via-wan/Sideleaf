@@ -1695,7 +1695,7 @@
   }
 
   (() => {
-    const appVersion = '0.22.4';
+    const appVersion = '0.22.5';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2369,6 +2369,11 @@
     }
 
     function closeLeafComposer() {
+      if (leafComposer.contains(document.activeElement)) document.activeElement.blur();
+      document.body.classList.remove('is-leaf-writing');
+      document.body.style.removeProperty('--leaf-rest-height');
+      document.body.style.removeProperty('--leaf-viewport-offset');
+      leafComposer.style.removeProperty('--leaf-input-max-height');
       leafComposer.classList.remove('is-open');
       leafComposerBackdrop.classList.remove('is-open');
       editingLeafPostId = null;
@@ -2385,16 +2390,20 @@
 
     function positionLeafComposerForViewport() {
       if (leafComposer.hidden || !leafComposer.classList.contains('is-open')) return;
-      const focused = leafComposer.contains(document.activeElement);
-      if (!focused) {
+      const viewport = window.visualViewport;
+      const restingHeight = parseFloat(document.body.style.getPropertyValue('--leaf-rest-height')) || window.innerHeight;
+      // Keep the background at its pre-keyboard size; compensate Safari's focus pan.
+      const keyboardOpen = viewport && viewport.scale === 1 && restingHeight - viewport.height > 100;
+      document.body.style.setProperty('--leaf-viewport-offset', `${keyboardOpen ? viewport.offsetTop : 0}px`);
+      if (!keyboardOpen) {
         leafComposer.style.removeProperty('top');
         leafComposer.style.removeProperty('bottom');
+        leafComposer.style.removeProperty('--leaf-input-max-height');
         return;
       }
-      const viewport = window.visualViewport;
-      if (!viewport) return;
       const margin = 12;
-      const height = leafComposer.offsetHeight;
+      const height = Math.min(190, Math.max(100, viewport.height - margin * 2));
+      leafComposer.style.setProperty('--leaf-input-max-height', `${height}px`);
       const top = Math.max(viewport.offsetTop + margin, viewport.offsetTop + viewport.height - height - margin);
       leafComposer.style.bottom = 'auto';
       leafComposer.style.top = `${top}px`;
@@ -2402,6 +2411,10 @@
 
     function openLeafComposer() {
       refreshLeafBooks();
+      if (!document.body.classList.contains('is-leaf-writing')) {
+        document.body.style.setProperty('--leaf-rest-height', `${window.innerHeight}px`);
+        document.body.classList.add('is-leaf-writing');
+      }
       leafComposerBackdrop.hidden = false;
       window.requestAnimationFrame(() => {
         leafComposerBackdrop.classList.add('is-open');

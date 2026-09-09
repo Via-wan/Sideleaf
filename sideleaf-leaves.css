@@ -1,4 +1,4 @@
-/* Sideleaf 0.22.4 — one calm vine, semantic leaves, stable text grid.
+/* Sideleaf 0.22.5 — one calm vine, semantic leaves, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
 #view-leaves { position: relative; }
@@ -159,15 +159,26 @@ body.is-leaves { position: fixed; inset: 0; width: 100%; overflow: hidden; overs
   top: 43px;
   right: 0;
   margin: 0;
-  padding: 4px 5px;
-  border: 1px solid rgba(207,185,170,.38);
+  padding: 4px;
+  border: 0;
   border-radius: 12px;
-  background: rgba(252,250,247,.96);
-  box-shadow: 0 8px 24px rgba(84,76,68,.09);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: #fcfaf7;
+  box-shadow: 0 5px 22px #544c4420;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
-#view-leaves .leaf-action-menu button { min-height: 36px; padding: 4px 10px; }
+#view-leaves .leaf-action-menu button { min-height: 0; padding: 8px 10px; border: 0; background: transparent; color: var(--ink); font-family: inherit; cursor: pointer; }
+#view-leaves .leaf-action-menu button.is-danger { color: #ab7868; }
+#view-leaves .leaf-action-menu button,
+#view-leaves .leaf-comment-menu button { font-size: 13px; font-weight: 400; line-height: 1.4; }
+body.is-leaf-writing .main-nav { visibility: hidden; pointer-events: none; }
+body.is-leaf-writing .shelf { transform: translateY(var(--leaf-viewport-offset, 0px)); }
+body.is-leaf-writing #view-leaves:not([hidden]) {
+  height: calc(var(--leaf-rest-height) - max(34px, env(safe-area-inset-top)) - 140px - env(safe-area-inset-bottom));
+}
+#leaf-composer.is-open { max-height: var(--leaf-input-max-height, 190px); }
+#leaf-composer .leaf-compose-body { min-height: 0; }
+#leaf-composer .leaf-compose-body textarea { font-size: 16px; min-height: 40px; }
 #view-leaves .leaf-more { position: relative; z-index: 5; }
 #view-leaves .leaf-more:focus-visible { outline: 2px solid #bd8b76; outline-offset: 2px; border-radius: 8px; }
 #leaf-composer .leaf-plus-sprout {
