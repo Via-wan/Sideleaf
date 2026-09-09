@@ -1695,7 +1695,7 @@
   }
 
   (() => {
-    const appVersion = '0.22.5';
+    const appVersion = '0.22.6';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2370,9 +2370,6 @@
 
     function closeLeafComposer() {
       if (leafComposer.contains(document.activeElement)) document.activeElement.blur();
-      document.body.classList.remove('is-leaf-writing');
-      document.body.style.removeProperty('--leaf-rest-height');
-      document.body.style.removeProperty('--leaf-viewport-offset');
       leafComposer.style.removeProperty('--leaf-input-max-height');
       leafComposer.classList.remove('is-open');
       leafComposerBackdrop.classList.remove('is-open');
@@ -2385,16 +2382,28 @@
       leafPublish.textContent = '留下';
       leafComposer.style.removeProperty('top');
       leafComposer.style.removeProperty('bottom');
+      positionLeafComposerForViewport();
       window.setTimeout(() => { leafComposerBackdrop.hidden = true; }, 240);
     }
 
     function positionLeafComposerForViewport() {
-      if (leafComposer.hidden || !leafComposer.classList.contains('is-open')) return;
+      if (!document.body.classList.contains('is-leaf-writing')) return;
       const viewport = window.visualViewport;
       const restingHeight = parseFloat(document.body.style.getPropertyValue('--leaf-rest-height')) || window.innerHeight;
       // Keep the background at its pre-keyboard size; compensate Safari's focus pan.
-      const keyboardOpen = viewport && viewport.scale === 1 && restingHeight - viewport.height > 100;
-      document.body.style.setProperty('--leaf-viewport-offset', `${keyboardOpen ? viewport.offsetTop : 0}px`);
+      // Follow the final keyboard-animation frames too: the former 100px cutoff
+      // removed compensation while Safari was still panning the visual viewport.
+      const unzoomed = viewport && Math.abs(viewport.scale - 1) < .01;
+      const keyboardOpen = unzoomed && (restingHeight - viewport.height > 1 || viewport.offsetTop > 1);
+      document.body.style.setProperty('--leaf-viewport-offset', `${unzoomed ? viewport.offsetTop : 0}px`);
+      if (leafComposer.hidden || !leafComposer.classList.contains('is-open')) {
+        if (!keyboardOpen || leafComposer.hidden) {
+          document.body.classList.remove('is-leaf-writing');
+          document.body.style.removeProperty('--leaf-rest-height');
+          document.body.style.removeProperty('--leaf-viewport-offset');
+        }
+        return;
+      }
       if (!keyboardOpen) {
         leafComposer.style.removeProperty('top');
         leafComposer.style.removeProperty('bottom');
