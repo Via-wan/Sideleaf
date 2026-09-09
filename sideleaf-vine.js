@@ -34,7 +34,7 @@
     const nodes = rows.map(row => {
       const box = row.getBoundingClientRect();
       const post = row.classList.contains('leaf-card-meta');
-      return {post, y: box.top-rect.top+(post ? box.height/2+18 : 3),
+      return {post, y: box.top-rect.top+(post ? box.height/2+18 : -3),
         x: post ? 12 : 29, author: row.closest('.is-zheng') ? 'zheng' : 'wish'};
     });
     const headers = nodes.filter(node=>node.post);
