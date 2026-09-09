@@ -45,8 +45,8 @@ test('动态、回复和菜单 ID 继续转义，不将文本变成 HTML',()=>{
   assert.match(output,/data-post-id="&quot; onclick=&quot;bad"/);
 });
 test('两种阅读器版本与本次更新保持一致',()=>{
-  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.22.6</small>'),file+' version label');
-  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v92/);
+  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.22.7</small>'),file+' version label');
+  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v93/);
   assert.match(html,/href="\.\/sideleaf-leaves.css"/);
 });
 test('操作菜单脱离内容流，弧枝与发布叶片均有稳定锚点',()=>{

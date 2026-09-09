@@ -1,4 +1,8 @@
-# 叶间 0.22.6 — keyboard dismissal continuity
+# 叶间 0.22.7 — native fixed background
+
+## 0.22.7
+
+User recording ScreenRecording_09-09-2026 20-27-57_1.mp4 confirms 0.22.6 did NOT solve the background jump. Retire JS visualViewport offset transforms on the shelf: the entire leaves background now uses native fixed positioning throughout the leaves view, so opening/closing the composer does not change its positioning mode. Only composer placement follows visualViewport events. Keep 42px title, existing keyboard-height lock and menus. Aa 0.22.7, cache v93. 39 calculation/unit tests pass, but those do not reproduce Safari compositor timing. Real iPhone acceptance remains pending; do not cite passing geometry tests as proof this visual issue is resolved.
 
 ## 0.22.6
 
