@@ -1,5 +1,7 @@
 # Sideleaf
 
+当前版本：**0.21.0**。叶间采用轻写意藤蔓动态流：主动态与回复叶片跟随内容定位，统一作者列，保留原有发布、编辑、评论、删除与书籍关联；正文 Aa 面板显示同一版本。正文及足迹布局保持不变。
+
 A quiet co-reading space for reading side by side without forced synchronization.
 
 当前版本支持从本机导入未加密的 EPUB、TXT 与 Markdown，并在移动端保留阅读进度、双人阅读线、喜欢、原句对话、章节札记、叶间动态与书评。
