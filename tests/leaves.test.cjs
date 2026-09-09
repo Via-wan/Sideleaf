@@ -43,8 +43,8 @@ test('动态、回复和菜单 ID 继续转义，不将文本变成 HTML',()=>{
   assert.match(output,/data-post-id="&quot; onclick=&quot;bad"/);
 });
 test('两种阅读器版本与本次更新保持一致',()=>{
-  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.21.2</small>'),file+' version label');
-  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v82/);
+  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.21.3</small>'),file+' version label');
+  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v83/);
   assert.match(html,/href="\.\/sideleaf-leaves.css"/);
 });
 test('操作菜单脱离内容流，弧枝与发布叶片均有稳定锚点',()=>{
@@ -60,4 +60,12 @@ test('空白处收起菜单，发布框内容先于外框隐藏',()=>{
   assert.match(html,/<svg class="leaf-plus-sprout"[^>]*>[\s\S]*leaf-plus-stem[\s\S]*leaf-plus-blade/);
   assert.match(css,/#leaf-composer \.leaf-compose-body\s*\{[^}]*visibility:\s*hidden/s);
   assert.match(css,/#leaf-composer\.is-open \.leaf-compose-body\s*\{[^}]*visibility:\s*visible/s);
+});
+test('主藤接缝平滑且只保留与内容对应的叶片',()=>{
+  const css=fs.readFileSync(path.join(root,'sideleaf-leaves.css'),'utf8');
+  assert.match(html,/M20 0 C20 38 36 67 20 100 C4 134 20 162 20 200/);
+  assert.doesNotMatch(css,/\.leaf-vine::before|\.leaf-vine::after/);
+  assert.match(css,/\.leaf-post-node\s*\{[^}]*left:\s*-37px/s);
+  assert.match(css,/\.leaf-reply-branch\s*\{[^}]*left:\s*-44px/s);
+  assert.match(html,/<svg class="leaf-reply-branch"[^>]*>[\s\S]*?<path/);
 });
