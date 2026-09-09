@@ -8,7 +8,7 @@ function style() {
   return {setProperty(k,v){this[k]=v;},getPropertyValue(k){return this[k] || '';},removeProperty(k){delete this[k];}};
 }
 test('keyboard positioning preserves background height and restores default position on dismissal', () => {
-  const body = {style:style()}; body.style.setProperty('--leaf-rest-height','800px');
+  const body = {style:style(),classList:{contains:()=>true,remove(){}}}; body.style.setProperty('--leaf-rest-height','800px');
   const leafComposer = {hidden:false,classList:{contains:()=>true},style:style()};
   const viewport = {height:800,offsetTop:0,scale:1};
   const context={document:{body},window:{innerHeight:800,visualViewport:viewport},leafComposer};
@@ -20,6 +20,14 @@ test('keyboard positioning preserves background height and restores default posi
   assert.equal(leafComposer.style.top,'288px');
   assert.equal(body.style['--leaf-viewport-offset'],'90px');
   assert.equal(body.style['--leaf-rest-height'],'800px');
+  Object.assign(viewport,{height:740,offsetTop:35});
+  context.positionLeafComposerForViewport();
+  assert.equal(body.style['--leaf-viewport-offset'],'35px','keep compensation in final 60px of keyboard dismissal');
+  assert.equal(leafComposer.style.top,'573px');
+  leafComposer.classList.contains=()=>false;
+  context.positionLeafComposerForViewport();
+  assert.equal(body.style['--leaf-rest-height'],'800px','closing composer does not unlock background mid-animation');
+  leafComposer.classList.contains=()=>true;
   Object.assign(viewport,{height:800,offsetTop:0});
   context.positionLeafComposerForViewport();
   assert.equal(leafComposer.style.top,undefined);
@@ -27,7 +35,7 @@ test('keyboard positioning preserves background height and restores default posi
   assert.equal(body.style['--leaf-viewport-offset'],'0px');
 });
 test('pinch zoom is not treated as a keyboard and short viewports bound the composer height',()=>{
-  const body={style:style()};body.style.setProperty('--leaf-rest-height','800px');
+  const body={style:style(),classList:{contains:()=>true,remove(){}}};body.style.setProperty('--leaf-rest-height','800px');
   const leafComposer={hidden:false,classList:{contains:()=>true},style:style()};
   const viewport={height:300,offsetTop:0,scale:2};
   const context={document:{body},window:{innerHeight:800,visualViewport:viewport},leafComposer};

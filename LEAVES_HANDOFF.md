@@ -1,4 +1,8 @@
-# 叶间 0.22.5 — matching menus and keyboard layout
+# 叶间 0.22.6 — keyboard dismissal continuity
+
+## 0.22.6
+
+User recording ScreenRecording_09-09-2026 20-23-10_1.mp4 shows a background jump during keyboard dismissal. Removed the 100px cutoff that reset viewport compensation before Safari's pan finished. Offset compensation now tracks the unzoomed viewport through the final frames; closing the composer keeps the background locked until the keyboard has settled. Heading increases 38px to 42px. Aa 0.22.6, cache v92. All 39 tests pass, with new assertions covering the final 60px of keyboard dismissal and closing mid-animation. Real iPhone retest remains necessary.
 
 ## 0.22.5
 
