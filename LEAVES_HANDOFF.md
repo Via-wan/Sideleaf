@@ -1,4 +1,12 @@
-# 叶间 0.22.1 — measured connected botanical SVG / pending visual acceptance
+# 叶间 0.22.2 — bounded botanical feed / pending live verification
+
+## 0.22.2 current checkpoint
+
+PR #37 merged to main at 8697a159e5df5c38b3f265e7792c1b1efa76c057. Reply arrows are now inline stroked SVG, avoiding iPhone emoji substitution. The leaf feed and measured SVG share a relative content wrapper inside a fixed-height scroll region; upper/lower masks fade both together. Heading and bottom controls stay outside that region. Body scroll locking applies only to the leaves view. The content wrapper preserves the vine's feed-relative coordinates without scroll-time redraws. Reader Aa version is 0.22.2, cache v88.
+
+37 Node tests and diff whitespace checks pass. At this checkpoint the live site still returned 0.22.1 and no publish workflow run for this merge was listed; do not claim deployed or browser-verified until the new region appears live. The unpaired QA browser has a temporary long post beginning “滚动区域验收” for scroll verification; remove that generated post after checking. User data/Core were not connected or modified.
+
+Below are earlier implementation notes; their version/test counts are historical.
 
 ## Latest correction
 
