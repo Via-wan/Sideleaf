@@ -113,7 +113,7 @@
 #view-leaves .leaf-comment { padding-right: 26px; }
 #view-leaves .leaf-reply-text { display: inline; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; line-height: inherit; cursor: pointer; }
 #view-leaves .leaf-reply-arrow { font-size: .85em; opacity: .7; }
-#view-leaves .leaf-comment-more { position: absolute; right: -5px; top: -8px; width: 30px; min-height: 36px; padding: 0; color: #aaa197; border: 0; background: transparent; box-shadow: none; appearance: none; font: 16px/1 inherit; cursor: pointer; }
+#view-leaves .leaf-comment-more { position: absolute; right: -5px; top: -8px; width: 30px; min-height: 36px; padding: 0; color: #aaa197; border: 0; background: transparent; box-shadow: none; appearance: none; font-family: inherit; font-size: 16px; line-height: 1; cursor: pointer; }
 #view-leaves .leaf-comment-menu { position: absolute; right: 0; top: 27px; z-index: 6; padding: 4px; border-radius: 12px; background: #fcfaf7; box-shadow: 0 5px 22px #544c4420; }
 #view-leaves .leaf-comment-menu button { padding: 8px 10px; border: 0; background: transparent; color: var(--ink); font-family: inherit; cursor: pointer; }
 #view-leaves .leaf-comment-menu .is-danger { color: #ab7868; }
