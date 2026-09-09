@@ -1,6 +1,27 @@
-/* Sideleaf 0.21.3 — one calm vine, semantic leaves, stable text grid.
+/* Sideleaf 0.21.4 — one calm vine, semantic leaves, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
+#view-leaves { position: relative; }
+#view-leaves .leaf-vine,
+#view-leaves .leaf-post-node,
+#view-leaves .leaf-reply-node,
+#view-leaves .leaf-reply-branch { display: none; }
+#view-leaves .leaf-connected-vine {
+  position: absolute;
+  width: 80px;
+  overflow: visible;
+  pointer-events: none;
+}
+#view-leaves .vine-stem, #view-leaves .vine-twig {
+  fill: none; stroke: #b5a58b; stroke-width: 1;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+#view-leaves .vine-leaf { --blade: #d5b2a1; --vein: #aa8976; }
+#view-leaves .vine-leaf.is-zheng { --blade: #b0b5a1; --vein: #8e9580; }
+#view-leaves .vine-blade { fill: var(--blade); fill-opacity: .82; stroke: var(--vein); stroke-width: .35; stroke-opacity: .35; }
+#view-leaves .vine-midvein, #view-leaves .vine-finevein { fill: none; stroke: var(--vein); stroke-width: .48; stroke-opacity: .48; stroke-linecap: round; }
+#view-leaves .vine-finevein { stroke-width: .36; stroke-opacity: .38; }
+#view-leaves .vine-leaf.is-small { opacity: .7; }
 #view-leaves .section-heading { margin-bottom: 40px; }
 #view-leaves .section-heading h2 {
   font-family: "Songti SC", "Noto Serif CJK SC", "STSong", serif;
