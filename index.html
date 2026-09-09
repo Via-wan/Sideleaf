@@ -981,6 +981,9 @@
     font-size: 13px;
     line-height: 1.65;
   }
+  .footprint-volume { --person-ink: #8e7568; --person-line: rgba(197,141,125,.34); }
+  .footprint-volume.is-author-zheng { --person-ink: #6f8489; --person-line: rgba(111,132,137,.34); }
+  .footprint-volume .footprint-book { color: var(--person-ink); }
   .footprint-index {
     border-bottom: 1px solid rgba(84,76,68,.095);
   }
@@ -1015,7 +1018,7 @@
   }
   .footprint-index-book {
     overflow: hidden;
-    color: #8e7568;
+    color: var(--person-ink);
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -1045,7 +1048,7 @@
   .footprint-index-detail {
     margin: -2px 2px 17px;
     padding: 13px 14px 14px;
-    border-left: 2px solid rgba(197,141,125,.34);
+    border-left: 2px solid var(--person-line);
     background: rgba(247,242,235,.44);
     color: var(--ink);
   }
@@ -1692,7 +1695,7 @@
   }
 
   (() => {
-    const appVersion = '0.22.3';
+    const appVersion = '0.22.4';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -2284,7 +2287,7 @@
         button.classList.toggle('is-future', index > activeKindIndex);
         button.setAttribute('aria-selected', String(active));
       });
-      footprintVolume.className = `footprint-volume is-${activeFootprintKind}`;
+      footprintVolume.className = `footprint-volume is-${activeFootprintKind} is-author-${activeFootprintAuthor}`;
       const books = bookTitleMap();
       let items = [];
       if (activeFootprintKind === 'notes') {

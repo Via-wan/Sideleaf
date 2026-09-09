@@ -1,4 +1,8 @@
-# 叶间 0.22.3 — heading typography
+# 叶间 / 足迹 0.22.4 — title hierarchy and author accents
+
+## 0.22.4
+
+叶间 heading increases from 32px to 38px. Name ink is independent of leaf pigment: zheng names use mist blue #6f8489 (same as the existing selected 峥 footprint label), wish names retain #bd8b76, botanical leaves remain sage/coral. Footprint volume now includes is-author-wish/zheng so book labels across notes/likes/reviews and expanded-detail borders follow the selected reader. Neutral reading text and functional bookmark colors remain intact. Aa version 0.22.4, cache v90; 37 existing tests pass and git diff --check is clean.
 
 ## 0.22.3
 
