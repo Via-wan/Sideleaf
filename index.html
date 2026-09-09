@@ -12,6 +12,7 @@
 <title>Sideleaf · 书架</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./sideleaf-heading-fonts.css">
 <link rel="stylesheet" href="./sideleaf-leaves.css">
 <style>
   @view-transition {
@@ -1491,7 +1492,7 @@
     <section id="view-leaves" class="app-view" hidden>
       <div class="section-heading">
         <h2>叶间</h2>
-        <p>读到这里，想留下一点什么。</p>
+        <p>书读到一半，想和你说句话。</p>
       </div>
       <div class="leaf-scroll-window" tabindex="0" role="region" aria-label="叶间动态">
         <div class="leaf-scroll-content"><div id="leaf-feed" class="leaf-feed"></div></div>
@@ -1691,7 +1692,7 @@
   }
 
   (() => {
-    const appVersion = '0.22.2';
+    const appVersion = '0.22.3';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';

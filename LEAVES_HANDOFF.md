@@ -1,4 +1,8 @@
-# 叶间 0.22.2 — bounded botanical feed / deployed
+# 叶间 0.22.3 — heading typography
+
+## 0.22.3
+
+User approved the subtitle “书读到一半，想和你说句话。” Title uses bundled ZCOOL XiaoWei (400, 32px), subtitle Noto Serif SC (400, 13px). Only needed characters are subsetted, embedded in sideleaf-heading-fonts.css (about 12KB raw font data combined), with OFL notices in vendor/LEAF-FONTS-LICENSE.txt. No runtime Google Fonts request or full CJK font download. Body/comment typography and botanical layout remain as in 0.22.2. Both Aa labels are 0.22.3, cache v89. Font subsets decoded with fontTools and visually rendered; 37 Node tests pass. This note records implementation, not a claim of iPhone visual acceptance.
 
 ## 0.22.2 current checkpoint
 
