@@ -29,3 +29,17 @@ test('empty and hidden feeds never show an orphan vine',()=>{
   assert.equal(fixture([]).style.display,'none');
   assert.equal(fixture([[true,12,false]],false).style.display,'none');
 });
+test('consecutive replies follow a curved stem instead of one fixed vertical rail',()=>{
+  const svg=fixture([[true,12,false],[false,130,true],[false,167,false],[true,240,true],[false,390,false]]);
+  const stem=svg.innerHTML.match(/class="vine-stem" d="([^"]+)"/)[1];
+  const segments=stem.split(' C').slice(1).map(s=>s.split(/\s+/).map(Number));
+  assert.ok(segments.every(s=>s.length===6 && s.every(Number.isFinite)));
+  assert.notEqual(segments[1][4],segments[2][4], 'reply anchors have distinct horizontal positions');
+  // At each shared endpoint, outgoing/incoming dx/dy agree (rounding tolerance).
+  for(let i=0;i<segments.length-1;i++) {
+    const a=segments[i], b=segments[i+1];
+    const before=(a[4]-a[2])/(a[5]-a[3]);
+    const after=(b[0]-a[4])/(b[1]-a[5]);
+    assert.ok(Math.abs(before-after)<.003, 'smooth tangent at row junction');
+  }
+});

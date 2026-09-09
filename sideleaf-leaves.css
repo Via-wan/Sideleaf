@@ -1,4 +1,4 @@
-/* Sideleaf 0.21.4 — one calm vine, semantic leaves, stable text grid.
+/* Sideleaf 0.21.5 — one calm vine, semantic leaves, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
 #view-leaves { position: relative; }
@@ -81,7 +81,9 @@
   font-size: 12px;
   overflow-wrap: anywhere;
 }
-#view-leaves .leaf-book::before { content: ""; display: inline-block; width: 14px; height: 11px; margin-right: 7px; vertical-align: -1px; border: 1px solid currentColor; border-radius: 2px; background: linear-gradient(currentColor,currentColor) center/1px 100% no-repeat; }
+#view-leaves .leaf-book::before { content: none; }
+#view-leaves .leaf-open-book { display: inline-block; width: 19px; height: 19px; margin-right: 7px; vertical-align: -4px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+#view-leaves .leaf-book-pages { stroke-width: .85; opacity: .65; }
 #view-leaves .botanical-leaf { position: absolute; overflow: visible; pointer-events: none; }
 #view-leaves .leaf-blade { fill: var(--leaf-fill); fill-opacity: .8; stroke: var(--leaf-color); stroke-opacity: .25; stroke-width: .8; }
 #view-leaves .leaf-veins { stroke: var(--leaf-color); stroke-opacity: .45; stroke-width: .7; stroke-linecap: round; }
