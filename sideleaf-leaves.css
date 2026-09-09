@@ -1,4 +1,4 @@
-/* Sideleaf 0.21.0 — organic branches, stable text grid.
+/* Sideleaf 0.21.1 — organic branches, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
 #view-leaves .section-heading { margin-bottom: 40px; }
@@ -41,7 +41,7 @@
   border-radius: 90% 0 90% 0;
   transform: rotate(-35deg);
 }
-#view-leaves .leaf-vine::before { top: 42%; }
+#view-leaves .leaf-vine::before { top: 2px; }
 #view-leaves .leaf-vine::after { bottom: 10%; left: 15px; transform: rotate(24deg); }
 #view-leaves .leaf-card-meta {
   position: relative;
@@ -54,7 +54,8 @@
 #view-leaves .leaf-author { color: var(--leaf-color); font-weight: 500; }
 #view-leaves .leaf-card-meta > .leaf-author { font-size: 17px; }
 #view-leaves .leaf-card-meta time { font-size: 10px; white-space: nowrap; }
-#view-leaves .leaf-header-branch { height: 1px; background: #d9c3b3; opacity: .7; }
+#view-leaves .leaf-header-branch { display: block; width: 100%; height: 8px; overflow: visible; }
+#view-leaves .leaf-header-branch path { fill: none; stroke: #d0aa98; stroke-width: .75px; stroke-linecap: round; vector-effect: non-scaling-stroke; opacity: .72; }
 #view-leaves .leaf-more { min-height: 44px; min-width: 32px; padding: 0; font-family: inherit; font-size: 18px; line-height: 1; }
 #view-leaves .leaf-card-body { margin-top: 10px; font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; }
 #view-leaves .leaf-book {
@@ -91,7 +92,22 @@
   pointer-events: none;
 }
 .leaf-comment-timestamp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-#view-leaves .leaf-action-menu { padding: 10px 0; }
+#view-leaves .leaf-action-menu {
+  position: absolute;
+  z-index: 4;
+  top: 43px;
+  right: 0;
+  margin: 0;
+  padding: 4px 5px;
+  border: 1px solid rgba(207,185,170,.38);
+  border-radius: 12px;
+  background: rgba(252,250,247,.96);
+  box-shadow: 0 8px 24px rgba(84,76,68,.09);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+#view-leaves .leaf-action-menu button { min-height: 36px; padding: 4px 10px; }
+#view-leaves .leaf-more { position: relative; z-index: 5; }
 #view-leaves .leaf-more:focus-visible { outline: 2px solid #bd8b76; outline-offset: 2px; border-radius: 8px; }
 #leaf-composer:not(.is-open) .leaf-plus::after {
   content: "";
@@ -106,6 +122,8 @@
   transform: rotate(15deg);
   pointer-events: none;
 }
+#leaf-composer:not(.is-open) { overflow: visible; }
+#leaf-composer.is-open { overflow: hidden; }
 @media (max-width: 360px) {
   #view-leaves .leaf-feed { padding-left: 32px; }
   #view-leaves .leaf-card-meta { column-gap: 5px; grid-template-columns: 21px max-content minmax(3px, 1fr) 28px; }

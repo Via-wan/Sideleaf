@@ -43,7 +43,13 @@ test('动态、回复和菜单 ID 继续转义，不将文本变成 HTML',()=>{
   assert.match(output,/data-post-id="&quot; onclick=&quot;bad"/);
 });
 test('两种阅读器版本与本次更新保持一致',()=>{
-  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.21.0</small>'),file+' version label');
-  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v80/);
+  for(const file of ['read.html','reader.html']) assert.ok(fs.readFileSync(path.join(root,file),'utf8').includes('<small class="build-version">Sideleaf 0.21.1</small>'),file+' version label');
+  assert.match(fs.readFileSync(path.join(root,'sw.js'),'utf8'),/network-first-v81/);
   assert.match(html,/href="\.\/sideleaf-leaves.css"/);
+});
+test('操作菜单脱离内容流，弧枝与发布叶片均有稳定锚点',()=>{
+  const css=fs.readFileSync(path.join(root,'sideleaf-leaves.css'),'utf8');
+  assert.match(css,/#view-leaves \.leaf-action-menu\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css,/#leaf-composer:not\(\.is-open\)\s*\{\s*overflow:\s*visible/);
+  assert.match(html,/<svg class="leaf-header-branch"[^>]*>\s*<path/);
 });
