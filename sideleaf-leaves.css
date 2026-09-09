@@ -1,4 +1,4 @@
-/* Sideleaf 0.21.5 — one calm vine, semantic leaves, stable text grid.
+/* Sideleaf 0.22.0 — one calm vine, semantic leaves, stable text grid.
    Every node belongs to its content row, never to a screenshot coordinate. */
 #view-leaves { --vine: #c6b49c; }
 #view-leaves { position: relative; }
@@ -110,6 +110,14 @@
   vector-effect: non-scaling-stroke;
 }
 .leaf-comment-timestamp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#view-leaves .leaf-comment { padding-right: 26px; }
+#view-leaves .leaf-reply-text { display: inline; padding: 0; border: 0; background: none; box-shadow: none; color: inherit; font: inherit; text-align: left; line-height: inherit; cursor: pointer; }
+#view-leaves .leaf-reply-arrow { font-size: .85em; opacity: .7; }
+#view-leaves .leaf-comment-more { position: absolute; right: -5px; top: -8px; width: 30px; min-height: 36px; padding: 0; color: #aaa197; }
+#view-leaves .leaf-comment-menu { position: absolute; right: 0; top: 27px; z-index: 6; padding: 4px; border-radius: 12px; background: #fcfaf7; box-shadow: 0 5px 22px #544c4420; }
+#view-leaves .leaf-comment-menu button { padding: 8px 10px; }
+#view-leaves .leaf-comment-compose { flex-wrap: wrap; }
+#view-leaves .leaf-reply-context { flex-basis: 100%; font-size: 11px; color: #978b80; }
 #view-leaves .leaf-action-menu {
   position: absolute;
   z-index: 4;

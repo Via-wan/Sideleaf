@@ -1689,7 +1689,7 @@
   }
 
   (() => {
-    const appVersion = '0.21.5';
+    const appVersion = '0.22.0';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -1772,6 +1772,8 @@
     let pendingDeleteBookId = null;
     let openLeafMenuId = null;
     let openLeafCommentId = null;
+    let leafReplyState = {};
+    let pendingDeleteLeafComment = null;
     let leafBookPickerOpen = false;
     let editingLeafPostId = null;
     let pendingDeleteLeafPostId = null;
@@ -2245,7 +2247,12 @@
           ${title ? `<span class="leaf-book"><svg class="leaf-open-book" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 6.5C9.2 4.4 5.9 4 2.5 5.2v14c3.4-1.2 6.7-.8 9.5 1.3m0-14c2.8-2.1 6.1-2.5 9.5-1.3v14c-3.4-1.2-6.7-.8-9.5 1.3m0-14v14"/><path class="leaf-book-pages" d="M5.5 8.2c1.4-.1 2.6.2 3.7.8m5.6 0c1.1-.6 2.3-.9 3.7-.8"/></svg>《${escapeText(title)}》</span>` : ''}
           ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment is-${comment.author === 'zheng' ? 'zheng' : 'wish'}">
             <svg class="leaf-reply-branch" viewBox="0 0 28 22" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M1 2 C5 12 13 17 27 17"/></svg>${botanicalLeaf('leaf-reply-node')}
-            <p><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}：</span>${escapeText(comment.body)}</p>
+            <p><button class="leaf-reply-text" type="button" data-leaf-action="reply-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}" aria-label="回复${comment.author === 'zheng' ? '峥' : '愿'}的评论"><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}${comment.replyToAuthor ? ` <span class="leaf-reply-arrow" aria-label="回复">↪</span> ${comment.replyToAuthor === 'zheng' ? '峥' : '愿'}` : ''}：</span>${escapeText(comment.body)}</button></p>
+            <button class="leaf-comment-more" type="button" data-leaf-action="comment-menu" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}" aria-label="评论操作" aria-expanded="${leafReplyState.menu === comment.id && leafReplyState.post === post.id ? 'true' : 'false'}">…</button>
+            <div class="leaf-comment-menu" ${leafReplyState.menu === comment.id && leafReplyState.post === post.id ? '' : 'hidden'}>
+              <button type="button" data-leaf-action="reply-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}">回复</button>
+              ${comment.author !== 'zheng' ? `<button type="button" data-leaf-action="edit-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}">编辑</button><button type="button" class="is-danger" data-leaf-action="delete-comment" data-post-id="${escapeText(post.id)}" data-comment-id="${escapeText(comment.id || '')}">删除</button>` : ''}
+            </div>
             <time class="leaf-comment-timestamp">${escapeText(formatMoment(comment.createdAt))}</time>
           </div>`).join('')}</div>` : ''}
           <div class="leaf-action-menu" ${openLeafMenuId === post.id ? '' : 'hidden'}>
@@ -2254,8 +2261,10 @@
             ${ownPost ? `<button class="is-danger" type="button" data-leaf-action="delete" data-post-id="${escapeText(post.id)}">删除</button>` : ''}
           </div>
           <div class="leaf-comment-compose" ${openLeafCommentId === post.id ? '' : 'hidden'}>
-            <textarea rows="1" maxlength="1000" data-leaf-comment-input="${escapeText(post.id)}" placeholder="接着说一句。"></textarea>
-            <button type="button" data-leaf-action="send-comment" data-post-id="${escapeText(post.id)}">发送</button>
+            <span class="leaf-reply-context">${leafReplyState.post === post.id && leafReplyState.mode ? (leafReplyState.mode === 'edit' ? '编辑评论' : `回复${leafReplyState.author === 'zheng' ? '峥' : '愿'}`) : '接着说一句'}</span>
+            <textarea rows="1" maxlength="1000" data-leaf-comment-input="${escapeText(post.id)}" placeholder="接着说一句。">${escapeText(leafReplyState.post === post.id ? leafReplyState.draft || '' : '')}</textarea>
+            <button type="button" data-leaf-action="send-comment" data-post-id="${escapeText(post.id)}">${leafReplyState.post === post.id && leafReplyState.mode === 'edit' ? '保存' : '发送'}</button>
+            <button type="button" data-leaf-action="cancel-comment" data-post-id="${escapeText(post.id)}">取消</button>
           </div>
         </article>`;
       }).join('');
@@ -2424,6 +2433,7 @@
     }
 
     function closeDeleteLeafDialog() {
+      pendingDeleteLeafComment = null;
       pendingDeleteLeafPostId = null;
       pendingDeleteReviewId = null;
       deleteLeafBackdrop.hidden = true;
@@ -2484,7 +2494,18 @@
     }
 
     function confirmPendingLeafDeletion() {
-      if (pendingDeleteReviewId) deletePendingReview();
+      if (pendingDeleteLeafComment) {
+        const {postId, commentId} = pendingDeleteLeafComment;
+        const posts = readArray(leafPostsKey);
+        const post = posts.find(item=>item.id===postId);
+        const comment = post?.comments?.find(item=>item.id===commentId);
+        if (!comment || comment.author === 'zheng') return closeDeleteLeafDialog();
+        post.comments = post.comments.filter(item=>item.id!==commentId);
+        post.updatedAt = Date.now();
+        closeDeleteLeafDialog();
+        leafReplyState = {}; openLeafCommentId = null;
+        saveLeafPosts(posts);
+      } else if (pendingDeleteReviewId) deletePendingReview();
       else deletePendingLeafPost();
     }
 
@@ -2497,16 +2518,25 @@
       if (!post) return;
       const now = Date.now();
       post.comments = Array.isArray(post.comments) ? post.comments : [];
-      post.comments.push({
+      const editing = leafReplyState.post === postId && leafReplyState.mode === 'edit';
+      const replying = leafReplyState.post === postId && leafReplyState.mode === 'reply';
+      const target = post.comments.find(item=>item.id===leafReplyState.target);
+      if ((editing || replying) && !target) { showToast('这条评论已不存在，请重新选择。'); return; }
+      if (editing) {
+        if (target.author === 'zheng') return;
+        target.body = body; target.updatedAt = now;
+      } else post.comments.push({
         id:window.crypto?.randomUUID?.() || `${now}-${Math.random().toString(16).slice(2)}`,
         author:'wish',
         body,
         createdAt:now,
-        updatedAt:now
+        updatedAt:now,
+        ...(replying ? {replyToId:target.id, replyToAuthor:target.author === 'zheng' ? 'zheng' : 'wish'} : {})
       });
       post.updatedAt = now;
       openLeafMenuId = null;
       openLeafCommentId = null;
+      leafReplyState = {};
       saveLeafPosts(posts);
     }
 
@@ -3013,10 +3043,36 @@
     });
     window.visualViewport?.addEventListener('resize', positionLeafComposerForViewport);
     window.visualViewport?.addEventListener('scroll', positionLeafComposerForViewport);
+    leafFeed.addEventListener('input', event => {
+      if (event.target.matches('[data-leaf-comment-input]')) leafReplyState = {...leafReplyState,post:event.target.dataset.leafCommentInput,draft:event.target.value};
+    });
     leafFeed.addEventListener('click', event => {
       const action = event.target.closest('[data-leaf-action]');
       if (!action) return;
       const postId = action.dataset.postId;
+      const kind = action.dataset.leafAction;
+      if (['comment-menu','reply-comment','edit-comment','delete-comment','cancel-comment'].includes(kind)) {
+        const commentId = action.dataset.commentId;
+        const comment = readArray(leafPostsKey).find(p=>p.id===postId)?.comments?.find(c=>c.id===commentId);
+        if (kind === 'cancel-comment') { openLeafCommentId=null; leafReplyState={}; renderLeafPosts(); return; }
+        if (!comment) return;
+        if (kind === 'comment-menu') {
+          leafReplyState = {...(leafReplyState.post === postId ? leafReplyState : {}),post:postId,menu:leafReplyState.menu===commentId ? null : commentId};
+          openLeafMenuId=null; renderLeafPosts(); return;
+        }
+        if (kind === 'delete-comment') {
+          if (comment.author==='zheng') return;
+          pendingDeleteLeafPostId=null; pendingDeleteReviewId=null;
+          pendingDeleteLeafComment={postId,commentId};
+          document.getElementById('delete-leaf-message').textContent='删除这条评论？已有的回复会保留。';
+          deleteLeafBackdrop.hidden=false; leafReplyState.menu=null; renderLeafPosts(); return;
+        }
+        if (kind==='edit-comment' && comment.author==='zheng') return;
+        leafReplyState={post:postId,target:commentId,author:comment.author,mode:kind==='edit-comment'?'edit':'reply',draft:kind==='edit-comment'?comment.body:''};
+        openLeafCommentId=postId; openLeafMenuId=null; renderLeafPosts();
+        leafFeed.querySelector(`[data-leaf-comment-input="${CSS.escape(postId)}"]`)?.focus();
+        return;
+      }
       if (action.dataset.leafAction === 'menu') {
         openLeafMenuId = openLeafMenuId === postId ? null : postId;
         openLeafCommentId = null;
@@ -3024,6 +3080,7 @@
       } else if (action.dataset.leafAction === 'edit') {
         beginLeafEdit(postId);
       } else if (action.dataset.leafAction === 'comment') {
+        leafReplyState = {post:postId,draft:''};
         openLeafMenuId = null;
         openLeafCommentId = postId;
         renderLeafPosts();
@@ -3135,10 +3192,11 @@
         if (bookManageMode) setBookManageMode(null);
       }
       if (activeMainView === 'leaves') {
-        const keepsMenuOpen = event.target.closest('.leaf-more, .leaf-action-menu');
-        const keepsCommentOpen = event.target.closest('.leaf-comment-compose, [data-leaf-action="comment"]');
+        const keepsMenuOpen = event.target.closest('.leaf-more, .leaf-action-menu, .leaf-comment-more, .leaf-comment-menu, [data-leaf-action]');
+        const keepsCommentOpen = event.target.closest('.leaf-comment-compose, [data-leaf-action]');
         const outsideLeafUi = !event.target.closest('#leaf-composer, .main-nav');
         let shouldRenderLeaves = false;
+        if (leafReplyState.menu && !keepsMenuOpen) { leafReplyState.menu=null; shouldRenderLeaves=true; }
         if (openLeafMenuId && !keepsMenuOpen) {
           openLeafMenuId = null;
           shouldRenderLeaves = true;
