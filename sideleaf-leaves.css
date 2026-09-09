@@ -1,0 +1,115 @@
+/* Sideleaf 0.21.0 — organic branches, stable text grid.
+   Every node belongs to its content row, never to a screenshot coordinate. */
+#view-leaves { --vine: #c6b49c; }
+#view-leaves .section-heading { margin-bottom: 40px; }
+#view-leaves .section-heading h2 {
+  font-family: "Songti SC", "Noto Serif CJK SC", "STSong", serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: .04em;
+}
+#view-leaves .leaf-feed { padding-left: 40px; }
+#view-leaves .leaf-card {
+  --leaf-color: #bd8b76;
+  --leaf-fill: #dfbba8;
+  padding: 12px 0 48px;
+  border: 0;
+  min-width: 0;
+}
+#view-leaves .is-zheng { --leaf-color: #858e7e; --leaf-fill: #bbc1b0; }
+#view-leaves .is-wish { --leaf-color: #bd8b76; --leaf-fill: #dfbba8; }
+#view-leaves .leaf-vine {
+  position: absolute;
+  left: -52px;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  pointer-events: none;
+}
+#view-leaves .leaf-vine > svg { width: 100%; height: 100%; display: block; overflow: visible; }
+#view-leaves .leaf-vine path { fill: none; stroke: var(--vine); stroke-width: 1.2px; vector-effect: non-scaling-stroke; }
+#view-leaves .leaf-vine::before,
+#view-leaves .leaf-vine::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 19px;
+  left: 10px;
+  background: #c9cbb6;
+  opacity: .62;
+  border: .6px solid #a5ad92;
+  border-radius: 90% 0 90% 0;
+  transform: rotate(-35deg);
+}
+#view-leaves .leaf-vine::before { top: 42%; }
+#view-leaves .leaf-vine::after { bottom: 10%; left: 15px; transform: rotate(24deg); }
+#view-leaves .leaf-card-meta {
+  position: relative;
+  display: grid;
+  grid-template-columns: 24px max-content minmax(8px, 1fr) 32px;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+}
+#view-leaves .leaf-author { color: var(--leaf-color); font-weight: 500; }
+#view-leaves .leaf-card-meta > .leaf-author { font-size: 17px; }
+#view-leaves .leaf-card-meta time { font-size: 10px; white-space: nowrap; }
+#view-leaves .leaf-header-branch { height: 1px; background: #d9c3b3; opacity: .7; }
+#view-leaves .leaf-more { min-height: 44px; min-width: 32px; padding: 0; font-family: inherit; font-size: 18px; line-height: 1; }
+#view-leaves .leaf-card-body { margin-top: 10px; font-size: 15px; line-height: 1.75; overflow-wrap: anywhere; }
+#view-leaves .leaf-book {
+  max-width: 100%;
+  margin-top: 12px;
+  padding: 7px 10px;
+  border-left: 1px solid #aeb49d;
+  border-radius: 2px 10px 10px 2px;
+  background: rgba(160,151,130,.055);
+  color: #858b79;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+#view-leaves .leaf-book::before { content: ""; display: inline-block; width: 14px; height: 11px; margin-right: 7px; vertical-align: -1px; border: 1px solid currentColor; border-radius: 2px; background: linear-gradient(currentColor,currentColor) center/1px 100% no-repeat; }
+#view-leaves .botanical-leaf { position: absolute; overflow: visible; pointer-events: none; }
+#view-leaves .leaf-blade { fill: var(--leaf-fill); fill-opacity: .8; stroke: var(--leaf-color); stroke-opacity: .25; stroke-width: .8; }
+#view-leaves .leaf-veins { stroke: var(--leaf-color); stroke-opacity: .45; stroke-width: .7; stroke-linecap: round; }
+#view-leaves .leaf-post-node { width: 43px; height: 43px; left: -46px; top: -8px; }
+#view-leaves .leaf-comments { margin-top: 21px; padding-left: 12px; border: 0; }
+#view-leaves .leaf-comment { position: relative; padding: 0; border: 0; }
+#view-leaves .leaf-comment + .leaf-comment { margin-top: 15px; padding-top: 0; border: 0; }
+#view-leaves .leaf-comment p { margin: 0; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+#view-leaves .leaf-reply-node { width: 21px; height: 21px; left: -29px; top: 0; transform: rotate(77deg); }
+#view-leaves .leaf-comment::before {
+  content: "";
+  position: absolute;
+  left: -47px;
+  top: -15px;
+  width: 25px;
+  height: 27px;
+  border-left: 1px solid var(--vine);
+  border-bottom: 1px solid var(--vine);
+  border-radius: 0 0 0 24px;
+  pointer-events: none;
+}
+.leaf-comment-timestamp { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+#view-leaves .leaf-action-menu { padding: 10px 0; }
+#view-leaves .leaf-more:focus-visible { outline: 2px solid #bd8b76; outline-offset: 2px; border-radius: 8px; }
+#leaf-composer:not(.is-open) .leaf-plus::after {
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: -8px;
+  width: 9px;
+  height: 17px;
+  border-radius: 90% 0 90% 0;
+  border: 1px solid #c39b87;
+  background: #dfbba8;
+  transform: rotate(15deg);
+  pointer-events: none;
+}
+@media (max-width: 360px) {
+  #view-leaves .leaf-feed { padding-left: 32px; }
+  #view-leaves .leaf-card-meta { column-gap: 5px; grid-template-columns: 21px max-content minmax(3px, 1fr) 28px; }
+  #view-leaves .leaf-card-meta time { font-size: 9px; }
+  #view-leaves .leaf-post-node { width: 35px; left: -37px; }
+  #view-leaves .leaf-vine { left: -44px; }
+}

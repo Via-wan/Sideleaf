@@ -12,6 +12,7 @@
 <title>Sideleaf · 书架</title>
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./sideleaf-leaves.css">
 <style>
   @view-transition {
     navigation: auto;
@@ -2214,6 +2215,10 @@
       leafBookPicker.hidden = !leafBookPickerOpen;
     }
 
+    function botanicalLeaf(className) {
+      return `<svg class="botanical-leaf ${className}" viewBox="0 0 60 60" fill="none" aria-hidden="true" focusable="false"><path class="leaf-blade" d="M7 53C4 30 16 12 55 5C50 39 35 55 7 53Z"/><path class="leaf-veins" d="M3 58Q25 31 52 8M12 46L12 32M20 37L19 22M29 28L29 16M38 20L38 12M12 46L28 45M20 37L36 36M29 28L43 27M38 20L48 19"/></svg>`;
+    }
+
     function renderLeafPosts() {
       const books = bookTitleMap();
       const posts = readArray(leafPostsKey).sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
@@ -2227,14 +2232,15 @@
         const comments = Array.isArray(post.comments) ? post.comments : [];
         const ownPost = author === 'wish';
         return `<article class="leaf-card is-${author}">
-          <div class="leaf-card-meta"><span>${author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(post.createdAt))}</time></div>
+          <div class="leaf-vine" aria-hidden="true"><svg viewBox="0 0 40 200" preserveAspectRatio="none" focusable="false"><path d="M20 0 C-5 38 42 65 20 110 S5 172 20 200"/></svg></div>
+          <div class="leaf-card-meta">${botanicalLeaf('leaf-post-node')}<span class="leaf-author">${author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(post.createdAt))}</time><span class="leaf-header-branch" aria-hidden="true"></span><button class="leaf-more" type="button" data-leaf-action="menu" data-post-id="${escapeText(post.id)}" aria-label="动态操作">…</button></div>
           <p class="leaf-card-body">${escapeText(post.body)}</p>
           ${title ? `<span class="leaf-book">《${escapeText(title)}》</span>` : ''}
-          ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment">
-            <div class="leaf-comment-meta"><span>${comment.author === 'zheng' ? '峥' : '愿'}</span><time>${escapeText(formatMoment(comment.createdAt))}</time></div>
-            <p>${escapeText(comment.body)}</p>
+          ${comments.length ? `<div class="leaf-comments">${comments.map(comment => `<div class="leaf-comment is-${comment.author === 'zheng' ? 'zheng' : 'wish'}">
+            ${botanicalLeaf('leaf-reply-node')}
+            <p><span class="leaf-author" title="${escapeText(formatMoment(comment.createdAt))}">${comment.author === 'zheng' ? '峥' : '愿'}：</span>${escapeText(comment.body)}</p>
+            <time class="leaf-comment-timestamp">${escapeText(formatMoment(comment.createdAt))}</time>
           </div>`).join('')}</div>` : ''}
-          <div class="leaf-card-actions"><button class="leaf-more" type="button" data-leaf-action="menu" data-post-id="${escapeText(post.id)}" aria-label="动态操作">…</button></div>
           <div class="leaf-action-menu" ${openLeafMenuId === post.id ? '' : 'hidden'}>
             ${ownPost ? `<button type="button" data-leaf-action="edit" data-post-id="${escapeText(post.id)}">编辑</button>` : ''}
             <button type="button" data-leaf-action="comment" data-post-id="${escapeText(post.id)}">评论</button>
