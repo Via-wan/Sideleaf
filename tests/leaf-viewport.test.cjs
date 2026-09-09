@@ -18,11 +18,11 @@ test('keyboard positioning preserves background height and restores default posi
   Object.assign(viewport,{height:400,offsetTop:90});
   context.positionLeafComposerForViewport();
   assert.equal(leafComposer.style.top,'288px');
-  assert.equal(body.style['--leaf-viewport-offset'],'90px');
+  assert.equal(body.style['--leaf-viewport-offset'],undefined,'keyboard events must not translate the background');
   assert.equal(body.style['--leaf-rest-height'],'800px');
   Object.assign(viewport,{height:740,offsetTop:35});
   context.positionLeafComposerForViewport();
-  assert.equal(body.style['--leaf-viewport-offset'],'35px','keep compensation in final 60px of keyboard dismissal');
+  assert.equal(body.style['--leaf-viewport-offset'],undefined,'background stays fixed during final keyboard frames');
   assert.equal(leafComposer.style.top,'573px');
   leafComposer.classList.contains=()=>false;
   context.positionLeafComposerForViewport();
@@ -32,7 +32,7 @@ test('keyboard positioning preserves background height and restores default posi
   context.positionLeafComposerForViewport();
   assert.equal(leafComposer.style.top,undefined);
   assert.equal(leafComposer.style.bottom,undefined);
-  assert.equal(body.style['--leaf-viewport-offset'],'0px');
+  assert.equal(body.style['--leaf-viewport-offset'],undefined);
 });
 test('pinch zoom is not treated as a keyboard and short viewports bound the composer height',()=>{
   const body={style:style(),classList:{contains:()=>true,remove(){}}};body.style.setProperty('--leaf-rest-height','800px');
