@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sideleaf-network-first-v81';
+const CACHE_NAME = 'sideleaf-network-first-v82';
 
 self.addEventListener('install', () => {
   self.skipWaiting();

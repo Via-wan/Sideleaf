@@ -1560,7 +1560,14 @@
 
   <div id="leaf-composer-backdrop" class="leaf-composer-backdrop" hidden></div>
   <section id="leaf-composer" class="leaf-composer" hidden aria-label="写一条叶间动态">
-    <button id="leaf-plus" class="leaf-plus" type="button" aria-label="写一条叶间动态">＋</button>
+    <button id="leaf-plus" class="leaf-plus" type="button" aria-label="写一条叶间动态">
+      <span aria-hidden="true">＋</span>
+      <svg class="leaf-plus-sprout" viewBox="0 0 24 28" fill="none" aria-hidden="true" focusable="false">
+        <path class="leaf-plus-stem" d="M4 28C5 19 9 14 15 10"/>
+        <path class="leaf-plus-blade" d="M13 11C14 4 19 1 23 1C23 8 19 13 13 11Z"/>
+        <path class="leaf-plus-vein" d="M14 10L21 3"/>
+      </svg>
+    </button>
     <div class="leaf-compose-body">
       <textarea id="leaf-input" maxlength="3000" placeholder="写下一点此刻的想法。"></textarea>
       <div></div>
@@ -1682,7 +1689,7 @@
   }
 
   (() => {
-    const appVersion = '0.21.1';
+    const appVersion = '0.21.2';
     const booksKey = 'sideleaf.books.v1';
     const readingLinesKey = 'sideleaf.reading-lines.v1';
     const notesKey = 'sideleaf.notes.v1';
@@ -3127,12 +3134,20 @@
         if (libraryMenu.classList.contains('is-open')) setLibraryMenu(false);
         if (bookManageMode) setBookManageMode(null);
       }
-      if (activeMainView === 'leaves' && !event.target.closest('.leaf-card, #leaf-composer, .main-nav')) {
-        if (openLeafMenuId || openLeafCommentId) {
+      if (activeMainView === 'leaves') {
+        const keepsMenuOpen = event.target.closest('.leaf-more, .leaf-action-menu');
+        const keepsCommentOpen = event.target.closest('.leaf-comment-compose, [data-leaf-action="comment"]');
+        const outsideLeafUi = !event.target.closest('#leaf-composer, .main-nav');
+        let shouldRenderLeaves = false;
+        if (openLeafMenuId && !keepsMenuOpen) {
           openLeafMenuId = null;
-          openLeafCommentId = null;
-          renderLeafPosts();
+          shouldRenderLeaves = true;
         }
+        if (openLeafCommentId && outsideLeafUi && !keepsCommentOpen) {
+          openLeafCommentId = null;
+          shouldRenderLeaves = true;
+        }
+        if (shouldRenderLeaves) renderLeafPosts();
       }
       if (activeMainView === 'leaves' && leafBookPickerOpen && !event.target.closest('.leaf-book-control')) {
         leafBookPickerOpen = false;
